@@ -1,0 +1,45 @@
+html {
+	background: #ffffff;
+}
+body{
+	margin: 0;
+	height:100%;
+	
+}
+
+.divcomingsoon {
+	position:absolute;
+	background-image: url('https://moodle-mobiteach.fr/media_mobiteach/MOBITEACH-Banner-1.jpg');
+	padding-top:80px;
+	padding-bottom: 40px;
+	text-align:center;
+	top: 15%;
+	width: 100%;
+	height: 250px;
+	
+}
+.Style2 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;
+	color: #FFFFFF;
+	font-size: 72px;
+	
+}
+.Style4 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;
+	color: #FFFFFF;
+	font-size: 36px;
+	
+}
+.Style12 {
+	font-family: Arial, Helvetica, sans-serif;
+	color: #FFFFFF;
+	font-size: 18px;
+}
+.Style15 {
+	font-family: Arial, Helvetica, sans-serif;
+	color: #FFFFFF;	
+	font-weight: bold; 
+	font-size: 10px;
+}
