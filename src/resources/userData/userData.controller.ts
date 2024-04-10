@@ -350,7 +350,7 @@ UserDataController.route('/')
 					const ffmpeg = require('fluent-ffmpeg');
 					ffmpeg.setFfmpegPath(ffmpegStatic);
 
-					// mise à jour document MongoDB
+					// Pour mise à jour document MongoDB
 					const thumbId = thumb?._id; 
 					const newName = thumb ? thumb.name + '.png' : ''; // Ajout '.png' au fichier '.mp4'
 					
