@@ -77,6 +77,9 @@ const thumbService = new ThumbService();
  *         mediaId:
  *          type: string
  *          description: ID du média
+ *         thumbId:
+ *          type: string
+ *          description: ID du thumbnail
  *    404:
  *     description: Utilisateur introuvable
  *     content:
@@ -505,8 +508,6 @@ UserDataController.route('/:room([a-z0-9]{6})')
 						next(err);
 					});
 			}
-			
-
 			return res.status(200).json(dataList);
 		} catch (err) {
 			next(err);

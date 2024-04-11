@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { IMedia } from '~~/types/media.interface';
+import { IThumb } from '~~/types/thumb.interface';
 import EMedia from '~~/types/media.enum';
 import { join } from 'path';
 import { config } from '~/config';

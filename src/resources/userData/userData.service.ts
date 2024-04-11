@@ -2,7 +2,6 @@ import type { IUserData } from '~~/types/userData.interface';
 import MUserData from '~/db/userData.model';
 import { Types } from 'mongoose';
 import { IMedia } from '~~/types/media.interface';
-import { IThumb } from '~~/types/thumb.interface';
 import { IUser } from '~~/types/users.interface';
 
 export class UserDataService {

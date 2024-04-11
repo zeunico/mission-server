@@ -3,6 +3,8 @@ import MMedia from '~/db/media.model';
 import { Types } from 'mongoose';
 
 
+
+
 export class MediaService {
 
 	// Trouve tout les médias d'un utilisateur
@@ -28,8 +30,9 @@ export class MediaService {
 	async create(userId: Types.ObjectId, mediaData: IMedia): Promise<IMedia> {
 		const newMedia: IMedia = {
 			...mediaData,
-			userId: userId
+			userId: userId,
 		};
+
 		console.log('Nouveau document Media', newMedia);
 
 		return await MMedia.create(newMedia);

@@ -51,6 +51,9 @@ const userService = new UsersService();
  *         _id:
  *          type: string
  *          description: ID du média
+ *         thumbId :
+ *          type: string
+ *          desription: Thumbnail du media
  *         name:
  *          type: string
  *          description: Nom du média
@@ -231,7 +234,6 @@ MediaController.route('/')
 				console.log('mauvais id user -- media controller')
 				throw new NotFoundException('Mauvais ID utilisateur');
 			}
-			
 			const createdMedia = await mediaService.create(userId, req.body);
 			console.log('media créé via media / ', createdMedia);
 			return res.status(201).json(createdMedia);
