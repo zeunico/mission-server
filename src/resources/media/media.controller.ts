@@ -51,9 +51,6 @@ const userService = new UsersService();
  *         _id:
  *          type: string
  *          description: ID du média
- *         thumbId :
- *          type: string
- *          desription: Thumbnail du media
  *         name:
  *          type: string
  *          description: Nom du média

@@ -42,7 +42,7 @@ export class MediaService {
 	// Supprime un media
 	async delete(_id: Types.ObjectId): Promise<IMedia | null> {
 		const deletedMedia = await MMedia.findByIdAndDelete(_id);
-		console.log('Media supprimée !');
+		console.log('Media supprimé !');
 		return deletedMedia;
 	}
 

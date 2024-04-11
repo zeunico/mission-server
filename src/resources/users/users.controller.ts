@@ -95,6 +95,9 @@ const mediaService = new MediaService();
  *        lastname:
  *         type: string
  *         description: Nom de l'utilisateur
+ *        instance:
+ *         type: string
+ *         description: Instance Mobiteach
  *   responses:
  *    201:
  *     description: Created
@@ -115,9 +118,6 @@ const mediaService = new MediaService();
  *         lastname:
  *          type: string
  *          description: Nom de l'utilisateur
- *         picture:
- *          type: string
- *          description: URL de l'image de profil de l'utilisateur
  *         instance:
  *          type: string
  *          description: Nom de l'instance à laquelle l'utilisateur est rattaché
@@ -125,7 +125,7 @@ const mediaService = new MediaService();
  *          type: array
  *          description: Liste des consignes de l'utilisateur
  * 
- * /users/{email}:
+ * /users/{email}/{room}/{instance}:
  *  get:
  *   summary: Récupère un utilisateur enregistré en base de données à partir de l'adresse email passée en paramètre.
  *   tags: [Users]
@@ -133,6 +133,16 @@ const mediaService = new MediaService();
  *    - name: email
  *      in: path
  *      description: Adresse email de l'utilisateur
+ *      type: string
+ *      required: true
+ *    - name: room
+ *      in: path
+ *      description: Salle virtuelle de l'utilisateur
+ *      type: string
+ *      required: true
+ *    - name: instance
+ *      in: path
+ *      description: Instance Mobiteach
  *      type: string
  *      required: true
  *   responses:

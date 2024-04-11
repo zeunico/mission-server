@@ -305,7 +305,7 @@ var MediaService = class {
   // Supprime un media
   async delete(_id) {
     const deletedMedia = await media_model_default.findByIdAndDelete(_id);
-    console.log("Media supprim\xE9e !");
+    console.log("Media supprim\xE9 !");
     return deletedMedia;
   }
 };
