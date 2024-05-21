@@ -17,6 +17,8 @@ import { readFileSync } from 'fs';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 
+
+
 // Création d'une nouvelle instance express
 const app = express();
 
@@ -34,7 +36,7 @@ const swaggerOptions = {
 		},
 		servers: [
 			{
-				url: 'https://missions.mobiteach.fr',
+				url: config.BASE_URL,
 				description: 'Server',
 			},
 		],
