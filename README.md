@@ -9,7 +9,7 @@
 
 ### Install
 
-1. Down*load this directory and extract it.
+1. Download this directory and extract it.
 2. Install dependencies `npm install` or `yarn install`
 3. Create a `.env` file at the root of the project from the example given `.env.example`
 4. Build project with `npm run build` or `yarn run build`
