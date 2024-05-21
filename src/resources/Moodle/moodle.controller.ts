@@ -194,7 +194,7 @@ const userDataService = new UserDataService();
  */
 
 /**    
- * Chemin: http://missions.mobiteach.fr/moodle/users
+ * Chemin: URI SERVER + /moodle/users
  * Ce lien fournit la liste des utilisateurs enregistrés en base de données, toutes instances et salles confondues.
  */
 MoodleController.route('/users')
