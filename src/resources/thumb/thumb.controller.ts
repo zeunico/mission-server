@@ -17,6 +17,192 @@ const ThumbController: Router = Router();
 const thumbService = new ThumbService();
 const userService = new UsersService();
 
+
+/**
+ * @swagger
+ * tags:
+ *  name: Thumbs
+ *  description: Gestion des thumbs
+ *  
+ * /thumbs:
+ *  post:
+ *   summary: Création d'un thumb
+ *   tags: [Thumbs]
+ *   requestBody:
+ *    required: true
+ *    content:
+ *     multipart/form-data:
+ *      schema:
+ *       type: object
+ *       properties:
+ *        file:
+ *         type: string
+ *         format: binary
+ *         description: Fichier à uploader
+ *        userId:
+ *         type: string
+ *         description: ID de l'utilisateur propriétaire du thumb
+ *   responses:
+ *    201:
+ *     description: Thumb créé
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID du thumb
+ *         name:
+ *          type: string
+ *          description: Nom du thumb
+ *         type:
+ *          type: string
+ *          description: Type du thumb
+ *          enum: [image, video]
+ *         userId:
+ *          type: string
+ *          description: ID de l'utilisateur propriétaire du thumb
+ *    500:
+ *     description: Erreur serveur
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+ * 
+ * /thumbs/user/{id}:
+ *  get:
+ *   summary: Récupération des thumbs d'un utilisateur à partir de l'ID passé en paramètre.
+ *   tags: [Thumbs]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      description: ID de l'utilisateur
+ *      required: true
+ *   responses:
+ *    200:
+ *     description: Thumbs récupérés
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: array
+ *        items:
+ *         type: object
+ *         properties:
+ *          _id:
+ *           type: string
+ *           description: ID du média
+ *          name:
+ *           type: string
+ *           description: Nom du média
+ *          type:
+ *           type: string
+ *           description: Type du média
+ *           enum: [image, video, audio]
+ *          userId:
+ *           type: string
+ *           description: ID de l'utilisateur propriétaire du média
+ *    404: 
+ *     description: Utilisateur non trouvé
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+ * 
+ * /thumbs/{id}:
+ *  get:
+ *   summary: Récupération d'un média à partir de l'ID passé en paramètre.
+ *   tags: [Thumbs]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      description: ID du média
+ *      required: true
+ *   responses:
+ *    200:
+ *     description: Thumb récupéré
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID du média
+ *         name:
+ *          type: string
+ *          description: Nom du média
+ *         type:
+ *          type: string
+ *          description: Type du média
+ *          enum: [image, video, audio]
+ *         userId:
+ *          type: string
+ *          description: ID de l'utilisateur propriétaire du média
+ *    404:
+ *     description: Thumb non trouvé
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+ * 
+ *  delete:
+ *   summary: Suppression d'un Thumb à partir de l'ID passé en paramètre.
+ *   tags: [Thumbs]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      description: ID du thumb
+ *      required: true
+ *   responses:
+ *    200:
+ *     description: Thumb supprimé
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *    404:
+ *     description: Thumb non trouvé
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Création d'un objet multer Storage
 const fileStorage = multer.diskStorage({
 	// définit le dossier de destination à partir de l'ID de l'utilisateur
