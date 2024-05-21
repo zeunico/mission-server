@@ -95,17 +95,17 @@ const userService = new UsersService();
  *         properties:
  *          _id:
  *           type: string
- *           description: ID du média
+ *           description: ID du thumb
  *          name:
  *           type: string
- *           description: Nom du média
+ *           description: Nom du média associé
  *          type:
  *           type: string
- *           description: Type du média
- *           enum: [image, video, audio]
+ *           description: Type du média associé
+ *           enum: [image, video]
  *          userId:
  *           type: string
- *           description: ID de l'utilisateur propriétaire du média
+ *           description: ID de l'utilisateur propriétaire du média associé
  *    404: 
  *     description: Utilisateur non trouvé
  *     content:
@@ -119,12 +119,12 @@ const userService = new UsersService();
  * 
  * /thumbs/{id}:
  *  get:
- *   summary: Récupération d'un média à partir de l'ID passé en paramètre.
+ *   summary: Récupération d'un thumb à partir de l'ID passé en paramètre.
  *   tags: [Thumbs]
  *   parameters:
  *    - name: id
  *      in: path
- *      description: ID du média
+ *      description: ID du thumb
  *      required: true
  *   responses:
  *    200:
@@ -136,17 +136,17 @@ const userService = new UsersService();
  *        properties:
  *         _id:
  *          type: string
- *          description: ID du média
+ *          description: ID du thumb
  *         name:
  *          type: string
- *          description: Nom du média
+ *          description: Nom du média associé
  *         type:
  *          type: string
- *          description: Type du média
+ *          description: Type du média associé
  *          enum: [image, video, audio]
  *         userId:
  *          type: string
- *          description: ID de l'utilisateur propriétaire du média
+ *          description: ID de l'utilisateur propriétaire du média associé
  *    404:
  *     description: Thumb non trouvé
  *     content:
