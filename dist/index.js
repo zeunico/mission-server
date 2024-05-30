@@ -61,7 +61,7 @@ var DB_AUTH_MECHANISM = (_a7 = import_process.default.env.DB_AUTH_MECHANISM) != 
 var dbUri = `mongodb://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?authSource=${DB_AUTH_SOURCE}&authMechanism=${DB_AUTH_MECHANISM}`;
 if (DB_USER && DB_PASSWORD)
   dbUri = `mongodb://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?authSource=${DB_AUTH_SOURCE}&authMechanism=${DB_AUTH_MECHANISM}`;
-var _a8, _b, _c, _d;
+var _a8, _b, _c, _d, _e;
 var config2 = {
   DB_URI: dbUri,
   API_PORT: (_a8 = import_process.default.env.PORT) != null ? _a8 : 3e3,
@@ -69,7 +69,8 @@ var config2 = {
   MOBITEACH_URL: (_c = import_process.default.env.MOBITEACH_URL) != null ? _c : "https://demo.mobiteach.net/",
   MOBITEACH_MOBIAPP_API: ((_d = import_process.default.env.MOBITEACH_URL) != null ? _d : "https://demo.mobiteach.net/") + "html/mobiApp/",
   SSL_KEY: import_process.default.env.SSL_KEY !== "" ? import_process.default.env.SSL_KEY : void 0,
-  SSL_CERT: import_process.default.env.SSL_CERT !== "" ? import_process.default.env.SSL_CERT : void 0
+  SSL_CERT: import_process.default.env.SSL_CERT !== "" ? import_process.default.env.SSL_CERT : void 0,
+  BASE_URL: (_e = import_process.default.env.BASE_URL) != null ? _e : "https://missions.mobiteach.fr/"
 };
 
 // src/index.ts
@@ -1323,7 +1324,7 @@ var swaggerOptions = {
     },
     servers: [
       {
-        url: "https://missions.mobiteach.fr",
+        url: config2.BASE_URL,
         description: "Server"
       }
     ]

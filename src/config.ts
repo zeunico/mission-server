@@ -29,5 +29,6 @@ export const config = {
 	MOBITEACH_URL: process.env.MOBITEACH_URL ?? 'https://demo.mobiteach.net/',
 	MOBITEACH_MOBIAPP_API: (process.env.MOBITEACH_URL ?? 'https://demo.mobiteach.net/') + 'html/mobiApp/',
 	SSL_KEY: process.env.SSL_KEY !== '' ? process.env.SSL_KEY : undefined,
-	SSL_CERT: process.env.SSL_CERT !== '' ? process.env.SSL_CERT : undefined
+	SSL_CERT: process.env.SSL_CERT !== '' ? process.env.SSL_CERT : undefined,
+        BASE_URL: process.env.BASE_URL ?? 'https://missions.mobiteach.fr/'
 };
