@@ -75,7 +75,7 @@ var config2 = {
 // src/index.ts
 var import_cors = __toESM(require("cors"));
 var import_express7 = __toESM(require("express"));
-var import_mongoose11 = __toESM(require("mongoose"));
+var import_mongoose12 = __toESM(require("mongoose"));
 
 // src/resources/media/media.controller.ts
 var import_multer = __toESM(require("multer"));
@@ -195,6 +195,11 @@ var UserSchema = new import_mongoose.default.Schema({
   }],
   "instance": {
     type: String,
+    required: true
+  },
+  "roomId": {
+    type: import_mongoose.Schema.Types.ObjectId,
+    ref: "Room",
     required: true
   }
 }, { timestamps: true });
@@ -560,7 +565,43 @@ var thumb_controller_default = ThumbController;
 
 // src/resources/users/users.controller.ts
 var import_express3 = require("express");
-var import_mongoose6 = require("mongoose");
+var import_mongoose7 = require("mongoose");
+
+// src/db/room.model.ts
+var import_mongoose6 = __toESM(require("mongoose"));
+var RoomSchema = new import_mongoose6.default.Schema({
+  "roomCode": {
+    type: String,
+    required: true
+  },
+  "moderatorId": {
+    type: import_mongoose6.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  }
+}, { timestamps: true });
+var Room = import_mongoose6.default.model("Room", RoomSchema);
+var room_model_default = Room;
+
+// src/resources/room/room.service.ts
+var RoomService = class {
+  // Creation d une nouvelle salle
+  static async create(data) {
+    const newRoom = __spreadValues({}, data);
+    console.log("room.service : nouvelle salle cr\xE9\xE9e", newRoom);
+    return await room_model_default.create(newRoom);
+  }
+  static async findByCode(roomCode) {
+    const researchedRoom = await room_model_default.findOne({ roomCode });
+    return researchedRoom;
+  }
+  static async findById(roomId) {
+    const researchedRoom = await room_model_default.findOne({ roomId });
+    return researchedRoom;
+  }
+};
+
+// src/resources/users/users.controller.ts
 var import_path8 = require("path");
 var import_fs4 = __toESM(require("fs"));
 var import_promises2 = require("fs/promises");
@@ -585,6 +626,19 @@ var import_axios2 = __toESM(require("axios"));
 var UsersController = (0, import_express3.Router)();
 var service = new UsersService();
 var mediaService2 = new MediaService();
+async function createDefaultRoom() {
+  const roomData = {
+    _id: new import_mongoose7.Types.ObjectId("66571ca5c2fee0607ed11b71"),
+    moderatorId: new import_mongoose7.Types.ObjectId("633aef06eb42397b214af9f3"),
+    roomCode: "ADC001"
+  };
+  try {
+    const createdRoom = await RoomService.create(roomData);
+    console.log("Created Room:", createdRoom);
+  } catch (error) {
+    console.error("Error creating room:", error);
+  }
+}
 UsersController.route("/").get(async (req, res) => {
   const userList = await service.findAll();
   return res.status(200).json(userList);
@@ -593,13 +647,28 @@ UsersController.route("/").get(async (req, res) => {
   return res.status(201).json(createdUser);
 });
 UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get(async (req, res, next) => {
+  var _a9;
   try {
     const email = req.params.email;
     let user;
     if (req.query.instance) {
       user = await service.findByEmail(email, req.query.instance.toString());
+      console.log("user by findByEmail", user);
     } else {
       user = await service.findByEmail(email);
+    }
+    const roomCode = (_a9 = req.query.roomCode) == null ? void 0 : _a9.toString();
+    let room;
+    if (roomCode) {
+      room = await RoomService.findByCode(roomCode);
+      console.log("room", room);
+      if (room === null) {
+        console.log("room = null");
+        createDefaultRoom();
+        room = await RoomService.findByCode(roomCode);
+      } else {
+        console.log("room pas null");
+      }
     }
     if (req.query.roomCode) {
       await import_axios2.default.post("https://" + req.query.instance + "/html/mobiApp/connect", {
@@ -608,13 +677,14 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
       }, { headers: { "mission-token": TokenHandler() } }).then(async (resAxios) => {
         if (!user) {
           user = await service.create({
-            _id: new import_mongoose6.Types.ObjectId(resAxios.data.user.id),
+            _id: new import_mongoose7.Types.ObjectId(resAxios.data.user.id),
             email,
             firstname: resAxios.data.user.firstname,
             lastname: resAxios.data.user.lastname,
             picture: null,
             instructions: [],
-            instance: req.query.instance !== void 0 ? req.query.instance.toString() : config2.MOBITEACH_URL
+            instance: req.query.instance !== void 0 ? req.query.instance.toString() : config2.MOBITEACH_URL,
+            roomId: room._id
           });
           const userPicture = resAxios.data.user.image;
           if (userPicture && userPicture !== "") {
@@ -631,11 +701,8 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
             user = await service.update({ picture: media._id }, user._id);
           }
         }
-        console.log(" YAY    USER");
-        console.log(user);
       }).catch((err) => {
-        console.log("ERROR");
-        console.log(err);
+        console.log("ERROR", err);
       });
     } else if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
@@ -647,7 +714,7 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
 });
 UsersController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const id = new import_mongoose6.Types.ObjectId(req.params.id);
+    const id = new import_mongoose7.Types.ObjectId(req.params.id);
     const user = await service.find(id);
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
@@ -664,13 +731,13 @@ UsersController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
     next(err);
   }
 }).put(async (req, res) => {
-  const id = new import_mongoose6.Types.ObjectId(req.params.id);
+  const id = new import_mongoose7.Types.ObjectId(req.params.id);
   const userData = req.body;
   const updatedUser = await service.update(userData, id);
   return res.status(200).json(updatedUser);
 }).delete(async (req, res, next) => {
   try {
-    const id = new import_mongoose6.Types.ObjectId(req.params.id);
+    const id = new import_mongoose7.Types.ObjectId(req.params.id);
     const user = await service.find(id);
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
@@ -693,7 +760,7 @@ UsersController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
 });
 UsersController.route("/:id([a-z0-9]{24})/image").get(async (req, res, next) => {
   try {
-    const id = new import_mongoose6.Types.ObjectId(req.params.id);
+    const id = new import_mongoose7.Types.ObjectId(req.params.id);
     const path = await service.findUserImage(id);
     return res.sendFile(path);
   } catch (err) {
@@ -701,23 +768,46 @@ UsersController.route("/:id([a-z0-9]{24})/image").get(async (req, res, next) => 
     next(err);
   }
 });
+UsersController.route("/:id([a-z0-9]{24})/ismoderator").get(async (req, res, next) => {
+  try {
+    const id = new import_mongoose7.Types.ObjectId(req.params.id);
+    const user = await service.find(id);
+    console.log("user id", user);
+    const room = await RoomService.findById(req.params.roomId);
+    console.log("room", room);
+    const isModeratorStatus = await isModerator(user, room);
+    return res.status(200).json({ isModerator: isModeratorStatus });
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+async function isModerator(user, room) {
+  console.log("IN !");
+  const researchedRoom = await room_model_default.findById(room);
+  console.log("reasearchedroom ", researchedRoom);
+  if (researchedRoom.moderatorId.toString() === user._id.toString()) {
+    return true;
+  } else
+    return false;
+}
 var users_controller_default = UsersController;
 
 // src/resources/userData/userData.controller.ts
 var import_multer3 = __toESM(require("multer"));
 var import_express4 = require("express");
-var import_mongoose8 = require("mongoose");
+var import_mongoose9 = require("mongoose");
 
 // src/db/userData.model.ts
-var import_mongoose7 = __toESM(require("mongoose"));
-var UserDataSchema = new import_mongoose7.default.Schema({
+var import_mongoose8 = __toESM(require("mongoose"));
+var UserDataSchema = new import_mongoose8.default.Schema({
   "mediaId": {
-    type: import_mongoose7.Schema.Types.ObjectId,
+    type: import_mongoose8.Schema.Types.ObjectId,
     ref: "Media",
     required: false
   },
   "thumbId": {
-    type: import_mongoose7.Schema.Types.ObjectId,
+    type: import_mongoose8.Schema.Types.ObjectId,
     ref: "Thumb",
     required: false
   },
@@ -730,7 +820,7 @@ var UserDataSchema = new import_mongoose7.default.Schema({
     required: true
   },
   "userId": {
-    type: import_mongoose7.Schema.Types.ObjectId,
+    type: import_mongoose8.Schema.Types.ObjectId,
     ref: "User",
     required: true
   },
@@ -739,7 +829,7 @@ var UserDataSchema = new import_mongoose7.default.Schema({
     required: true
   }
 }, { timestamps: true });
-var MUserData = import_mongoose7.default.model("UserData", UserDataSchema);
+var MUserData = import_mongoose8.default.model("UserData", UserDataSchema);
 var userData_model_default = MUserData;
 
 // src/resources/userData/userData.service.ts
@@ -832,7 +922,7 @@ var fileupload = (0, import_multer3.default)({
 UserDataController.route("/").post(fileupload.single("file"), async (req, res, next) => {
   var _a9, _b2, _c2;
   try {
-    const userId = new import_mongoose8.Types.ObjectId(req.body.userId);
+    const userId = new import_mongoose9.Types.ObjectId(req.body.userId);
     const user = await userService3.find(userId);
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
@@ -916,7 +1006,7 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
 });
 UserDataController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const userDataId = new import_mongoose8.Types.ObjectId(req.params.id);
+    const userDataId = new import_mongoose9.Types.ObjectId(req.params.id);
     const userData = await userDataService.find(userDataId);
     if (!userData) {
       throw new NotFoundException("R\xE9ponse introuvable");
@@ -927,7 +1017,7 @@ UserDataController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
   }
 }).delete(async (req, res, next) => {
   try {
-    const userDataId = new import_mongoose8.Types.ObjectId(req.params.id);
+    const userDataId = new import_mongoose9.Types.ObjectId(req.params.id);
     const userData = await userDataService.find(userDataId);
     if (!userData) {
       throw new NotFoundException("R\xE9ponse introuvable");
@@ -995,7 +1085,7 @@ UserDataController.route("/:room([a-z0-9]{6})/:userId([a-z0-9]{24})").get(async 
     if (req.params.room !== req.params.room.toUpperCase()) {
       throw new NotFoundException("Room code invalide");
     }
-    const userId = new import_mongoose8.Types.ObjectId(req.params.userId);
+    const userId = new import_mongoose9.Types.ObjectId(req.params.userId);
     const user = await userService3.find(userId);
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
@@ -1012,8 +1102,8 @@ var userData_controller_default = UserDataController;
 var import_express5 = require("express");
 
 // src/db/instruction.model.ts
-var import_mongoose9 = __toESM(require("mongoose"));
-var InstructionSchema = new import_mongoose9.default.Schema({
+var import_mongoose10 = __toESM(require("mongoose"));
+var InstructionSchema = new import_mongoose10.default.Schema({
   "consigne": {
     type: String,
     required: true
@@ -1023,12 +1113,12 @@ var InstructionSchema = new import_mongoose9.default.Schema({
     required: true
   },
   "userTarget": {
-    type: import_mongoose9.Schema.Types.ObjectId,
+    type: import_mongoose10.Schema.Types.ObjectId,
     ref: "User",
     required: true
   }
 }, { timestamps: true });
-var MInstruction = import_mongoose9.default.model("Instruction", InstructionSchema);
+var MInstruction = import_mongoose10.default.model("Instruction", InstructionSchema);
 var instruction_model_default = MInstruction;
 
 // src/resources/instruction/instruction.service.ts
@@ -1069,7 +1159,7 @@ var InstructionService = class {
 };
 
 // src/resources/instruction/instruction.controller.ts
-var import_mongoose10 = require("mongoose");
+var import_mongoose11 = require("mongoose");
 var InstructionController = (0, import_express5.Router)();
 var instructionService = new InstructionService();
 var usersService = new UsersService();
@@ -1099,7 +1189,7 @@ InstructionController.route("/").post(async (req, res, next) => {
 });
 InstructionController.route("/:InstructionId([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const instructionId = new import_mongoose10.Types.ObjectId(req.params.InstructionId);
+    const instructionId = new import_mongoose11.Types.ObjectId(req.params.InstructionId);
     const instruction = await instructionService.find(instructionId);
     if (!instruction) {
       throw new NotFoundException("Instruction introuvable");
@@ -1124,7 +1214,7 @@ InstructionController.route("/:room([a-z0-9]{6})").get(async (req, res, next) =>
 InstructionController.route("/:room([a-z0-9]{6})/:userTarget([a-z0-9]{24})").get(async (req, res, next) => {
   try {
     const room = req.params.room;
-    const userTarget = new import_mongoose10.Types.ObjectId(req.params.userTarget);
+    const userTarget = new import_mongoose11.Types.ObjectId(req.params.userTarget);
     if (room !== room.toUpperCase()) {
       throw new NotFoundException("Room code invalide");
     }
@@ -1268,7 +1358,7 @@ var start = async () => {
   try {
     httpServer.listen(config2.API_PORT);
     console.log("HTTP server is listening on port : " + config2.API_PORT);
-    import_mongoose11.default.connect(config2.DB_URI);
+    import_mongoose12.default.connect(config2.DB_URI);
     httpServer.on("error", (err) => {
       throw err;
     });
@@ -1276,7 +1366,7 @@ var start = async () => {
       httpServer.close();
     });
     httpServer.on("close", async () => {
-      await import_mongoose11.default.disconnect();
+      await import_mongoose12.default.disconnect();
       console.log("Server closed");
     });
     if (config2.SSL_KEY && config2.SSL_CERT) {

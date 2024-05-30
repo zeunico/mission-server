@@ -7,5 +7,6 @@ export interface IUser {
     email: string,
     picture: Types.ObjectId | null,
 	instructions: Types.ObjectId[],
-	instance: string
+	instance: string,
+	roomId: Types.ObjectId | null
 }

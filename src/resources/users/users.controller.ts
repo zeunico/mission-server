@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { Types } from 'mongoose';
+import { Types, isObjectIdOrHexString } from 'mongoose';
 import { UsersService } from '~/resources/users/users.service';
+import { RoomService } from '~/resources/room/room.service';
 import { NotFoundException } from '~/utils/exceptions';
 import { extname, join, sep } from 'path';
 import { config } from '~/config';
@@ -12,6 +13,12 @@ import { MediaService } from '../media/media.service';
 import EMedia from '~~/types/media.enum';
 import { TokenHandler } from '~/middlewares/token.handler';
 import axios from 'axios';
+import { IRoom } from '~~/types/room.interface';
+import MRoom from '~/db/room.model';
+import { ReadableStreamBYOBRequest } from 'stream/web';
+import Room from '~/db/room.model';
+import { ObjectId } from "mongoose";
+
 
 // Création d'un Router Express
 const UsersController: Router = Router();
@@ -291,7 +298,58 @@ const mediaService = new MediaService();
  *         error:
  *          type: string
  *          description: Message d'erreur
+ * 
+ * 
+ * /users/{id}/ismoderator:
+ *  get:
+ *   summary: Récupère le statut de l'utilisateur. Est-il moderator (animateur) de la salle ou non ?
+ *   tags: [Users]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      description: Code identifiant de l'utilisateur généré par la base de données
+ *      type: string
+ *      required: true
+ *   responses:
+ *     200:
+ *      description: Vérification du statut de l'utilisateur réussie!
+ *      content:
+ *       application/json:
+ *        schema:
+ *         type: object
+ *         properties:
+ *          isModerator:
+ *           type: boolean
+ *           example: false
+ *           description: Code identifiant de l'utilisateur généré par la base de données
+ *     404:
+ *      description: L'utilisateur n'a pas été trouvé en base de données.
+ *      content:
+ *       application/json:
+ *        schema:
+ *         type: object
+ *         properties:
+ *          error:
+ *           type: string
+ *           description: Message d'erreur
  */
+
+async function createDefaultRoom() {
+	const roomData: IRoom = {
+	  _id: new Types.ObjectId("66571ca5c2fee0607ed11b71"),
+	  moderatorId: new Types.ObjectId("633aef06eb42397b214af9f3"),
+	  roomCode: "ADC001",
+	};
+  
+	try {
+	  const createdRoom = await RoomService.create(roomData);
+	  console.log('Created Room:', createdRoom);
+	} catch (error) {
+	  console.error('Error creating room:', error);
+	}
+  }
+
+
 UsersController.route('/')
 	.get(async (req, res) => {
 		const userList = await service.findAll();
@@ -312,11 +370,27 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 			let user: IUser | null;
 			if (req.query.instance) {
 				user = await service.findByEmail(email, req.query.instance.toString());
+				console.log('user by findByEmail', user);
 			} else {
 				user = await service.findByEmail(email);
 			}
-			
-			if (req.query.roomCode) {
+
+			const roomCode = req.query.roomCode?.toString();
+			let room: IRoom | null;
+			if (roomCode) {
+				room = await RoomService.findByCode(roomCode);
+				console.log('room', room);
+				if (room === null) {
+					console.log('room = null');
+					createDefaultRoom();
+					room = await RoomService.findByCode(roomCode);
+				}
+					else  {console.log('room pas null');}
+				}
+		
+
+
+        	if (req.query.roomCode) {
 				await axios.post('https://' + req.query.instance + '/html/mobiApp/connect', {
 					'roomCode': req.query.roomCode,
 					'userEmail': email
@@ -330,7 +404,8 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 								lastname: resAxios.data.user.lastname, 
 								picture: null,
 								instructions: [],
-								instance: req.query.instance !== undefined ? req.query.instance.toString() : config.MOBITEACH_URL
+								instance: req.query.instance !== undefined ? req.query.instance.toString() : config.MOBITEACH_URL,
+								roomId: room._id,
 							});
 
 							const userPicture = resAxios.data.user.image;
@@ -357,12 +432,10 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 								user = await service.update({ picture: media._id }, user._id);
 							}
 						}
-						console.log(' YAY    USER');
-						console.log(user);
+
 					})
 					.catch((err) => {
-						console.log('ERROR');	
-						console.log(err);
+						console.log('ERROR', err);
 					});
 			} else if (!user) {
 				// Ce n'est pas l'utilisateur que vous recherchez
@@ -393,9 +466,6 @@ UsersController.route('/:id([a-z0-9]{24})')
 						console.log(err);
 					});
 			}
-			
-
-			
 			return res.status(200).json(user);
 		} catch (err) {
 			next(err);
@@ -439,17 +509,54 @@ UsersController.route('/:id([a-z0-9]{24})')
 	});
 
 UsersController.route('/:id([a-z0-9]{24})/image')
-	.get(async (req, res, next) => {
-		try {
-			const id = new Types.ObjectId(req.params.id);
+.get(async (req, res, next) => {
+	try {
+		const id = new Types.ObjectId(req.params.id);
+	
+		const path = await service.findUserImage(id);
 		
-			const path = await service.findUserImage(id);
-			
-			return res.sendFile(path);
-		} catch (err) {
-			console.log(err);
-			next(err);
-		}
-	});
+		return res.sendFile(path);
+	} catch (err) {
+		console.log(err);
+		next(err);
+	}
+});
+
+
+
+UsersController.route('/:id([a-z0-9]{24})/ismoderator')
+.get(async (req, res, next) => {
+	try {
+		const id = new Types.ObjectId(req.params.id);
+	
+		const user = await service.find(id);
+		console.log('user id', user);
+
+		const room = await RoomService.findById(req.params.roomId);		
+		console.log('room', room);
+
+		const isModeratorStatus = await isModerator(user, room);
+
+		return res.status(200).json({ isModerator: isModeratorStatus });
+	} catch (err) {
+		console.log(err);
+		next(err);
+	}
+});
+
+
+
+async function isModerator(user, room) {
+	console.log('IN !');
+
+	const researchedRoom = await MRoom.findById(room);
+	console.log('reasearchedroom ', researchedRoom);
+	if (researchedRoom.moderatorId.toString() === user._id.toString()) {
+		return true;
+	}
+	else return false;
+
+  }
+
 
 export default UsersController;

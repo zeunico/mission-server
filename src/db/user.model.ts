@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema, SchemaType } from 'mongoose';
 import {IUser} from '~~/types/users.interface';
 
 const UserSchema = new mongoose.Schema<IUser>({
@@ -32,6 +32,12 @@ const UserSchema = new mongoose.Schema<IUser>({
 
 	'instance': {
 		type: String,
+		required: true
+	},
+	
+	'roomId': {
+		type: Schema.Types.ObjectId,
+		ref: 'Room',
 		required: true
 	}
 }, { timestamps: true });
