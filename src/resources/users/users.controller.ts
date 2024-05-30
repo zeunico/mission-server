@@ -379,16 +379,11 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 			let room: IRoom | null;
 			if (roomCode) {
 				room = await RoomService.findByCode(roomCode);
-				console.log('room', room);
 				if (room === null) {
-					console.log('room = null');
 					createDefaultRoom();
 					room = await RoomService.findByCode(roomCode);
+					}
 				}
-					else  {console.log('room pas null');}
-				}
-		
-
 
         	if (req.query.roomCode) {
 				await axios.post('https://' + req.query.instance + '/html/mobiApp/connect', {
@@ -547,16 +542,16 @@ UsersController.route('/:id([a-z0-9]{24})/ismoderator')
 
 
 async function isModerator(user, room) {
-	console.log('IN !');
 
 	const researchedRoom = await MRoom.findById(room);
-	console.log('reasearchedroom ', researchedRoom);
-	if (researchedRoom.moderatorId.toString() === user._id.toString()) {
+	
+	if (researchedRoom && (researchedRoom.moderatorId.toString() === user._id.toString())) {
 		return true;
+	} else {
+		return false;
 	}
-	else return false;
-
-  }
+	
+}
 
 
 export default UsersController;
