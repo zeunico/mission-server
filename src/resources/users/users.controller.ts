@@ -14,7 +14,9 @@ import EMedia from '~~/types/media.enum';
 import { TokenHandler } from '~/middlewares/token.handler';
 import axios from 'axios';
 import { IRoom } from '~~/types/room.interface';
+import { IMission } from '~~/types/mission.interface';
 import MRoom from '~/db/room.model';
+import Mission from '~/db/mission.model';
 import { ReadableStreamBYOBRequest } from 'stream/web';
 import Room from '~/db/room.model';
 import { ObjectId } from "mongoose";
@@ -302,7 +304,7 @@ const mediaService = new MediaService();
  * 
  * /users/{id}/ismoderator:
  *  get:
- *   summary: Récupère le statut de l'utilisateur. Est-il moderator (animateur) de la salle ou non ?
+ *   summary: Récupère le statut de l'utilisateur. Est-il moderator (animateur) de la salle ou non ? 
  *   tags: [Users]
  *   parameters:
  *    - name: id
@@ -334,16 +336,19 @@ const mediaService = new MediaService();
  *           description: Message d'erreur
  */
 
-async function createDefaultRoom() {
-	const roomData: IRoom = {
-	  _id: new Types.ObjectId("66571ca5c2fee0607ed11b71"),
-	  moderatorId: new Types.ObjectId("633aef06eb42397b214af9f3"),
-	  roomCode: "ADC001",
-	};
-  
+async function createDefaultRoom(roomCode) {
 	try {
-	  const createdRoom = await RoomService.create(roomData);
-	  console.log('Created Room:', createdRoom);
+	const users = service.findAll();
+	console.log('users', users);
+	const roomData: IRoom = {
+	  _id: new Types.ObjectId(),
+	  moderatorId: new Types.ObjectId("633aef06eb42397b214af9f3"),
+	  roomCode: roomCode,
+	  participants: [],
+	  mission: []
+	};
+	const createdRoom = await RoomService.create(roomData);
+	console.log('Created Room:', createdRoom);
 	} catch (error) {
 	  console.error('Error creating room:', error);
 	}
@@ -370,6 +375,7 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 			let user: IUser | null;
 			if (req.query.instance) {
 				user = await service.findByEmail(email, req.query.instance.toString());
+				console.log('req.query.instance.toString()', req.query.instance.toString());
 				console.log('user by findByEmail', user);
 			} else {
 				user = await service.findByEmail(email);
@@ -380,10 +386,11 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 			if (roomCode) {
 				room = await RoomService.findByCode(roomCode);
 				if (room === null) {
-					createDefaultRoom();
+					createDefaultRoom(roomCode);
 					room = await RoomService.findByCode(roomCode);
-					}
+					
 				}
+			}
 
         	if (req.query.roomCode) {
 				await axios.post('https://' + req.query.instance + '/html/mobiApp/connect', {
@@ -392,16 +399,24 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 				}, { headers: { 'mission-token': TokenHandler() } })
 					.then(async (resAxios) => {
 						if (!user) {
-							user = await service.create({
-								_id: new Types.ObjectId(resAxios.data.user.id),
-								email,
-								firstname: resAxios.data.user.firstname,
-								lastname: resAxios.data.user.lastname, 
-								picture: null,
-								instructions: [],
-								instance: req.query.instance !== undefined ? req.query.instance.toString() : config.MOBITEACH_URL,
-								roomId: room._id,
-							});
+								if (room) {
+									user = await service.create({
+									_id: new Types.ObjectId(resAxios.data.user.id),
+									email,
+									firstname: resAxios.data.user.firstname,
+									lastname: resAxios.data.user.lastname, 
+									picture: null,
+									instructions: [],
+									instance: req.query.instance !== undefined ? req.query.instance.toString() : config.MOBITEACH_URL,
+									roomId: room._id,
+								});
+								console.log('room',room);
+								console.log('user._id', user._id);
+								room.participants.push(user._id);
+								RoomService.update(room, room._id);
+							} else {
+								console.error("Pas de Room, room is null");
+							}
 
 							const userPicture = resAxios.data.user.image;
 
@@ -425,19 +440,21 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 
 								// On met à jour l'utilisateur
 								user = await service.update({ picture: media._id }, user._id);
-							}
+							}					
 						}
 
 					})
 					.catch((err) => {
 						console.log('ERROR', err);
 					});
+
 			} else if (!user) {
 				// Ce n'est pas l'utilisateur que vous recherchez
 				throw new NotFoundException('Utilisateur introuvable');
 			}
 
 			return res.status(200).json(user);
+		
 		} catch (err) {
 			next(err);
 		}
@@ -504,40 +521,41 @@ UsersController.route('/:id([a-z0-9]{24})')
 	});
 
 UsersController.route('/:id([a-z0-9]{24})/image')
-.get(async (req, res, next) => {
-	try {
-		const id = new Types.ObjectId(req.params.id);
-	
-		const path = await service.findUserImage(id);
+	.get(async (req, res, next) => {
+		try {
+			const id = new Types.ObjectId(req.params.id);
 		
-		return res.sendFile(path);
-	} catch (err) {
-		console.log(err);
-		next(err);
-	}
-});
+			const path = await service.findUserImage(id);
+			
+			return res.sendFile(path);
+		} catch (err) {
+			console.log(err);
+			next(err);
+		}
+	});
 
 
 
 UsersController.route('/:id([a-z0-9]{24})/ismoderator')
-.get(async (req, res, next) => {
-	try {
-		const id = new Types.ObjectId(req.params.id);
-	
-		const user = await service.find(id);
-		console.log('user id', user);
+	.get(async (req, res, next) => {
+		try {
+			const id = new Types.ObjectId(req.params.id);
+		
+			const user = await service.find(id);
+			console.log('user id', user);
 
-		const room = await RoomService.findById(req.params.roomId);		
-		console.log('room', room);
+			const room = new Types.ObjectId(req.params.roomId); 
+			await RoomService.findById(room);		
+			console.log('room', room);
 
-		const isModeratorStatus = await isModerator(user, room);
+			const isModeratorStatus = await isModerator(user, room);
 
-		return res.status(200).json({ isModerator: isModeratorStatus });
-	} catch (err) {
-		console.log(err);
-		next(err);
-	}
-});
+			return res.status(200).json({ isModerator: isModeratorStatus });
+		} catch (err) {
+			console.log(err);
+			next(err);
+		}
+	});
 
 
 

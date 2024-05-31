@@ -12,9 +12,17 @@ export class RoomService {
             ...data, 
 		};
 
-		console.log('room.service : nouvelle salle créée', newRoom);
+		console.log('room.service : nouvelle salle à créer', newRoom);
 
 		return await Room.create(newRoom);
+	}
+	
+	// Met à jour une salle en particulier
+	static async update(roomData: Partial<IRoom>, _id: Types.ObjectId): Promise<IRoom | null> {
+		const modifiedRoom = await Room.findByIdAndUpdate(_id, roomData, { new: true });
+		console.log('room service update');
+		console.log(await Room.findOne(_id));
+		return modifiedRoom;
 	}
 	
 	static async findByCode(roomCode: string): Promise<IRoom | null> {
@@ -22,10 +30,17 @@ export class RoomService {
 		return researchedRoom;
 	}
 
-	static async findById(roomId: string): Promise<IRoom | null> {
-		const researchedRoom = await Room.findOne({ roomId});
+	static async findById(_id: Types.ObjectId): Promise<IRoom | null> {
+		const researchedRoom = await Room.findOne({ _id});
 		return researchedRoom;
 	}
+
+	// Trouve tous les salles
+	static async findAll(): Promise<IRoom[]> {
+		const allRoom = await Room.find();
+		return allRoom;
+	}
+
 }
 
 

@@ -75,8 +75,8 @@ var config2 = {
 
 // src/index.ts
 var import_cors = __toESM(require("cors"));
-var import_express7 = __toESM(require("express"));
-var import_mongoose12 = __toESM(require("mongoose"));
+var import_express9 = __toESM(require("express"));
+var import_mongoose15 = __toESM(require("mongoose"));
 
 // src/resources/media/media.controller.ts
 var import_multer = __toESM(require("multer"));
@@ -579,7 +579,15 @@ var RoomSchema = new import_mongoose6.default.Schema({
     type: import_mongoose6.Schema.Types.ObjectId,
     ref: "User",
     required: true
-  }
+  },
+  "participants": [{
+    type: import_mongoose6.Schema.Types.ObjectId,
+    ref: "User"
+  }],
+  "mission": [{
+    type: import_mongoose6.Schema.Types.ObjectId,
+    ref: "Mission"
+  }]
 }, { timestamps: true });
 var Room = import_mongoose6.default.model("Room", RoomSchema);
 var room_model_default = Room;
@@ -589,16 +597,28 @@ var RoomService = class {
   // Creation d une nouvelle salle
   static async create(data) {
     const newRoom = __spreadValues({}, data);
-    console.log("room.service : nouvelle salle cr\xE9\xE9e", newRoom);
+    console.log("room.service : nouvelle salle \xE0 cr\xE9er", newRoom);
     return await room_model_default.create(newRoom);
+  }
+  // Met à jour une salle en particulier
+  static async update(roomData, _id) {
+    const modifiedRoom = await room_model_default.findByIdAndUpdate(_id, roomData, { new: true });
+    console.log("room service update");
+    console.log(await room_model_default.findOne(_id));
+    return modifiedRoom;
   }
   static async findByCode(roomCode) {
     const researchedRoom = await room_model_default.findOne({ roomCode });
     return researchedRoom;
   }
-  static async findById(roomId) {
-    const researchedRoom = await room_model_default.findOne({ roomId });
+  static async findById(_id) {
+    const researchedRoom = await room_model_default.findOne({ _id });
     return researchedRoom;
+  }
+  // Trouve tous les salles
+  static async findAll() {
+    const allRoom = await room_model_default.find();
+    return allRoom;
   }
 };
 
@@ -627,13 +647,17 @@ var import_axios2 = __toESM(require("axios"));
 var UsersController = (0, import_express3.Router)();
 var service = new UsersService();
 var mediaService2 = new MediaService();
-async function createDefaultRoom() {
-  const roomData = {
-    _id: new import_mongoose7.Types.ObjectId("66571ca5c2fee0607ed11b71"),
-    moderatorId: new import_mongoose7.Types.ObjectId("633aef06eb42397b214af9f3"),
-    roomCode: "ADC001"
-  };
+async function createDefaultRoom(roomCode) {
   try {
+    const users = service.findAll();
+    console.log("users", users);
+    const roomData = {
+      _id: new import_mongoose7.Types.ObjectId(),
+      moderatorId: new import_mongoose7.Types.ObjectId("633aef06eb42397b214af9f3"),
+      roomCode,
+      participants: [],
+      mission: []
+    };
     const createdRoom = await RoomService.create(roomData);
     console.log("Created Room:", createdRoom);
   } catch (error) {
@@ -654,6 +678,7 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
     let user;
     if (req.query.instance) {
       user = await service.findByEmail(email, req.query.instance.toString());
+      console.log("req.query.instance.toString()", req.query.instance.toString());
       console.log("user by findByEmail", user);
     } else {
       user = await service.findByEmail(email);
@@ -662,13 +687,9 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
     let room;
     if (roomCode) {
       room = await RoomService.findByCode(roomCode);
-      console.log("room", room);
       if (room === null) {
-        console.log("room = null");
-        createDefaultRoom();
+        createDefaultRoom(roomCode);
         room = await RoomService.findByCode(roomCode);
-      } else {
-        console.log("room pas null");
       }
     }
     if (req.query.roomCode) {
@@ -677,16 +698,24 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
         "userEmail": email
       }, { headers: { "mission-token": TokenHandler() } }).then(async (resAxios) => {
         if (!user) {
-          user = await service.create({
-            _id: new import_mongoose7.Types.ObjectId(resAxios.data.user.id),
-            email,
-            firstname: resAxios.data.user.firstname,
-            lastname: resAxios.data.user.lastname,
-            picture: null,
-            instructions: [],
-            instance: req.query.instance !== void 0 ? req.query.instance.toString() : config2.MOBITEACH_URL,
-            roomId: room._id
-          });
+          if (room) {
+            user = await service.create({
+              _id: new import_mongoose7.Types.ObjectId(resAxios.data.user.id),
+              email,
+              firstname: resAxios.data.user.firstname,
+              lastname: resAxios.data.user.lastname,
+              picture: null,
+              instructions: [],
+              instance: req.query.instance !== void 0 ? req.query.instance.toString() : config2.MOBITEACH_URL,
+              roomId: room._id
+            });
+            console.log("room", room);
+            console.log("user._id", user._id);
+            room.participants.push(user._id);
+            RoomService.update(room, room._id);
+          } else {
+            console.error("Pas de Room, room is null");
+          }
           const userPicture = resAxios.data.user.image;
           if (userPicture && userPicture !== "") {
             const [file, filename] = await downloadFile(resAxios.data.user.image);
@@ -774,7 +803,8 @@ UsersController.route("/:id([a-z0-9]{24})/ismoderator").get(async (req, res, nex
     const id = new import_mongoose7.Types.ObjectId(req.params.id);
     const user = await service.find(id);
     console.log("user id", user);
-    const room = await RoomService.findById(req.params.roomId);
+    const room = new import_mongoose7.Types.ObjectId(req.params.roomId);
+    await RoomService.findById(room);
     console.log("room", room);
     const isModeratorStatus = await isModerator(user, room);
     return res.status(200).json({ isModerator: isModeratorStatus });
@@ -784,13 +814,12 @@ UsersController.route("/:id([a-z0-9]{24})/ismoderator").get(async (req, res, nex
   }
 });
 async function isModerator(user, room) {
-  console.log("IN !");
   const researchedRoom = await room_model_default.findById(room);
-  console.log("reasearchedroom ", researchedRoom);
-  if (researchedRoom.moderatorId.toString() === user._id.toString()) {
+  if (researchedRoom && researchedRoom.moderatorId.toString() === user._id.toString()) {
     return true;
-  } else
+  } else {
     return false;
+  }
 }
 var users_controller_default = UsersController;
 
@@ -1167,15 +1196,15 @@ var usersService = new UsersService();
 InstructionController.route("/").post(async (req, res, next) => {
   try {
     const user = await usersService.find(req.body.userTarget);
+    console.log("user instruction controller", user);
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
     }
     const instruction = await instructionService.createInstruction(req.body.userTarget, req.body);
     user.instructions.push(instruction._id);
     usersService.update(user, user._id);
-    console.log(instruction);
-    console.log("hellllllo !");
-    console.log(user);
+    console.log("instruction", instruction);
+    console.log("user", user);
     return res.status(201).json(instruction);
   } catch (err) {
     next(err);
@@ -1227,7 +1256,7 @@ InstructionController.route("/:room([a-z0-9]{6})/:userTarget([a-z0-9]{24})").get
 });
 var instruction_controller_default = InstructionController;
 
-// src/resources/Moodle/moodle.controller.ts
+// src/resources/moodle/moodle.controller.ts
 var import_express6 = require("express");
 var MoodleController = (0, import_express6.Router)();
 var userService4 = new UsersService();
@@ -1289,6 +1318,218 @@ MoodleController.route("/userDatas/:instance([a-zA-Z0-9]+.mobiteach.net)").get(a
 });
 var moodle_controller_default = MoodleController;
 
+// src/resources/mission/mission.controller.ts
+var import_express7 = require("express");
+var import_mongoose13 = require("mongoose");
+
+// src/db/mission.model.ts
+var import_mongoose12 = __toESM(require("mongoose"));
+
+// types/etat.enum.ts
+var EEtat = /* @__PURE__ */ ((EEtat2) => {
+  EEtat2[EEtat2["NON_DEMARREE"] = 0] = "NON_DEMARREE";
+  EEtat2[EEtat2["EN_COURS"] = 1] = "EN_COURS";
+  EEtat2[EEtat2["TERMINEE"] = 2] = "TERMINEE";
+  return EEtat2;
+})(EEtat || {});
+var etat_enum_default = EEtat;
+
+// src/db/mission.model.ts
+var MissionSchema = new import_mongoose12.default.Schema({
+  "titre": {
+    type: String,
+    unique: false,
+    required: true
+  },
+  "roomId": {
+    type: import_mongoose12.Schema.Types.ObjectId,
+    unique: false,
+    required: true,
+    ref: "room"
+  },
+  "nb_activites": {
+    type: Number,
+    unique: false,
+    required: true
+  },
+  "etat": {
+    type: String,
+    enum: Object.values(etat_enum_default),
+    required: true
+  },
+  "visible": {
+    type: Boolean
+  },
+  "active": {
+    type: Boolean
+  },
+  "guidee": {
+    type: Boolean
+  },
+  "visuel": {
+    type: String
+  }
+}, { timestamps: true });
+var Mission = import_mongoose12.default.model("Mission", MissionSchema);
+var mission_model_default = Mission;
+
+// src/resources/mission/mission.service.ts
+var MissionService = class {
+  // Creation d une nouvelle mission
+  async create(data) {
+    const newMission = __spreadValues({}, data);
+    console.log("mission.service : nouvelle mission cr\xE9\xE9e", newMission);
+    return await mission_model_default.create(newMission);
+  }
+  // Trouve une mission en particulier
+  async find(_id) {
+    const researchedMission = await mission_model_default.findById(_id);
+    return researchedMission;
+  }
+  // Trouve toutes les missions
+  async findAll() {
+    try {
+      const missionList = await mission_model_default.find();
+      return missionList;
+    } catch (error) {
+      console.error("Error finding missions:", error);
+      throw error;
+    }
+  }
+};
+
+// src/resources/mission/mission.controller.ts
+var MissionController = (0, import_express7.Router)();
+var service2 = new MissionService();
+MissionController.route("/").get(async (req, res) => {
+  if ((await service2.findAll()).length === 0) {
+    createTestMission();
+  }
+  try {
+    console.log("GET /missions called");
+    const missionList = await service2.findAll();
+    console.log("missinList;;", missionList);
+    if (missionList.length === 0) {
+      return res.status(404).json({ message: "Aucune mission trouv\xE9e" });
+    }
+    return res.status(200).json(missionList);
+  } catch (error) {
+    console.error("Error in GET /missions:", error);
+    return res.status(500).json({ message: "Erreur du serveur" });
+  }
+});
+MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
+  try {
+    const id = new import_mongoose13.Types.ObjectId(req.params.id);
+    const mission = await service2.find(id);
+    return res.status(200).json(mission);
+  } catch (err) {
+    next(err);
+  }
+});
+async function createTestMission() {
+  const missionData = {
+    _id: new import_mongoose13.Types.ObjectId(),
+    titre: "Mission Test avec misionsArray",
+    roomId: new import_mongoose13.Types.ObjectId("66571ca5c2fee0607ed11b71"),
+    nb_activites: 4,
+    etat: "0",
+    visible: false,
+    active: false,
+    guidee: false,
+    visuel: "/blabla/uimg.jpg"
+  };
+  try {
+    const createdMission = await service2.create(missionData);
+    console.log("Created Mission:", createdMission);
+  } catch (error) {
+    console.error("Error creating mission:", error);
+  }
+}
+MissionController.route("/:id([a-z0-9]{24})/isVisible/").get(async (req, res) => {
+  try {
+    const id = new import_mongoose13.Types.ObjectId(req.params.id);
+    const isVisibleStatus = await isVisible(id);
+    return res.status(200).json(isVisibleStatus);
+  } catch (error) {
+    console.error("Error in GET /missions/{id}/isVisible:", error);
+    return res.status(500).json({ message: "Erreur du serveur" });
+  }
+});
+MissionController.route("/:id([a-z0-9]{24})/isActive/").get(async (req, res) => {
+  try {
+    const id = new import_mongoose13.Types.ObjectId(req.params.id);
+    const isActiveStatus = await isActive(id);
+    return res.status(200).json(isActiveStatus);
+  } catch (error) {
+    console.error("Error in GET /missions/{id}/isActive:", error);
+    return res.status(500).json({ message: "Erreur du serveur" });
+  }
+});
+MissionController.route("/:id([a-z0-9]{24})/isGuidee/").get(async (req, res) => {
+  try {
+    const id = new import_mongoose13.Types.ObjectId(req.params.id);
+    const isGuideeStatus = await isGuidee(id);
+    return res.status(200).json(isGuideeStatus);
+  } catch (error) {
+    console.error("Error in GET /missions/{id}/isGuidee:", error);
+    return res.status(500).json({ message: "Erreur du serveur" });
+  }
+});
+async function isVisible(mission) {
+  const researchedMission = await service2.find(mission);
+  if (researchedMission && researchedMission.visible === true) {
+    return true;
+  } else {
+    return false;
+  }
+}
+async function isActive(mission) {
+  const researchedMission = await service2.find(mission);
+  if (researchedMission && researchedMission.active === true) {
+    return true;
+  } else {
+    return false;
+  }
+}
+async function isGuidee(mission) {
+  const researchedMission = await service2.find(mission);
+  if (researchedMission && researchedMission.guidee === true) {
+    return true;
+  } else {
+    return false;
+  }
+}
+var mission_controller_default = MissionController;
+
+// src/resources/room/room.controller.ts
+var import_express8 = require("express");
+var import_mongoose14 = require("mongoose");
+var RoomController = (0, import_express8.Router)();
+var service3 = new RoomService();
+RoomController.route("/").get(async (req, res) => {
+  try {
+    const roomList = await RoomService.findAll();
+    if (roomList.length === 0) {
+      return res.status(404).json({ message: "Aucune salle trouv\xE9e" });
+    }
+    return res.status(200).json(roomList);
+  } catch (error) {
+    console.error("Error in GET /room:", error);
+    return res.status(500).json({ message: "Erreur du serveur" });
+  }
+});
+RoomController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
+  try {
+    const id = new import_mongoose14.Types.ObjectId(req.params.id);
+    const room = await RoomService.findById(id);
+    return res.status(200).json(room);
+  } catch (err) {
+    next(err);
+  }
+});
+var room_controller_default = RoomController;
+
 // src/middlewares/exceptions.handler.ts
 var ExceptionsHandler = (err, req, res, next) => {
   if (res.headersSent) {
@@ -1312,7 +1553,7 @@ var import_https = __toESM(require("https"));
 var import_fs6 = require("fs");
 var import_swagger_jsdoc = __toESM(require("swagger-jsdoc"));
 var import_swagger_ui_express = __toESM(require("swagger-ui-express"));
-var app = (0, import_express7.default)();
+var app = (0, import_express9.default)();
 var httpServer = import_http.default.createServer(app);
 var swaggerOptions = {
   definition: {
@@ -1341,13 +1582,15 @@ app.use((0, import_cors.default)({
 }));
 app.use("/users", users_controller_default);
 app.use("/medias", media_controller_default);
-app.use("/thumbs", thumb_controller_default);
+app.use("/thumb", thumb_controller_default);
 app.use("/datas", userData_controller_default);
 app.use("/instructions", instruction_controller_default);
+app.use("/mission", mission_controller_default);
+app.use("/room", room_controller_default);
 app.use("/moodle", moodle_controller_default);
 app.use("/docs", import_swagger_ui_express.default.serve);
 app.get("/docs", import_swagger_ui_express.default.setup(specs, { customCss: ".swagger-ui .topbar { display: none } .try-out { display: none }", customSiteTitle: "MISSIONS HUB DOCS", customfavIcon: "https://missions.mobiteach.fr/mobi.ico" }));
-app.use("/", import_express7.default.static(__dirname + "/../public", { dotfiles: "allow" }));
+app.use("/", import_express9.default.static(__dirname + "/../public", { dotfiles: "allow" }));
 app.all("*", UnknownRoutesHandler);
 app.use(ExceptionsHandler);
 app.use((req, res, next) => {
@@ -1359,7 +1602,7 @@ var start = async () => {
   try {
     httpServer.listen(config2.API_PORT);
     console.log("HTTP server is listening on port : " + config2.API_PORT);
-    import_mongoose12.default.connect(config2.DB_URI);
+    import_mongoose15.default.connect(config2.DB_URI);
     httpServer.on("error", (err) => {
       throw err;
     });
@@ -1367,7 +1610,7 @@ var start = async () => {
       httpServer.close();
     });
     httpServer.on("close", async () => {
-      await import_mongoose12.default.disconnect();
+      await import_mongoose15.default.disconnect();
       console.log("Server closed");
     });
     if (config2.SSL_KEY && config2.SSL_CERT) {

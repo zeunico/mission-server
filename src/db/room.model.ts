@@ -11,7 +11,17 @@ const RoomSchema = new mongoose.Schema<IRoom>({
 		type: Schema.Types.ObjectId,
 		ref: 'User',
 		required: true	
-	}
+	},
+
+	'participants': [{
+		type: Schema.Types.ObjectId,
+		ref: 'User'
+	}],
+
+	'mission': [{
+		type: Schema.Types.ObjectId,
+		ref: 'Mission'
+	}],
 	
 }, { timestamps: true });
 

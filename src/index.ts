@@ -7,7 +7,9 @@ import ThumbController from '~/resources/thumb/thumb.controller';
 import UsersController from '~/resources/users/users.controller';
 import UserDataController from '~/resources/userData/userData.controller';
 import InstructionController from '~/resources/instruction/instruction.controller';
-import MoodleController from '~/resources/Moodle/moodle.controller';
+import MoodleController from '~/resources/moodle/moodle.controller';
+import MissionController from '~/resources/mission/mission.controller';
+import RoomController from '~/resources/room/room.controller';
 import { ExceptionsHandler } from '~/middlewares/exceptions.handler';
 import { UnknownRoutesHandler } from '~/middlewares/unknownRoutes.handler';
 import bodyParser from 'body-parser';
@@ -64,13 +66,19 @@ app.use('/users', UsersController);
 app.use('/medias', MediaController);
 
 // Route CRUD des thumbs
-app.use('/thumbs', ThumbController);
+app.use('/thumb', ThumbController);
 
 // Route CRUD des réponses
 app.use('/datas', UserDataController);
 
 // Route CRUD des instructions
 app.use('/instructions', InstructionController);
+
+// Route CRUD pour l'interface MISSION
+app.use('/mission', MissionController);
+
+// Route CRUD pour l'interface ROOM
+app.use('/room', RoomController);
 
 // Route CRUD pour l'interface MOODLE
 app.use('/moodle', MoodleController);

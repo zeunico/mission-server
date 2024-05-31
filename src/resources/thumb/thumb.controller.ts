@@ -21,13 +21,13 @@ const userService = new UsersService();
 /**
  * @swagger
  * tags:
- *  name: Thumbs
+ *  name: Thumb
  *  description: Gestion des thumbs
  *  
- * /thumbs:
+ * /thumb:
  *  post:
  *   summary: Création d'un thumb
- *   tags: [Thumbs]
+ *   tags: [Thumb]
  *   requestBody:
  *    required: true
  *    content:
@@ -74,10 +74,10 @@ const userService = new UsersService();
  *          type: string
  *          description: Message d'erreur
  * 
- * /thumbs/user/{id}:
+ * /thumb/user/{id}:
  *  get:
  *   summary: Récupération des thumbs d'un utilisateur à partir de l'ID passé en paramètre.
- *   tags: [Thumbs]
+ *   tags: [Thumb]
  *   parameters:
  *    - name: id
  *      in: path
@@ -117,10 +117,10 @@ const userService = new UsersService();
  *          type: string
  *          description: Message d'erreur
  * 
- * /thumbs/{id}:
+ * /thumb/{id}:
  *  get:
  *   summary: Récupération d'un thumb à partir de l'ID passé en paramètre.
- *   tags: [Thumbs]
+ *   tags: [Thumb]
  *   parameters:
  *    - name: id
  *      in: path
@@ -160,7 +160,7 @@ const userService = new UsersService();
  * 
  *  delete:
  *   summary: Suppression d'un Thumb à partir de l'ID passé en paramètre.
- *   tags: [Thumbs]
+ *   tags: [Thumb]
  *   parameters:
  *    - name: id
  *      in: path
@@ -184,19 +184,6 @@ const userService = new UsersService();
  *          type: string
  *          description: Message d'erreur
  */
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

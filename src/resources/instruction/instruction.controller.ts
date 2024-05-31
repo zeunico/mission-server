@@ -200,6 +200,7 @@ InstructionController.route('/')
 		try {
 
 			const user = await usersService.find(req.body.userTarget);
+			console.log('user instruction controller', user);
 
 			if (!user) {
 				throw new NotFoundException('Utilisateur introuvable');
@@ -209,9 +210,8 @@ InstructionController.route('/')
 			user.instructions.push(instruction._id);
 			usersService.update(user, user._id);
 			
-			console.log(instruction);
-			console.log('hellllllo !');
-			console.log(user);
+			console.log('instruction',instruction);
+			console.log('user',user);
 			return res.status(201).json(instruction);
 		} catch (err) {
 			next(err);
