@@ -198,6 +198,7 @@ const usersService = new UsersService();
 InstructionController.route('/')
 	.post(async (req, res, next) => {
 		try {
+			console.log('rq.body',req.body);
 
 			const user = await usersService.find(req.body.userTarget);
 			console.log('user instruction controller', user);
