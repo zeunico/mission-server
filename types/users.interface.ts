@@ -8,5 +8,7 @@ export interface IUser {
     picture: Types.ObjectId | null,
 	instructions: Types.ObjectId[],
 	instance: string,
-	roomId: Types.ObjectId | null
+	roomId: Types.ObjectId | null,
+	createdAt: Date,
+    updatedAt: Date,
 }

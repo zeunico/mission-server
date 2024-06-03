@@ -77,9 +77,6 @@ const service = new MissionService();
  *      schema:
  *       type: object
  *       properties:
- *        _id:
- *         type: string
- *         description: Code identifiant (ID) de la mission
  *        titre:
  *         type: string
  *         description: Titre de la mission
@@ -160,9 +157,6 @@ const service = new MissionService();
  *      schema:
  *       type: object
  *       properties:
- *        _id:
- *         type: string
- *         description: Code identifiant (ID) de la mission
  *        titre:
  *         type: string
  *         description: Titre de la mission

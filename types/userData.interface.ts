@@ -6,8 +6,8 @@ export interface IUserData {
     thumbId?: Types.ObjectId,
     description: string,
 	room: string,
+    userId: Types.ObjectId,
+	instance: string,
     createdAt: Date,
     updatedAt: Date,
-    userId: Types.ObjectId,
-	instance: string
 }
