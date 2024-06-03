@@ -386,9 +386,8 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 			if (roomCode) {
 				room = await RoomService.findByCode(roomCode);
 				if (room === null) {
-					createDefaultRoom(roomCode);
-					room = await RoomService.findByCode(roomCode);
-					
+					await createDefaultRoom(roomCode);
+					room = await RoomService.findByCode(roomCode);					
 				}
 			}
 

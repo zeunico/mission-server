@@ -688,7 +688,7 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
     if (roomCode) {
       room = await RoomService.findByCode(roomCode);
       if (room === null) {
-        createDefaultRoom(roomCode);
+        await createDefaultRoom(roomCode);
         room = await RoomService.findByCode(roomCode);
       }
     }
@@ -1383,20 +1383,21 @@ var MissionService = class {
     });
     return await mission_model_default.create(newMission);
   }
-  // Trouve une mission en particulier
+  // Trouve une mission par son ID
   async find(_id) {
     const researchedMission = await mission_model_default.findById(_id);
     return researchedMission;
   }
   // Trouve toutes les missions
   async findAll() {
-    try {
-      const missionList = await mission_model_default.find();
-      return missionList;
-    } catch (error) {
-      console.error("Error finding missions:", error);
-      throw error;
-    }
+    const missionList = await mission_model_default.find();
+    return missionList;
+  }
+  // Supprimme une mission par son ID
+  async delete(missionId) {
+    console.log("missionId", missionId);
+    const deletedMission = await mission_model_default.findByIdAndDelete(missionId);
+    return deletedMission;
   }
   async findVisibilityStatus(missionId) {
     try {
@@ -1407,7 +1408,7 @@ var MissionService = class {
         return mission.visible;
       }
     } catch (error) {
-      console.error("Error finding missions:", error);
+      console.error("Erreur lors de la recherche de la mission:", error);
       throw error;
     }
   }
@@ -1420,7 +1421,7 @@ var MissionService = class {
       const titre = mission.titre;
       return titre;
     } catch (error) {
-      console.error("Error finding missions:", error);
+      console.error("Erreur lors de la recherche de la mission:", error);
       throw error;
     }
   }
@@ -1467,14 +1468,35 @@ MissionController.route("/").get(async (req, res) => {
     } else {
       const mission = await MissionService.createMission(req.body.roomId, req.body);
       const room = await RoomService.findById(req.body.roomId);
-      const roomId = new import_mongoose13.Types.ObjectId(req.body.roomId);
-      room.mission.push(mission._id);
-      await RoomService.update(room, roomId);
+      if (room) {
+        const roomId = new import_mongoose13.Types.ObjectId(req.body.roomId);
+        room.mission.push(mission._id);
+        await RoomService.update(room, roomId);
+      } else {
+        console.log("salle inconnue");
+      }
       return res.status(201).json(mission);
     }
   } catch (error) {
     console.error("Error in POST /missions:", error);
-    return res.status(500).json({ message: "Erreur du serveur" });
+    return res.status(500).json({ message: "Erreur de pram\xE0tres" });
+  }
+});
+MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next) => {
+  try {
+    const room = await RoomService.findByCode(req.params.roomCode);
+    const roomId = room == null ? void 0 : room._id;
+    const mission = await MissionService.createMission(roomId, req.body);
+    console.log("room", room);
+    console.log("roomId", roomId);
+    console.log("mission", mission);
+    room.mission.push(mission._id);
+    await room.save();
+    console.log("mission", mission);
+    return res.status(201).json(mission);
+  } catch (err) {
+    console.error("Error in POST /missions/roomCode:");
+    next(err);
   }
 });
 MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
@@ -1486,7 +1508,28 @@ MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
     console.error("Error in POST /missions/id:");
     next(err);
   }
-});
+}).delete(
+  async (req, res, next) => {
+    const id = new import_mongoose13.Types.ObjectId(req.params.id);
+    const mission = await service2.find(id);
+    if (!mission) {
+      return res.status(404).json({ error: `Mission avec ID ${id} non trouv\xE9e` });
+    }
+    try {
+      await service2.delete(id);
+      const room = await RoomService.findById(mission.roomId);
+      console.log("room", room);
+      if (room) {
+        room.mission.pop(mission.roomId);
+        await room.save();
+      }
+      return res.status(200).json(mission);
+    } catch (error) {
+      console.error("Error in DELETE /missions/id:", error);
+      return res.status(500).json({ message: "Erreur du serveur" });
+    }
+  }
+);
 MissionController.route("/:id([a-z0-9]{24})/isVisible/").get(async (req, res) => {
   try {
     const id = new import_mongoose13.Types.ObjectId(req.params.id);

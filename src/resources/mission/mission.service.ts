@@ -6,6 +6,7 @@ import { NotFoundException } from '~/utils/exceptions';
 import { RoomService } from '../room/room.service';
 import { IRoom } from '~~/types/room.interface';
 import  Room  from '~/db/room.model';
+import RoomController from '../room/room.controller';
 
 export class MissionService {
 
@@ -19,24 +20,22 @@ export class MissionService {
 		return await Mission.create(newMission);
 	}
 
-	// Trouve une mission en particulier
+	// Trouve une mission par son ID
 	async find(_id: Types.ObjectId): Promise<IMission | null> {
 		const researchedMission = await Mission.findById(_id);
 		return researchedMission;
 	}
-
-
 	// Trouve toutes les missions
 	async findAll(): Promise<IMission[]> {
-		try {
-            const missionList = await Mission.find();
-            return missionList;
-        } catch (error) {
-            console.error('Error finding missions:', error);
-            throw error;
-        }		
+		const missionList = await Mission.find();
+		return missionList;		
 	}
-
+	// Supprimme une mission par son ID
+	async delete(missionId: Types.ObjectId): Promise<IMission | null> {
+		console.log('missionId', missionId);
+		const deletedMission = await Mission.findByIdAndDelete(missionId);
+		return deletedMission;
+	}
 
 	async findVisibilityStatus(missionId: Types.ObjectId): Promise<Boolean> {
 		try {
@@ -48,7 +47,7 @@ export class MissionService {
 				}
 			}
 		 catch (error) {
-			console.error('Error finding missions:', error);
+			console.error('Erreur lors de la recherche de la mission:', error);
 			throw error;
 		}	
 	}
@@ -63,7 +62,7 @@ export class MissionService {
 			const titre = mission.titre;
 			return titre;
 		} catch (error) {
-			console.error('Error finding missions:', error);
+			console.error('Erreur lors de la recherche de la mission:', error);
 			throw error;
 		}	
 	};

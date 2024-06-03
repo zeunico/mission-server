@@ -149,7 +149,76 @@ const service = new MissionService();
  *         message:
  *          type: string
  *          description: Message d'erreur
- * 
+ * /mission/{roomCode}:
+ *  post:
+ *   summary: Création d'une mission Route avec RoomCode
+ *   tags: [Mission]
+ *   requestBody:
+ *    required: true
+ *    content:
+ *     application/json:
+ *      schema:
+ *       type: object
+ *       properties:
+ *        _id:
+ *         type: string
+ *         description: Code identifiant (ID) de la mission
+ *        titre:
+ *         type: string
+ *         description: Titre de la mission
+ *        nb_activites:
+ *         type: number
+ *         description: Nombre d'activités de la mission
+ *        etat:
+ *         type: string
+ *         description: Etat de la mission (non démarrée / en cours / terminée)
+ *        visible:
+ *         type: boolean
+ *         description: Visibilié de la mission
+ *        active:  
+ *         type: boolean
+ *         description: La mission est-elle active ?
+ *        guidee:
+ *         type: boolean
+ *         description: La mission est-elle guidée ?
+ *        visuel: 
+ *         type: String,
+ *         description: Visuel accompagnant la mission.
+ *   responses:
+ *    201:
+ *     description: Mission créée
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de la mission
+ *         titre:
+ *          type: string
+ *          description: Titre de la mission
+ *         roomId:
+ *          type: string
+ *          description: ID de la salle 
+ *         nb_activites:
+ *          type: number
+ *          description: Nombre d'activités de la mission
+ *         etat:
+ *          type: string
+ *          description: Etat de la mission (non démarrée / en cours / terminée)
+ *         visible:
+ *          type: boolean
+ *          description: Visibilié de la mission
+ *         active:  
+ *          type: boolean
+ *          description: La mission est-elle active ?
+ *         guidee:
+ *          type: boolean
+ *          description: La mission est-elle guidée ?
+ *         visuel: 
+ *          type: String,
+ *          description: Visuel accompagnant la mission.
  * /mission/{id}:
  *  get:
  *   summary: Récupère une mission enregistrée en base de données à partir de son ID passé en paramètre.
@@ -162,7 +231,7 @@ const service = new MissionService();
  *      required: true
  *   responses:
  *    200:
- *     description: La mission enregistrée en base de données à partir de son ID passé en paramètre.
+ *     description: La mission enregistrée avec succès.
  *     content:
  *      application/json:
  *       schema:
@@ -170,7 +239,7 @@ const service = new MissionService();
  *        properties:
  *         _id:
  *          type: string
- *          description: Code identifiant de la mission généré par la base de données
+ *          description: Code identifiant (ID) de la mission généré par la base de données
  *         titre:
  *          type: string
  *          description: Titre de la mission
@@ -202,7 +271,47 @@ const service = new MissionService();
  *         error:
  *          type: string
  *          description: Message d'erreur
- * 
+ *  delete:
+ *   summary: Supprime une mission à partir de son ID passé en paramètre.
+ *   tags: [Mission]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      description: ID de la mission
+ *      type: string
+ *      required: true
+ *   responses:
+ *    200:
+ *     description: La mission supprimée avec succès.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: Code identifiant (ID) de la mission généré par la base de données
+ *         titre:
+ *          type: string
+ *          description: Titre de la mission
+ *         nb_activites:
+ *          type: number
+ *          description: Nombre d activites dans cette mission
+ *         etat:
+ *          type: string
+ *          description: Etat de la mission (non_demarree, en_cours ou terminee)
+ *         visible :
+ *          type: boolean
+ *          description: Visibilité de la mission
+ *         active :
+ *          type: boolean
+ *          description: Activité de la mission
+ *         guidee :
+ *          type: boolean
+ *          description: Mission Guidee
+ *         visuel :
+ *          type: string
+ *          description: Visuel
  * 
  * /mission/{id}/isVisible:
  *  get:
@@ -387,17 +496,42 @@ MissionController.route('/')
 			else {
 				const mission = await MissionService.createMission(req.body.roomId, req.body);
 				const room = await RoomService.findById(req.body.roomId);
-				const roomId = new Types.ObjectId(req.body.roomId);
-				room.mission.push(mission._id);	
-				await RoomService.update(room, roomId);
+				if (room) {
+					const roomId = new Types.ObjectId(req.body.roomId);
+				    room.mission.push(mission._id);	
+				    await RoomService.update(room, roomId);
+				} else {console.log('salle inconnue');}
+
 				return res.status(201).json(mission);
 			}	
 		}		
 		catch (error) {
 			console.error('Error in POST /missions:', error);
-			return res.status(500).json({ message: 'Erreur du serveur' });
+			return res.status(500).json({ message: 'Erreur de pramàtres' });
 		}
 	});
+
+
+// ROUTE POST MISSION DANS UNE SALLE IDENTIFIEE PAR SON ROOMCODE
+MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
+	.post(async (req, res, next) => {
+		try {
+			const room = await RoomService.findByCode(req.params.roomCode);
+			const roomId = room?._id;
+			const mission = await MissionService.createMission(roomId, req.body);
+			console.log('room',room);console.log('roomId',roomId);console.log('mission',mission);
+			room.mission.push(mission._id);	
+			await room.save();
+			console.log('mission', mission);
+			
+			return res.status(201).json(mission);		
+		}
+		catch (err) {
+			console.error('Error in POST /missions/roomCode:');
+			next(err);
+		}
+	})
+
 
 // ROUTE RACINE MISSION PAR SON ID
 MissionController.route('/:id([a-z0-9]{24})/')
@@ -410,8 +544,30 @@ MissionController.route('/:id([a-z0-9]{24})/')
 			console.error('Error in POST /missions/id:');
 			next(err);
 		}
-	});
+	})
 
+// ROUTE DELETE MISSION PAR SON ID
+	.delete(async (req, res, next) => {
+		const id = new Types.ObjectId(req.params.id);
+		const mission = await service.find(id);
+		if (!mission) {
+			return res.status(404).json({ error: `Mission avec ID ${id} non trouvée` });
+			}
+		try {
+				await service.delete(id);
+				const room = await RoomService.findById(mission.roomId);
+				console.log('room', room);
+				if (room) {
+					room.mission.pop(mission.roomId);
+					await room.save();
+				}
+				return res.status(200).json(mission);
+			} catch (error) {
+				console.error('Error in DELETE /missions/id:', error);
+				return res.status(500).json({ message: 'Erreur du serveur' });
+			}
+		}
+	);
 
 
 
