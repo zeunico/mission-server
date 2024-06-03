@@ -358,19 +358,61 @@ const service = new MissionService();
  *         description: L'ID de la mission
  *     responses:
  *       200:
- *         description: La mission est déjà active
+ *         description: La mission est déjà visible
  *         content:
  *           application/json:
  *             schema:
  *               type: string
- *               example: Mission {titre} est déjà active
+ *               example: Mission {titre} est déjà visible
  *       201:
- *         description: La mission est maintenant active
+ *         description: La mission est maintenant visible
  *         content:
  *           application/json:
  *             schema:
  *               type: string
- *               example: Mission {titre} est désormais active
+ *               example: Mission {titre} est désormais visible
+ *       400:
+ *         description: Le champ ID est manquant
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
+* /mission/{id}/change-to-not-visible:
+ *   post:
+ *     summary: Changer la visibilité de la mission à non visible
+ *     tags: [Mission]
+ *     description: Ce point de terminaison change l'état de visibilité d'une mission en non visible.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de la mission
+ *     responses:
+ *       200:
+ *         description: La mission est déjà non visible
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Mission {titre} est déjà non visible
+ *       201:
+ *         description: La mission est maintenant non visible
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Mission {titre} est désormais non visible
  *       400:
  *         description: Le champ ID est manquant
  *         content:
@@ -414,6 +456,90 @@ const service = new MissionService();
  *         error:
  *          type: string
  *          description: Message d'erreur
+ * /mission/{id}/change-to-active:
+ *   post:
+ *     summary: Changer la statut Actif de la mission à visible
+ *     tags: [Mission]
+ *     description: Ce point de terminaison change l'état de l'activité d'une mission en active.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de la mission
+ *     responses:
+ *       200:
+ *         description: La mission est déjà active
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Mission {titre} est déjà active
+ *       201:
+ *         description: La mission est maintenant active
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Mission {titre} est désormais active
+ *       400:
+ *         description: Le champ ID est manquant
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
+ * /mission/{id}/change-to-not-active:
+ *   post:
+ *     summary: Changer la visibilité de la mission à non active
+ *     tags: [Mission]
+ *     description: Ce point de terminaison change l'état de visibilité d'une mission en non active.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de la mission
+ *     responses:
+ *       200:
+ *         description: La mission est déjà non active
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Mission {titre} est déjà non active
+ *       201:
+ *         description: La mission est maintenant non active
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Mission {titre} est désormais non active
+ *       400:
+ *         description: Le champ ID est manquant
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
  * 
  * /mission/{id}/isGuidee:
  *  get:
@@ -443,7 +569,91 @@ const service = new MissionService();
  *        properties:
  *         error:
  *          type: string
- *          description: Message d'erreur 
+ *          description: Message d'erreur
+ * /mission/{id}/change-to-guidee:
+ *   post:
+ *     summary: Changer la statut Actif de la mission à guidée
+ *     tags: [Mission]
+ *     description: Ce point de terminaison change l'état de l'activité d'une mission en guidée.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de la mission
+ *     responses:
+ *       200:
+ *         description: La mission est déjà guidée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Mission {titre} est déjà guidée
+ *       201:
+ *         description: La mission est maintenant guidée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Mission {titre} est désormais guidée
+ *       400:
+ *         description: Le champ ID est manquant
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
+ * /mission/{id}/change-to-not-guidee:
+ *   post:
+ *     summary: Changer la visibilité de la mission à non guidée
+ *     tags: [Mission]
+ *     description: Ce point de terminaison change l'état de visibilité d'une mission en non guidée.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de la mission
+ *     responses:
+ *       200:
+ *         description: La mission est déjà non guidée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Mission {titre} est déjà non guidée
+ *       201:
+ *         description: La mission est maintenant non guidée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Mission {titre} est désormais non guidée
+ *       400:
+ *         description: Le champ ID est manquant
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
  * 
  */
 
@@ -545,7 +755,6 @@ MissionController.route('/:id([a-z0-9]{24})/')
 			next(err);
 		}
 	})
-
 // ROUTE DELETE MISSION PAR SON ID
 	.delete(async (req, res, next) => {
 		const id = new Types.ObjectId(req.params.id);
@@ -569,18 +778,13 @@ MissionController.route('/:id([a-z0-9]{24})/')
 		}
 	);
 
-
-
-
-
 // ROUTES ET FONCTIONS POUR STATUS VISIBLE, ACTIVE et GUIDEE 
 MissionController.route('/:id([a-z0-9]{24})/isVisible/')
 	.get(async (req, res) => {
 		try {
 			const id = new Types.ObjectId(req.params.id);
-
-            const isVisibleStatus = await isVisible(id);
-			return res.status(200).json(isVisibleStatus);
+			const  statusVisible = await service.findVisibilityStatus(new Types.ObjectId(id));
+			return res.status(200).json(statusVisible);
 				
 		}
 		catch (error) {
@@ -588,7 +792,7 @@ MissionController.route('/:id([a-z0-9]{24})/isVisible/')
 			return res.status(500).json({ message: 'Erreur du serveur' });
 		}
 	});
-
+// ROUTE CHANGE TO VISIBLE
 MissionController.route('/:id([a-z0-9]{24})/change-to-visible/')
 	.post(async (req, res) => {
 		const id = req.params.id;
@@ -600,13 +804,15 @@ MissionController.route('/:id([a-z0-9]{24})/change-to-visible/')
 	
 		try {
 			const  statusVisible = await service.findVisibilityStatus(new Types.ObjectId(id));
+			console.log('status visible', statusVisible);
 			const titre = await service.findTitreByid(new Types.ObjectId(id));
-			if (statusVisible) {
-				res.status(200).json('Mission :  ' + titre + ' est déjà active');
+			if (statusVisible === true) {
+				res.status(200).json('Mission :  ' + titre + ' est déjà visible');
 			} else {
-				if (mission) {mission.visible = true;
-				await mission.save();
-				res.status(201).json('Mission :  ' + titre + ' est désormais active');
+				if (mission) {
+					mission.visible = true;
+					await mission.save();
+				res.status(201).json('Mission :  ' + titre + ' est désormais visible');
 				}
 			} 	
 		} catch (error) {
@@ -614,13 +820,40 @@ MissionController.route('/:id([a-z0-9]{24})/change-to-visible/')
 			res.status(500).send('Internal Server Error');
 		}
 	});
-
+// ROUTE CHANGE TO NOT VISIBLE
+	MissionController.route('/:id([a-z0-9]{24})/change-to-not-visible/')
+	.post(async (req, res) => {
+		const id = req.params.id;
+		const mission = await service.find(new Types.ObjectId(id));
+	
+		if (!id) {
+			return res.status(400).send('Le champ ID est manquant.');
+		}	
+		try {
+			const  statusVisible = await service.findVisibilityStatus(new Types.ObjectId(id));
+			const titre = await service.findTitreByid(new Types.ObjectId(id));
+			console.log('statut visible', statusVisible);
+			if (!statusVisible) {
+				res.status(200).json('Mission :  ' + titre + ' est déjà non visible');
+			} else {
+				if (mission) {
+					mission.visible = false;
+					await mission.save();
+					res.status(201).json('Mission :  ' + titre + ' est désormais non visible');
+				}
+			} 	
+		} catch (error) {
+			console.error(error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
+// ROUTE STATUT ACTIVE
 MissionController.route('/:id([a-z0-9]{24})/isActive/')
 	.get(async (req, res) => {
 		try {
 			const id = new Types.ObjectId(req.params.id);
 
-            const isActiveStatus = await isActive(id);
+            const isActiveStatus = await service.findActiveStatus(id);
 			return res.status(200).json(isActiveStatus);
 				
 		}
@@ -629,13 +862,68 @@ MissionController.route('/:id([a-z0-9]{24})/isActive/')
 			return res.status(500).json({ message: 'Erreur du serveur' });
 		}
 	});
-
+// ROUTE CHANGE TO ACTIVE
+MissionController.route('/:id([a-z0-9]{24})/change-to-active/')
+	.post(async (req, res) => {
+		const id = req.params.id;
+		const mission = await service.find(new Types.ObjectId(id));
+	
+		if (!id) {
+			return res.status(400).send('Le champ ID est manquant.');
+		}
+	
+		try {
+			const  statusActive = await service.findActiveStatus(new Types.ObjectId(id));
+			console.log('status visible', statusActive);
+			const titre = await service.findTitreByid(new Types.ObjectId(id));
+			if (statusActive === true) {
+				res.status(200).json('Mission :  ' + titre + ' est déjà active');
+			} else {
+				if (mission) {
+					mission.active = true;
+					await mission.save();
+				res.status(201).json('Mission :  ' + titre + ' est désormais active');
+				}
+			} 	
+		} catch (error) {
+			console.error(error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
+// ROUTE CHANGE TO NOT ACTIVE
+	MissionController.route('/:id([a-z0-9]{24})/change-to-not-active/')
+	.post(async (req, res) => {
+		const id = req.params.id;
+		const mission = await service.find(new Types.ObjectId(id));
+	
+		if (!id) {
+			return res.status(400).send('Le champ ID est manquant.');
+		}	
+		try {
+			const  statusActive = await service.findActiveStatus(new Types.ObjectId(id));
+			const titre = await service.findTitreByid(new Types.ObjectId(id));
+			console.log('statut visible', statusActive);
+			if (!statusActive) {
+				res.status(200).json('Mission :  ' + titre + ' est déjà non active');
+			} else {
+				if (mission) {
+					mission.active = false;
+					await mission.save();
+					res.status(201).json('Mission :  ' + titre + ' est désormais non active');
+				}
+			} 	
+		} catch (error) {
+			console.error(error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
+// ROUTE STATUT GUIDEE
 MissionController.route('/:id([a-z0-9]{24})/isGuidee/')
 	.get(async (req, res) => {
 		try {
 			const id = new Types.ObjectId(req.params.id);
 
-            const isGuideeStatus = await isGuidee(id);
+            const isGuideeStatus = await service.findGuideeStatus(id);
 			return res.status(200).json(isGuideeStatus);
 				
 		}
@@ -645,43 +933,60 @@ MissionController.route('/:id([a-z0-9]{24})/isGuidee/')
 		}
 	});
 
-
-function isVisible(mission) {
-
-	const researchedMission =  service.find(mission);
+// ROUTE CHANGE TO GUIDEE
+MissionController.route('/:id([a-z0-9]{24})/change-to-guidee/')
+	.post(async (req, res) => {
+		const id = req.params.id;
+		const mission = await service.find(new Types.ObjectId(id));
 	
-	if (researchedMission && (researchedMission.visible === true)) {
-		return true;
-	} else {
-		return false;
-	}
+		if (!id) {
+			return res.status(400).send('Le champ ID est manquant.');
+		}
 	
-}
-
-function isActive(mission) {
-
-	const researchedMission = service.find(mission);
+		try {
+			const  statusGuidee = await service.findGuideeStatus(new Types.ObjectId(id));
+			console.log('status visible', statusGuidee);
+			const titre = await service.findTitreByid(new Types.ObjectId(id));
+			if (statusGuidee === true) {
+				res.status(200).json('Mission :  ' + titre + ' est déjà guidée');
+			} else {
+				if (mission) {
+					mission.guidee = true;
+					await mission.save();
+				res.status(201).json('Mission :  ' + titre + ' est désormais guidée');
+				}
+			} 	
+		} catch (error) {
+			console.error(error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
+// ROUTE CHANGE TO NOT GUIDEE
+	MissionController.route('/:id([a-z0-9]{24})/change-to-not-guidee/')
+	.post(async (req, res) => {
+		const id = req.params.id;
+		const mission = await service.find(new Types.ObjectId(id));
 	
-	if (researchedMission && (researchedMission.active === true)) {
-		return true;
-	} else {
-		return false;
-	}
-	
-}
-
-function isGuidee(mission) {
-
-	const researchedMission = service.find(mission);
-	
-	if (researchedMission && (researchedMission.guidee === true)) {
-		return true;
-	} else {
-		return false;
-	}
-	
-}
-
-
+		if (!id) {
+			return res.status(400).send('Le champ ID est manquant.');
+		}	
+		try {
+			const  statusActive = await service.findGuideeStatus(new Types.ObjectId(id));
+			const titre = await service.findTitreByid(new Types.ObjectId(id));
+			console.log('statut visible', statusActive);
+			if (!statusActive) {
+				res.status(200).json('Mission :  ' + titre + ' est déjà non guidée');
+			} else {
+				if (mission) {
+					mission.guidee = false;
+					await mission.save();
+					res.status(201).json('Mission :  ' + titre + ' est désormais non guidée');
+				}
+			} 	
+		} catch (error) {
+			console.error(error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
 
 export default MissionController;

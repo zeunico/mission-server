@@ -1399,6 +1399,7 @@ var MissionService = class {
     const deletedMission = await mission_model_default.findByIdAndDelete(missionId);
     return deletedMission;
   }
+  // Statut Visible de la missin
   async findVisibilityStatus(missionId) {
     try {
       const mission = await mission_model_default.findById(missionId);
@@ -1412,6 +1413,35 @@ var MissionService = class {
       throw error;
     }
   }
+  // Statut Activité de la missin
+  async findActiveStatus(missionId) {
+    try {
+      const mission = await mission_model_default.findById(missionId);
+      if (!mission) {
+        throw new Error("Mission introuvable");
+      } else {
+        return mission.active;
+      }
+    } catch (error) {
+      console.error("Erreur lors de la recherche de la mission:", error);
+      throw error;
+    }
+  }
+  // Statut Guidée de la missin
+  async findGuideeStatus(missionId) {
+    try {
+      const mission = await mission_model_default.findById(missionId);
+      if (!mission) {
+        throw new Error("Mission introuvable");
+      } else {
+        return mission.guidee;
+      }
+    } catch (error) {
+      console.error("Erreur lors de la recherche de la mission:", error);
+      throw error;
+    }
+  }
+  // Titre de la mission par Id de la mission
   async findTitreByid(missionId) {
     try {
       const mission = await mission_model_default.findById(missionId);
@@ -1533,8 +1563,8 @@ MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
 MissionController.route("/:id([a-z0-9]{24})/isVisible/").get(async (req, res) => {
   try {
     const id = new import_mongoose13.Types.ObjectId(req.params.id);
-    const isVisibleStatus = await isVisible(id);
-    return res.status(200).json(isVisibleStatus);
+    const statusVisible = await service2.findVisibilityStatus(new import_mongoose13.Types.ObjectId(id));
+    return res.status(200).json(statusVisible);
   } catch (error) {
     console.error("Error in GET /missions/{id}/isVisible:", error);
     return res.status(500).json({ message: "Erreur du serveur" });
@@ -1548,14 +1578,39 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-visible/").post(async (req
   }
   try {
     const statusVisible = await service2.findVisibilityStatus(new import_mongoose13.Types.ObjectId(id));
+    console.log("status visible", statusVisible);
     const titre = await service2.findTitreByid(new import_mongoose13.Types.ObjectId(id));
-    if (statusVisible) {
-      res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 active");
+    if (statusVisible === true) {
+      res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 visible");
     } else {
       if (mission) {
         mission.visible = true;
         await mission.save();
-        res.status(201).json("Mission :  " + titre + " est d\xE9sormais active");
+        res.status(201).json("Mission :  " + titre + " est d\xE9sormais visible");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+MissionController.route("/:id([a-z0-9]{24})/change-to-not-visible/").post(async (req, res) => {
+  const id = req.params.id;
+  const mission = await service2.find(new import_mongoose13.Types.ObjectId(id));
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  try {
+    const statusVisible = await service2.findVisibilityStatus(new import_mongoose13.Types.ObjectId(id));
+    const titre = await service2.findTitreByid(new import_mongoose13.Types.ObjectId(id));
+    console.log("statut visible", statusVisible);
+    if (!statusVisible) {
+      res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 non visible");
+    } else {
+      if (mission) {
+        mission.visible = false;
+        await mission.save();
+        res.status(201).json("Mission :  " + titre + " est d\xE9sormais non visible");
       }
     }
   } catch (error) {
@@ -1566,47 +1621,119 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-visible/").post(async (req
 MissionController.route("/:id([a-z0-9]{24})/isActive/").get(async (req, res) => {
   try {
     const id = new import_mongoose13.Types.ObjectId(req.params.id);
-    const isActiveStatus = await isActive(id);
+    const isActiveStatus = await service2.findActiveStatus(id);
     return res.status(200).json(isActiveStatus);
   } catch (error) {
     console.error("Error in GET /missions/{id}/isActive:", error);
     return res.status(500).json({ message: "Erreur du serveur" });
   }
 });
+MissionController.route("/:id([a-z0-9]{24})/change-to-active/").post(async (req, res) => {
+  const id = req.params.id;
+  const mission = await service2.find(new import_mongoose13.Types.ObjectId(id));
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  try {
+    const statusActive = await service2.findActiveStatus(new import_mongoose13.Types.ObjectId(id));
+    console.log("status visible", statusActive);
+    const titre = await service2.findTitreByid(new import_mongoose13.Types.ObjectId(id));
+    if (statusActive === true) {
+      res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 active");
+    } else {
+      if (mission) {
+        mission.active = true;
+        await mission.save();
+        res.status(201).json("Mission :  " + titre + " est d\xE9sormais active");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+MissionController.route("/:id([a-z0-9]{24})/change-to-not-active/").post(async (req, res) => {
+  const id = req.params.id;
+  const mission = await service2.find(new import_mongoose13.Types.ObjectId(id));
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  try {
+    const statusActive = await service2.findActiveStatus(new import_mongoose13.Types.ObjectId(id));
+    const titre = await service2.findTitreByid(new import_mongoose13.Types.ObjectId(id));
+    console.log("statut visible", statusActive);
+    if (!statusActive) {
+      res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 non active");
+    } else {
+      if (mission) {
+        mission.active = false;
+        await mission.save();
+        res.status(201).json("Mission :  " + titre + " est d\xE9sormais non active");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
 MissionController.route("/:id([a-z0-9]{24})/isGuidee/").get(async (req, res) => {
   try {
     const id = new import_mongoose13.Types.ObjectId(req.params.id);
-    const isGuideeStatus = await isGuidee(id);
+    const isGuideeStatus = await service2.findGuideeStatus(id);
     return res.status(200).json(isGuideeStatus);
   } catch (error) {
     console.error("Error in GET /missions/{id}/isGuidee:", error);
     return res.status(500).json({ message: "Erreur du serveur" });
   }
 });
-function isVisible(mission) {
-  const researchedMission = service2.find(mission);
-  if (researchedMission && researchedMission.visible === true) {
-    return true;
-  } else {
-    return false;
+MissionController.route("/:id([a-z0-9]{24})/change-to-guidee/").post(async (req, res) => {
+  const id = req.params.id;
+  const mission = await service2.find(new import_mongoose13.Types.ObjectId(id));
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
   }
-}
-function isActive(mission) {
-  const researchedMission = service2.find(mission);
-  if (researchedMission && researchedMission.active === true) {
-    return true;
-  } else {
-    return false;
+  try {
+    const statusGuidee = await service2.findGuideeStatus(new import_mongoose13.Types.ObjectId(id));
+    console.log("status visible", statusGuidee);
+    const titre = await service2.findTitreByid(new import_mongoose13.Types.ObjectId(id));
+    if (statusGuidee === true) {
+      res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 guid\xE9e");
+    } else {
+      if (mission) {
+        mission.guidee = true;
+        await mission.save();
+        res.status(201).json("Mission :  " + titre + " est d\xE9sormais guid\xE9e");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
   }
-}
-function isGuidee(mission) {
-  const researchedMission = service2.find(mission);
-  if (researchedMission && researchedMission.guidee === true) {
-    return true;
-  } else {
-    return false;
+});
+MissionController.route("/:id([a-z0-9]{24})/change-to-not-guidee/").post(async (req, res) => {
+  const id = req.params.id;
+  const mission = await service2.find(new import_mongoose13.Types.ObjectId(id));
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
   }
-}
+  try {
+    const statusActive = await service2.findGuideeStatus(new import_mongoose13.Types.ObjectId(id));
+    const titre = await service2.findTitreByid(new import_mongoose13.Types.ObjectId(id));
+    console.log("statut visible", statusActive);
+    if (!statusActive) {
+      res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 non guid\xE9e");
+    } else {
+      if (mission) {
+        mission.guidee = false;
+        await mission.save();
+        res.status(201).json("Mission :  " + titre + " est d\xE9sormais non guid\xE9e");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
 var mission_controller_default = MissionController;
 
 // src/resources/room/room.controller.ts

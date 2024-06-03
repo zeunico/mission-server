@@ -35,17 +35,16 @@ const service = new RoomService();
  *         properties:
  *          _id:
  *           type: string
- *           description: Code identifiant de la salle généré par la base de données
+ *           description: ID de la salle généré par la base de données
  *          roomCode:
  *           type: string
- *           description: Nom de code de la salle
+ *           description: Roomcode de la salle
  *          moderatorId:
  *           type: string
  *           description: L'ID de l'animateur (moderator) de la salle
  *          mission:
  *           type: array
  *           description: Liste des missions présentes dans la salle
- * 
  *    404:
  *     description: Aucune salle trouvée
  *     content:
@@ -56,12 +55,16 @@ const service = new RoomService();
  *         message:
  *          type: string
  *          description: Message d'erreur
- * 
- *
  * /room/{id}:
  *  get:
  *   summary: Récupération des informations d'une salle pour son ID
  *   tags: [Room]
+ *   parameters:
+ *   - name: id
+ *     in: path
+ *     required: true
+ *     description: L'ID de la mission dont on récupère les informations
+ *     type: string
  *   responses:
  *    200:
  *     description: Liste des salles
@@ -100,6 +103,12 @@ const service = new RoomService();
  *  get:
  *   summary: Récupération de l'ID du moderator de la salle par l'ID de la salle
  *   tags: [Room]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      required: true
+ *      description: L'ID de la salle
+ *      type: string
  *   responses:
  *    200:
  *     description: ID du moderator de la salle
@@ -128,6 +137,12 @@ const service = new RoomService();
  *  get:
  *   summary: Récupération de l'ID du moderator de la salle par le roomCode de la salle (MOBI01 par exemple) 
  *   tags: [Room]
+ *   parameters:
+ *    - name: roomcode
+ *      in: path
+ *      required: true
+ *      description: Le roomcode de la salle.
+ *      type: string
  *   responses:
  *    200:
  *     description: ID du moderator de la salle
@@ -151,16 +166,139 @@ const service = new RoomService();
  *         message:
  *          type: string
  *          description: Message d'erreur
- * 
- *  
+ * /room/{id}/participants:
+ *  get:
+ *   summary:  Récupération de la liste des ID des participants de la salle par l'ID de la salle
+ *   tags: [Room]
+ *   parameters:
+ *   - name: id
+ *     in: path
+ *     required: true
+ *     description: L'ID de la salle
+ *     type: string
+ *   responses:
+ *    200:
+ *     description: Liste des ID des participants dans la salle 181
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: array
+ *        items:
+ *         type: string
+ *         properties:
+ *           type: string
+ *           description: Liste des ID des particpants dans la salle 190
+ *     404:
+ *      description: Aucune participant trouvée
+ *      content:
+ *       application/json:
+ *        schema:
+ *         type: object
+ *         properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+ * /room/{roomCode}/participants:
+ *  get:
+ *   summary: Récupération de la liste des ID des participants de la salle par le RoomCode de la salle
+ *   tags: [Room]
+ *   parameters:
+ *   - name: roomcode
+ *     in: path
+ *     required: true
+ *     description: Le roomcode de la salle
+ *     type: string
+ *   responses:
+ *    200:
+ *     description: Liste des ID des participants dans la salle 213
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: array
+ *        items:
+ *         type: string
+ *         properties:
+ *           type: string
+ *           description: Liste des ID des particpants dans la salle 221
+ *    404:
+ *     description: Aucun participant trouvé
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: string
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+  * /room/{id}/missions:
+ *  get:
+ *   summary:  Récupération de la liste des ID des missions de la salle par l'ID de la salle
+ *   tags: [Room]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      required: true
+ *      description: L'ID de la salle
+ *      type: string
+ *   responses:
+ *    200:
+ *     description: Liste des ID des missions de la salle
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: array
+ *        items:
+ *         type: string
+ *         properties:
+ *           type: string
+ *           description: Liste des ID des missions dans la salle
+ *    404:
+ *     description: Aucune mission trouvée
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+ * /room/{roomCode}/missions:
+ *  get:
+ *   summary: Récupération de la liste des ID des participants de la salle par le RoomCode de la salle
+ *   tags: [Room]
+ *   parameters:
+ *    - name: roomcode
+ *      in: path
+ *      required: true
+ *      description: Le roomcode de la salle
+ *      type: string
+ *   responses:
+ *    200:
+ *     description: Liste des ID des missions de la salle
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: array
+ *        items:
+ *         type: string
+ *         properties:
+ *           type: string
+ *           description: Liste des ID des missions dans la salle
+ *    404:
+ *     description: Aucune mission trouvé
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: string
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
  */
 
 // ROUTE RACINE LISTE TOUTES LES SALLES
 RoomController.route('/')
 	.get(async (req, res) => {
-
-
-
 		try {
            
 		const roomList = await RoomService.findAll();

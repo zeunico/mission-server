@@ -36,7 +36,7 @@ export class MissionService {
 		const deletedMission = await Mission.findByIdAndDelete(missionId);
 		return deletedMission;
 	}
-
+    // Statut Visible de la missin
 	async findVisibilityStatus(missionId: Types.ObjectId): Promise<Boolean> {
 		try {
 			const mission = await Mission.findById(missionId);
@@ -50,9 +50,39 @@ export class MissionService {
 			console.error('Erreur lors de la recherche de la mission:', error);
 			throw error;
 		}	
+	}	
+    // Statut Activité de la missin
+	async findActiveStatus(missionId: Types.ObjectId): Promise<Boolean> {
+		try {
+			const mission = await Mission.findById(missionId);
+			if (!mission) {
+				throw new Error('Mission introuvable');
+			} else {
+				return mission.active;
+				}
+			}
+		 catch (error) {
+			console.error('Erreur lors de la recherche de la mission:', error);
+			throw error;
+		}	
 	}
-	
-	
+	// Statut Guidée de la missin
+	async findGuideeStatus(missionId: Types.ObjectId): Promise<Boolean> {
+		try {
+			const mission = await Mission.findById(missionId);
+			if (!mission) {
+				throw new Error('Mission introuvable');
+			} else {
+				return mission.guidee;
+				}
+			}
+			catch (error) {
+			console.error('Erreur lors de la recherche de la mission:', error);
+			throw error;
+		}	
+	}
+
+	// Titre de la mission par Id de la mission
 	async  findTitreByid(missionId: Types.ObjectId): Promise<IMission["titre"]> {
 		try {
 			const mission = await Mission.findById(missionId);
