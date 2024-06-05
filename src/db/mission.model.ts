@@ -15,11 +15,17 @@ const MissionSchema = new mongoose.Schema<IMission>({
 		required: true,
 		ref: 'room'
 	},
+
+	'activites': [{
+		type: Schema.Types.ObjectId,
+		ref: 'mission'
+
+	}],
 	 
 	'nb_activites': {
 		type: Number,
 		unique: false,
-		required: true
+		required: false
 	},
 
 	'etat': {

@@ -18,6 +18,7 @@ import https from 'https';
 import { readFileSync } from 'fs';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import ActivityController from './resources/activity/activity.controller';
 
 
 
@@ -76,6 +77,9 @@ app.use('/instructions', InstructionController);
 
 // Route CRUD pour l'interface MISSION
 app.use('/mission', MissionController);
+
+// Route CRUD pour l'interface MISSION
+app.use('/activity', ActivityController);
 
 // Route CRUD pour l'interface ROOM
 app.use('/room', RoomController);

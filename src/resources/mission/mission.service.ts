@@ -30,6 +30,8 @@ export class MissionService {
 		const missionList = await Mission.find();
 		return missionList;		
 	}
+
+
 	// Supprimme une mission par son ID
 	async delete(missionId: Types.ObjectId): Promise<IMission | null> {
 		console.log('missionId', missionId);

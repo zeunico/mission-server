@@ -75,8 +75,8 @@ var config2 = {
 
 // src/index.ts
 var import_cors = __toESM(require("cors"));
-var import_express9 = __toESM(require("express"));
-var import_mongoose15 = __toESM(require("mongoose"));
+var import_express10 = __toESM(require("express"));
+var import_mongoose17 = __toESM(require("mongoose"));
 
 // src/resources/media/media.controller.ts
 var import_multer = __toESM(require("multer"));
@@ -87,6 +87,7 @@ var EMedia = /* @__PURE__ */ ((EMedia2) => {
   EMedia2["VIDEO"] = "video";
   EMedia2["AUDIO"] = "audio";
   EMedia2["TEXT"] = "text";
+  EMedia2["SLIDES"] = "slides";
   return EMedia2;
 })(EMedia || {});
 var media_enum_default = EMedia;
@@ -1348,10 +1349,14 @@ var MissionSchema = new import_mongoose12.default.Schema({
     required: true,
     ref: "room"
   },
+  "activites": [{
+    type: import_mongoose12.Schema.Types.ObjectId,
+    ref: "mission"
+  }],
   "nb_activites": {
     type: Number,
     unique: false,
-    required: true
+    required: false
   },
   "etat": {
     type: String,
@@ -1460,6 +1465,7 @@ var MissionService = class {
 // src/resources/mission/mission.controller.ts
 var MissionController = (0, import_express7.Router)();
 var service2 = new MissionService();
+var roomService = new RoomService();
 MissionController.route("/").get(async (req, res) => {
   if ((await service2.findAll()).length === 0) {
     const missionData = {
@@ -1515,15 +1521,17 @@ MissionController.route("/").get(async (req, res) => {
 MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next) => {
   try {
     const room = await RoomService.findByCode(req.params.roomCode);
-    const roomId = room == null ? void 0 : room._id;
-    const mission = await MissionService.createMission(roomId, req.body);
-    console.log("room", room);
-    console.log("roomId", roomId);
-    console.log("mission", mission);
-    room.mission.push(mission._id);
-    await room.save();
-    console.log("mission", mission);
-    return res.status(201).json(mission);
+    if (room) {
+      const roomId = room._id;
+      const mission = await MissionService.createMission(roomId, req.body);
+      console.log("room", room);
+      console.log("roomId", roomId);
+      console.log("mission", mission);
+      room == null ? void 0 : room.mission.push(mission._id);
+      await room.save();
+      console.log("mission", mission);
+      return res.status(201).json(mission);
+    }
   } catch (err) {
     console.error("Error in POST /missions/roomCode:");
     next(err);
@@ -1550,7 +1558,7 @@ MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
       const room = await RoomService.findById(mission.roomId);
       console.log("room", room);
       if (room) {
-        room.mission.pop(mission.roomId);
+        room.mission = room.mission.filter((id2) => !id2.equals(mission._id));
         await room.save();
       }
       return res.status(200).json(mission);
@@ -1844,10 +1852,292 @@ var UnknownRoutesHandler = () => {
 var import_body_parser = __toESM(require("body-parser"));
 var import_http = __toESM(require("http"));
 var import_https = __toESM(require("https"));
-var import_fs6 = require("fs");
+var import_fs7 = require("fs");
 var import_swagger_jsdoc = __toESM(require("swagger-jsdoc"));
 var import_swagger_ui_express = __toESM(require("swagger-ui-express"));
-var app = (0, import_express9.default)();
+
+// src/resources/activity/activity.controller.ts
+var import_express9 = require("express");
+var import_mongoose16 = require("mongoose");
+
+// src/db/activity.model.ts
+var import_mongoose15 = __toESM(require("mongoose"));
+var extendSchema = require("mongoose-extend-schema");
+var ActivitySchema = new import_mongoose15.default.Schema({
+  "titre": {
+    type: String,
+    required: true
+  },
+  "description": {
+    type: String,
+    required: true
+  },
+  "etat": {
+    type: String,
+    enum: Object.values(etat_enum_default),
+    required: false
+  },
+  "visible": {
+    type: Boolean
+  },
+  "active": {
+    type: Boolean
+  },
+  "guidee": {
+    type: Boolean
+  }
+}, { timestamps: true });
+var Activity = import_mongoose15.default.model("Activity", ActivitySchema);
+var ActivityConsulterSchema = extendSchema(ActivitySchema, {
+  "description_detaillee_consulter": {
+    type: String,
+    required: false
+  },
+  "type": {
+    type: String,
+    enum: Object.values(media_enum_default),
+    required: false
+  }
+}, { timestamps: true });
+var ActivityProduireSchema = extendSchema(ActivitySchema, {
+  "description_detaillee_produire": {
+    type: String,
+    required: true
+  },
+  "types": [{
+    type: String,
+    enum: Object.values(media_enum_default),
+    required: false
+  }]
+}, { timestamps: true });
+var ActivityConsulter = Activity.discriminator("ActivityConsulter", ActivityConsulterSchema);
+var ActivityProduire = Activity.discriminator(" ActivityProduire", ActivityProduireSchema);
+var activity_model_default = { ActivityConsulter, ActivityProduire, Activity };
+
+// src/resources/activity/activity.service.ts
+var ActivityService = class {
+  static async create(data) {
+    const newActivity = __spreadValues({}, data);
+    console.log("new act in create", newActivity);
+    return activity_model_default.Activity.create(newActivity);
+  }
+  // Trouve tous les activités (produire et consulter confondues)
+  static async findAll() {
+    const consulterActivities = await activity_model_default.Activity.find();
+    const produireActivities = await activity_model_default.Activity.find();
+    const allActivities = consulterActivities.concat(produireActivities);
+    console.log("allAct in Act Service", allActivities);
+    return allActivities;
+  }
+  // Trouve une activite par son ID
+  static async find(_id) {
+    const researchedActivity = await activity_model_default.Activity.findById(_id);
+    return researchedActivity;
+  }
+  static async findById(_id) {
+    const researchedActivity = await activity_model_default.Activity.findOne({ _id });
+    return researchedActivity;
+  }
+};
+var ActivityConsulterService = class extends ActivityService {
+  static async createConsulter(data) {
+    console.log("data", data);
+    if (!data.type && !data.description_detaillee_consulter) {
+      super.create(data);
+    } else {
+      console.log("data.type", data.type);
+      const newActivityConsulter = __spreadProps(__spreadValues({}, data), {
+        type: data.type,
+        description_detaillee_consulter: data.description_detaillee_consulter
+      });
+      console.log("new act in createCONSULTER via  ...", newActivityConsulter);
+      return activity_model_default.ActivityConsulter.create(newActivityConsulter);
+    }
+    ;
+  }
+  // Trouve tous les activités CONSULTER
+  static async findAll() {
+    const allActivitiesConsulter = await activity_model_default.ActivityConsulter.find();
+    console.log("allAct", allActivitiesConsulter);
+    return allActivitiesConsulter;
+  }
+};
+var ActivityProduireService = class extends ActivityService {
+  static async createProduire(data) {
+    console.log("data", data);
+    if (!data.types) {
+      super.create(data);
+    } else {
+      console.log("data.types", data.types);
+      const newActivityProduire = __spreadProps(__spreadValues({}, data), {
+        types: data.types,
+        description_detaillee_produire: data.description_detaillee_produire
+      });
+      console.log("new act in createProduire ds clas produire", newActivityProduire);
+      return activity_model_default.ActivityProduire.create(newActivityProduire);
+    }
+    ;
+  }
+  // Trouve tous les activités (produire et consulter confondues)
+  static async findAll() {
+    const allActivities = await activity_model_default.ActivityProduire.find();
+    console.log("allAct", allActivities);
+    return allActivities;
+  }
+};
+
+// src/resources/activity/activity.controller.ts
+var import_path10 = require("path");
+var import_fs6 = __toESM(require("fs"));
+var import_multer4 = __toESM(require("multer"));
+var fileStorage4 = import_multer4.default.diskStorage({
+  // définit le dossier de destination à partir de l'ID de l'utilisateur
+  destination: function(req, file, cb) {
+    const extension = (0, import_path10.extname)(file.originalname);
+    try {
+      const folder = getFileTypeByExtension(extension);
+      console.log("extension", extension);
+      console.log("folder", folder);
+      req.body.type = folder;
+      const dest = (0, import_path10.join)(config2.ATTACHEMENT_SRC, req.body.userId, folder + "s");
+      if (!import_fs6.default.existsSync(dest)) {
+        import_fs6.default.mkdirSync(dest, { recursive: true });
+      }
+      cb(null, (0, import_path10.join)(dest));
+    } catch (err) {
+      cb(err, "");
+    }
+  },
+  filename: function(req, file, cb) {
+    const extension = (0, import_path10.extname)(file.originalname);
+    try {
+      const fileName = getFileNameFormatted(file.originalname, extension);
+      req.body.name = fileName;
+      cb(null, fileName);
+    } catch (err) {
+      cb(err, "");
+    }
+  }
+});
+var fileUpload3 = (0, import_multer4.default)({
+  storage: fileStorage4
+});
+var ActivityController = (0, import_express9.Router)();
+var activityService = new ActivityService();
+ActivityController.route("/").get(async (req, res, next) => {
+  try {
+    const activityList = await ActivityService.findAll();
+    return res.status(200).json(activityList);
+  } catch (err) {
+    next(err);
+  }
+});
+ActivityController.route("/").post(async (req, res, next) => {
+  try {
+    if (req.body.description_detaillee_consulter && req.body.type) {
+      const savedConsulter = await ActivityConsulterService.createConsulter(req.body);
+      return res.status(201).json(savedConsulter);
+    } else {
+      if (req.body.description_detaillee_produire && req.body.types) {
+        const savedProduire = await ActivityProduireService.createProduire(req.body);
+        console.log("Controller / ActivityProduire return from ActProdSer:", savedProduire);
+        return res.status(201).json(savedProduire);
+      }
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+ActivityController.route("/consulter").post(async (req, res, next) => {
+  try {
+    const activityConsulter = await ActivityConsulterService.createConsulter(req.body);
+    res.status(201).send(activityConsulter);
+  } catch (err) {
+    next(err);
+  }
+}).get(async (req, res, next) => {
+  try {
+    const activityConsulterList = await ActivityConsulterService.findAll();
+    res.status(200).send(activityConsulterList);
+  } catch (err) {
+    next(err);
+  }
+});
+ActivityController.route("/produire").post(async (req, res) => {
+  try {
+    const activityProduire = await ActivityProduireService.createProduire(req.body);
+    res.status(201).send(activityProduire);
+  } catch (error) {
+    res.status(400).send(error);
+  }
+}).get(async (req, res, next) => {
+  try {
+    const activityProduireList = await ActivityProduireService.findAll();
+    res.json(activityProduireList);
+  } catch (err) {
+    next(err);
+  }
+});
+ActivityController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
+  try {
+    const id = new import_mongoose16.Types.ObjectId(req.params.id);
+    const room = await ActivityService.findById(id);
+    return res.status(200).json(room);
+  } catch (err) {
+    next(err);
+  }
+});
+ActivityController.route("/addMission/:idActivity([a-z0-9]{24})/:idMission([a-z0-9]{24})").post(async (req, res) => {
+  try {
+    const idActivity = req.params.idActivity;
+    const idMission = req.params.idMission;
+    const activity = await ActivityService.findById(new import_mongoose16.Types.ObjectId(idActivity));
+    if (!activity) {
+      return res.status(404).json({ error: `Activit\xE9 avec ID ${idActivity} non trouv\xE9e` });
+    }
+    const mission = await mission_model_default.findById(new import_mongoose16.Types.ObjectId(idMission));
+    if (!mission) {
+      return res.status(404).json({ error: `Mission avec ID ${idMission} non trouv\xE9e` });
+    }
+    if (mission.activites.includes(activity._id)) {
+      return res.status(409).json({ message: "L'activit\xE9 est d\xE9j\xE0 pr\xE9sente dans la mission." });
+    }
+    mission.activites.push(activity._id);
+    mission.nb_activites += 1;
+    await mission.save();
+    return res.status(200).json(mission);
+  } catch (error) {
+    console.error("Error in Post /activity/mission/idAct/idMiss:", error);
+    return res.status(500).json({ message: "Erreur du serveur" });
+  }
+}).delete(async (req, res) => {
+  try {
+    const idActivity = req.params.idActivity;
+    const idMission = req.params.idMission;
+    const activity = await ActivityService.findById(new import_mongoose16.Types.ObjectId(idActivity));
+    if (!activity) {
+      return res.status(404).json({ error: `Activit\xE9 avec ID ${idActivity} non trouv\xE9e` });
+    }
+    const mission = await mission_model_default.findById(new import_mongoose16.Types.ObjectId(idMission));
+    if (!mission) {
+      return res.status(404).json({ error: `Mission avec ID ${idMission} non trouv\xE9e` });
+    }
+    if (!mission.activites.includes(activity._id)) {
+      return res.status(409).json({ message: "L'activit\xE9 n'est pas pr\xE9sente dans la mission." });
+    }
+    mission.activites = mission.activites.filter((id) => !id.equals(activity._id));
+    mission.nb_activites -= 1;
+    await mission.save();
+    return res.status(200).json(mission);
+  } catch (error) {
+    console.error("Error in Delete /activity/mission/idAct/idMiss:", error);
+    return res.status(500).json({ message: "Erreur du serveur" });
+  }
+});
+var activity_controller_default = ActivityController;
+
+// src/index.ts
+var app = (0, import_express10.default)();
 var httpServer = import_http.default.createServer(app);
 var swaggerOptions = {
   definition: {
@@ -1880,11 +2170,12 @@ app.use("/thumb", thumb_controller_default);
 app.use("/datas", userData_controller_default);
 app.use("/instructions", instruction_controller_default);
 app.use("/mission", mission_controller_default);
+app.use("/activity", activity_controller_default);
 app.use("/room", room_controller_default);
 app.use("/moodle", moodle_controller_default);
 app.use("/docs", import_swagger_ui_express.default.serve);
 app.get("/docs", import_swagger_ui_express.default.setup(specs, { customCss: ".swagger-ui .topbar { display: none } .try-out { display: none }", customSiteTitle: "MISSIONS HUB DOCS", customfavIcon: "https://missions.mobiteach.fr/mobi.ico" }));
-app.use("/", import_express9.default.static(__dirname + "/../public", { dotfiles: "allow" }));
+app.use("/", import_express10.default.static(__dirname + "/../public", { dotfiles: "allow" }));
 app.all("*", UnknownRoutesHandler);
 app.use(ExceptionsHandler);
 app.use((req, res, next) => {
@@ -1896,7 +2187,7 @@ var start = async () => {
   try {
     httpServer.listen(config2.API_PORT);
     console.log("HTTP server is listening on port : " + config2.API_PORT);
-    import_mongoose15.default.connect(config2.DB_URI);
+    import_mongoose17.default.connect(config2.DB_URI);
     httpServer.on("error", (err) => {
       throw err;
     });
@@ -1904,13 +2195,13 @@ var start = async () => {
       httpServer.close();
     });
     httpServer.on("close", async () => {
-      await import_mongoose15.default.disconnect();
+      await import_mongoose17.default.disconnect();
       console.log("Server closed");
     });
     if (config2.SSL_KEY && config2.SSL_CERT) {
       const options = {
-        key: (0, import_fs6.readFileSync)(config2.SSL_KEY),
-        cert: (0, import_fs6.readFileSync)(config2.SSL_CERT)
+        key: (0, import_fs7.readFileSync)(config2.SSL_KEY),
+        cert: (0, import_fs7.readFileSync)(config2.SSL_CERT)
       };
       const httpsServer = import_https.default.createServer(options, app);
       httpsServer.listen(443);

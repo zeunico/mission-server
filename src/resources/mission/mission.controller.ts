@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { Types, isObjectIdOrHexString } from 'mongoose';
-import { NotFoundException } from '~/utils/exceptions';
+import { Types } from 'mongoose';
 import { MissionService } from '../mission/mission.service';
 import { RoomService } from '../room/room.service';
 import { IMission } from '~~/types/mission.interface';
@@ -12,6 +11,7 @@ const MissionController: Router = Router();
 // Instanciation des Services
 
 const service = new MissionService();
+const roomService = new RoomService();
 
 /**
  * @swagger
@@ -148,7 +148,7 @@ const service = new MissionService();
  *          description: Message d'erreur
  * /mission/{roomCode}:
  *  post:
- *   summary: Création d'une mission Route avec RoomCode
+ *   summary: Création d'une mission (Route avec RoomCode)
  *   tags: [Mission]
  *   requestBody:
  *    required: true
@@ -721,14 +721,15 @@ MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
 	.post(async (req, res, next) => {
 		try {
 			const room = await RoomService.findByCode(req.params.roomCode);
-			const roomId = room?._id;
-			const mission = await MissionService.createMission(roomId, req.body);
-			console.log('room',room);console.log('roomId',roomId);console.log('mission',mission);
-			room.mission.push(mission._id);	
-			await room.save();
-			console.log('mission', mission);
-			
-			return res.status(201).json(mission);		
+			if (room) {
+				const roomId = room._id;
+				const mission = await MissionService.createMission(roomId, req.body);
+				console.log('room',room);console.log('roomId',roomId);console.log('mission',mission);
+				room?.mission.push(mission._id);	
+				await room.save();
+				console.log('mission', mission);
+				
+				return res.status(201).json(mission);}		
 		}
 		catch (err) {
 			console.error('Error in POST /missions/roomCode:');
@@ -761,7 +762,9 @@ MissionController.route('/:id([a-z0-9]{24})/')
 				const room = await RoomService.findById(mission.roomId);
 				console.log('room', room);
 				if (room) {
-					room.mission.pop(mission.roomId);
+					room.mission = room.mission.filter(id => !id.equals(mission._id));
+
+
 					await room.save();
 				}
 				return res.status(200).json(mission);
