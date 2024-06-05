@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Types } from 'mongoose';
-import { IActivity } from '~~/types/activity.interface';
+import { IActivity, IActivityConsulter, IActivityProduire } from '~~/types/activity.interface';
 import { ActivityService, ActivityConsulterService, ActivityProduireService } from '../activity/activity.service';
 import { getFileTypeByExtension, getFileNameFormatted } from '~/utils/file.utils';
 import { extname, join } from 'path';
@@ -260,5 +260,63 @@ ActivityController.route('/addMission/:idActivity([a-z0-9]{24})/:idMission([a-z0
 });
 
 
+// DUPLIQUER UNE ACTIVITE
+
+ActivityController.route('/duplicate/:idActivity([a-z0-9]{24})')
+    .post(async (req, res) => {
+        try {
+            const idActivity = req.params.idActivity;
+			console.log('idActivity',idActivity);
+
+            // Find the activity to be duplicated
+            const activitytodup = await ActivityService.findById(new Types.ObjectId(idActivity));
+			console.log('activitytodup',activitytodup);
+			const isConsulter = activitytodup?.description_detaillee_consulter;
+			const isProduire = activitytodup?.description_detaillee_produire;
+			
+			console.log('isConsulter',isConsulter);
+			if (isProduire ) {
+               console.log('yyyy');
+            };
+			if (!isConsulter && !isProduire ) {
+                return res.status(404).json({ error: `Activité avec ID ${idActivity} non trouvée` });
+            };
+			if (isConsulter) {	
+					const activityData: IActivityConsulter = {
+						_id: new Types.ObjectId(), 
+						titre: activitytodup.titre + '-Copie',
+						description: activitytodup.description,
+						etat: activitytodup.etat,
+						description_detaillee_consulter: activitytodup.description_detaillee_consulter,
+						active: activitytodup.active,
+						guidee: activitytodup.guidee,
+						visible: activitytodup.visible,
+						type: activitytodup.type,	
+					}
+					const duplicatedActivityConsulter = await ActivityConsulterService.createConsulter(activityData);
+					return res.status(200).json(duplicatedActivityConsulter);
+				}
+				if (isProduire) {	
+					const activityData: IActivityProduire = {
+						_id: new Types.ObjectId(), 
+						titre: activitytodup.titre + '-Copie',
+						description: activitytodup.description,
+						etat: activitytodup.etat,
+						description_detaillee_produire: activitytodup.description_detaillee_produire,
+						active: activitytodup.active,
+						guidee: activitytodup.guidee,
+						visible: activitytodup.visible,
+						types: activitytodup.types,	
+					}
+					const duplicatedActivityConsulter = await ActivityProduireService.createProduire(activityData);
+					return res.status(200).json(duplicatedActivityConsulter);
+				}
+
+			
+        } catch (error) {
+            console.error('Error in POST activity/duplicate/:idActivity:', error);
+            return res.status(500).json({ message: 'Erreur du serveur' });
+        }
+    });
 
 export default ActivityController;

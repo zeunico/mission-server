@@ -10,7 +10,7 @@ import { IActivityProduire } from '~~/types/activity.interface';
 export class ActivityService {
 		
 
-	static async create(data:IActivity): Promise<IActivity | undefined> {
+	static async create(data:IActivity): Promise<IActivity> {
 		const newActivity: IActivity = {
 			...data,
 		};
@@ -65,6 +65,10 @@ export class ActivityConsulterService extends ActivityService {
 		console.log('allAct', allActivitiesConsulter);
 		return allActivitiesConsulter;
 	}
+	static async findById(_id: Types.ObjectId): Promise<IActivityConsulter | null> {
+		const researchedActivity = await ActivityConsulter.ActivityConsulter.findOne({ _id});
+		return researchedActivity;
+	}
 	
 }
 
@@ -72,7 +76,8 @@ export class ActivityProduireService extends ActivityService {
 
 	static async createProduire(data:IActivityProduire): Promise<IActivityProduire | undefined> {
 		console.log('data', data);
-		if (!data.types){	
+		if (!data.types && !data.description_detaillee_produire){	
+			console.log('ici');
 			super.create(data);
 		}else {
 			console.log('data.types', data.types);

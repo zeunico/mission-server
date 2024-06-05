@@ -1961,11 +1961,16 @@ var ActivityConsulterService = class extends ActivityService {
     console.log("allAct", allActivitiesConsulter);
     return allActivitiesConsulter;
   }
+  static async findById(_id) {
+    const researchedActivity = await activity_model_default.ActivityConsulter.findOne({ _id });
+    return researchedActivity;
+  }
 };
 var ActivityProduireService = class extends ActivityService {
   static async createProduire(data) {
     console.log("data", data);
-    if (!data.types) {
+    if (!data.types && !data.description_detaillee_produire) {
+      console.log("ici");
       super.create(data);
     } else {
       console.log("data.types", data.types);
@@ -2131,6 +2136,58 @@ ActivityController.route("/addMission/:idActivity([a-z0-9]{24})/:idMission([a-z0
     return res.status(200).json(mission);
   } catch (error) {
     console.error("Error in Delete /activity/mission/idAct/idMiss:", error);
+    return res.status(500).json({ message: "Erreur du serveur" });
+  }
+});
+ActivityController.route("/duplicate/:idActivity([a-z0-9]{24})").post(async (req, res) => {
+  try {
+    const idActivity = req.params.idActivity;
+    console.log("idActivity", idActivity);
+    const activitytodup = await ActivityService.findById(new import_mongoose16.Types.ObjectId(idActivity));
+    console.log("activitytodup", activitytodup);
+    const isConsulter = activitytodup == null ? void 0 : activitytodup.description_detaillee_consulter;
+    const isProduire = activitytodup == null ? void 0 : activitytodup.description_detaillee_produire;
+    console.log("isConsulter", isConsulter);
+    if (isProduire) {
+      console.log("yyyy");
+    }
+    ;
+    if (!isConsulter && !isProduire) {
+      return res.status(404).json({ error: `Activit\xE9 avec ID ${idActivity} non trouv\xE9e` });
+    }
+    ;
+    if (isConsulter) {
+      const activityData = {
+        _id: new import_mongoose16.Types.ObjectId(),
+        titre: activitytodup.titre + "-Copie",
+        description: activitytodup.description,
+        etat: activitytodup.etat,
+        description_detaillee_consulter: activitytodup.description_detaillee_consulter,
+        active: activitytodup.active,
+        guidee: activitytodup.guidee,
+        visible: activitytodup.visible,
+        type: activitytodup.type
+      };
+      const duplicatedActivityConsulter = await ActivityConsulterService.createConsulter(activityData);
+      return res.status(200).json(duplicatedActivityConsulter);
+    }
+    if (isProduire) {
+      const activityData = {
+        _id: new import_mongoose16.Types.ObjectId(),
+        titre: activitytodup.titre + "-Copie",
+        description: activitytodup.description,
+        etat: activitytodup.etat,
+        description_detaillee_produire: activitytodup.description_detaillee_produire,
+        active: activitytodup.active,
+        guidee: activitytodup.guidee,
+        visible: activitytodup.visible,
+        types: activitytodup.types
+      };
+      const duplicatedActivityConsulter = await ActivityProduireService.createProduire(activityData);
+      return res.status(200).json(duplicatedActivityConsulter);
+    }
+  } catch (error) {
+    console.error("Error in POST activity/duplicate/:idActivity:", error);
     return res.status(500).json({ message: "Erreur du serveur" });
   }
 });
