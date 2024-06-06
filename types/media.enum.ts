@@ -3,7 +3,7 @@ enum EMedia {
 	VIDEO = 'video',
 	AUDIO = 'audio',
 	TEXT = 'text',
-	SLIDES ="slides",	
+	SLIDE = 'slide'	
 }
 
 export default EMedia;

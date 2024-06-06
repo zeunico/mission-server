@@ -20,6 +20,11 @@ const UserSchema = new mongoose.Schema<IUser>({
 		required: true
 	},
 	
+	'moderator': {
+		type: Boolean,
+		required: false
+	},
+	
 	'picture': {
 		type: Schema.Types.ObjectId,
 		ref: 'Media'
@@ -40,6 +45,7 @@ const UserSchema = new mongoose.Schema<IUser>({
 		ref: 'Room',
 		required: true
 	}
+
 }, { timestamps: true });
 
 

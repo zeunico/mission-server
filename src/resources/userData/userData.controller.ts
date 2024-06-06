@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import { UserDataService } from './userData.service';
 import { MediaService } from '../media/media.service';
 import { ThumbService } from '../thumb/thumb.service';
+import { RoomService } from '../room/room.service';
 import { NotFoundException } from '~/utils/exceptions';
 import { extname, join } from 'path';
 import { getFileNameFormatted, getFileTypeByExtension } from '~/utils/file.utils';
@@ -16,6 +17,7 @@ import { IThumb } from '~~/types/thumb.interface';
 import MThumb from '~/db/thumb.model';
 import axios from 'axios';
 import { TokenHandler } from '~/middlewares/token.handler';
+import { ActivityService } from '../activity/activity.service';
 
 
 
@@ -299,17 +301,23 @@ UserDataController.route('/')
 			
 		try {
 			const userId = new Types.ObjectId(req.body.userId);
+			if (!req.body.userId) {
+				throw new NotFoundException('Utilisateur manquant');
+			}
 			const user = await userService.find(userId);
-
 			if (!user) {
 				throw new NotFoundException('Utilisateur introuvable');
 			}
+
+			const activityId  = new Types.ObjectId(req.body.activityId);
+			if (!req.body.activityId) {
+				throw new NotFoundException('Activité manquante');
+			}
+			const activity = await ActivityService.findById(activityId);
 			
 			let media: IMedia | undefined = undefined;
 			console.log('ok');
-			let thumb: IThumb | undefined = undefined;
-			
-
+			let thumb: IThumb | undefined = undefined;	
 			if (req.file) {
 				
 				media = await mediaService.create(userId, req.body);
@@ -366,7 +374,7 @@ UserDataController.route('/')
 
 							async function updateThumbName(thumbId: Object, newName: Object) {
 								try {
-									// Find the Thumb document by its _id and update its name
+									// Mise à jour du nom du thumb
 									const result = await MThumb.updateOne(
 									{ _id: thumbId },
 									{ $set: { name: newName } }
@@ -386,7 +394,7 @@ UserDataController.route('/')
 				}
 			}
 
-			const newUserData = await userDataService.createUserData(user, media?._id, thumb?._id, req.body);
+			const newUserData = await userDataService.createUserData(user, activity._id, media?._id, thumb?._id, req.body);
 
         	// Connexion Axios à Mobiteach
 
@@ -521,13 +529,16 @@ UserDataController.route('/:room([a-z0-9]{6})/:userId([a-z0-9]{24})')
 				throw new NotFoundException('Room code invalide');
 			}
 			const userId = new Types.ObjectId(req.params.userId);
+			console.log('userId',userId);
+			console.log('req.params.room',req.params.room);
 			const user = await userService.find(userId);
-
+			console.log('user',user);
 			if (!user) {
 				throw new NotFoundException('Utilisateur introuvable');
 			}
 
 			const dataList = await userDataService.findByUserId(user, req.params.room);
+			console.log('dataList',dataList);
 			return res.status(200).json(dataList);
 		} catch (err) {
 			next(err);

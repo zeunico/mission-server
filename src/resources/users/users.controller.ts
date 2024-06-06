@@ -397,13 +397,17 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 					'userEmail': email
 				}, { headers: { 'mission-token': TokenHandler() } })
 					.then(async (resAxios) => {
+						console.log('mission-token', TokenHandler());
+						console.log('resAxios', resAxios);
 						if (!user) {
 								if (room) {
+									console.log('resAxios.data.user.moderatorId',  resAxios.data.user.isModerator );
 									user = await service.create({
 									_id: new Types.ObjectId(resAxios.data.user.id),
 									email,
 									firstname: resAxios.data.user.firstname,
 									lastname: resAxios.data.user.lastname, 
+									moderator: resAxios.data.user.isModerator,
 									picture: null,
 									instructions: [],
 									instance: req.query.instance !== undefined ? req.query.instance.toString() : config.MOBITEACH_URL,
@@ -411,11 +415,19 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 								});
 								console.log('room',room);
 								console.log('user._id', user._id);
-								room.participants.push(user._id);
+
+								// On ajoute le user à la liste des participants seulement si il n'est pas moderator
+								console.log('user._id', user._id);
+								console.log('modo', room.moderatorId);
+								if (user.moderator) {
+									console.log('Cet user est le moderator de la salle, il ne sera pas ajouté à la liste des participants');
+									
+								} else {room.participants.push(user._id);}
+
 								RoomService.update(room, room._id);
-							} else {
-								console.error("Pas de Room, room is null");
-							}
+								} else {
+									console.error("Pas de Room, room is null");
+								}
 
 							const userPicture = resAxios.data.user.image;
 

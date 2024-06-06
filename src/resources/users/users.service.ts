@@ -32,11 +32,10 @@ export class UsersService {
 	}
 
 	// Crée un utilisateur
-	async create(userData: IUser): Promise<IUser> {
+	async create(data: IUser): Promise<IUser> {
 		const newUser: IUser = {
-			...userData
+			...data
 		};
-
 		return await User.create(newUser);
 	}
 

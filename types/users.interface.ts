@@ -5,6 +5,7 @@ export interface IUser {
     firstname: string,
 	lastname: string,
     email: string,
+	moderator: boolean,
     picture: Types.ObjectId | null,
 	instructions: Types.ObjectId[],
 	instance: string,

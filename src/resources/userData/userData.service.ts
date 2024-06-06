@@ -3,6 +3,8 @@ import MUserData from '~/db/userData.model';
 import { Types } from 'mongoose';
 import { IMedia } from '~~/types/media.interface';
 import { IUser } from '~~/types/users.interface';
+import { IActivity, IActivityConsulter } from '~~/types/activity.interface';
+
 
 export class UserDataService {
 
@@ -10,11 +12,13 @@ export class UserDataService {
 	 * Crée une réponse à partir des informations données par l'utilisateur
 	 * @param userId 
 	 * @param datas 
+	 * @param activity
 	 * @returns 
 	 */
-	async createUserData(user: IUser, mediaId: Types.ObjectId | undefined, thumbId: Types.ObjectId | undefined, datas: IUserData): Promise<IUserData> {
+	async createUserData(user: IUser, activityId: Types.ObjectId, mediaId: Types.ObjectId | undefined, thumbId: Types.ObjectId | undefined, datas: IUserData): Promise<IUserData> {
 		const newUserData: IUserData = {
 			...datas,
+			activityId: activityId,
 			mediaId: mediaId? mediaId: undefined,
 			thumbId: thumbId? thumbId: undefined,
 			userId: user._id,

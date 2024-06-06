@@ -10,14 +10,30 @@ import { readFile, unlink } from 'fs/promises';
 export const getFileTypeByExtension = (extension: string): EMedia => {
 	switch (extension) {
 	case '.jpg':
+	case '.JPG':
 	case '.png':
+	case '.PNG':
 	case '.jpeg':
+	case '.JPEG':
 		return EMedia.IMAGE;
 	case '.mp4':
+	case '.MP4':
 		return EMedia.VIDEO;
 	case '.mp3':
 	case '.flac':
+	case '.MP3':
+	case '.FLAC':
 		return EMedia.AUDIO;
+	case '.pdf':
+	case '.PDF':
+		return EMedia.SLIDE;
+	case '.doc':
+	case '.docx':
+	case '.txt':
+	case '.DOC':
+	case '.DOCX':
+	case '.TXT':
+		return EMedia.TEXT;
 	default:
 		throw new BadRequestException('Le type de fichier n\'est pas reconnu');
 	}
@@ -25,13 +41,31 @@ export const getFileTypeByExtension = (extension: string): EMedia => {
 
 export const getPathByExtension = (extension: string, id: string): string => {
 	switch(extension) {
-	case'.jpg':
-	case'.png':
+	case '.jpg':
+	case '.JPG':
+	case '.png':
+	case '.PNG':
+	case '.jpeg':
+	case '.JPEG':
 		return join(config.ATTACHEMENT_SRC, id, 'images');
-	case'.mp4':
+	case '.mp4':
+	case '.MP4':
 		return join(config.ATTACHEMENT_SRC, id, 'videos');
-	case'.mp3':
+	case '.mp3':
+	case '.flac':
+	case '.MP3':
+	case '.FLAC':
 		return join(config.ATTACHEMENT_SRC, id, 'audios');
+	case '.pdf':
+	case '.PDF':
+		return join(config.ATTACHEMENT_SRC, id, 'slides');
+	case '.doc':
+	case '.docx':
+	case '.txt':
+	case '.DOC':
+	case '.DOCX':
+	case '.TXT':
+		return join(config.ATTACHEMENT_SRC, id, 'textes');
 	default:
 		throw new BadExtensionException('Mauvaise format de fichier');
 	}

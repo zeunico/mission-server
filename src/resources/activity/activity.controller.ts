@@ -115,10 +115,7 @@ ActivityController.route('/')
 		 catch (err) {
 			next(err);
 		}
-	});
-
-
-ActivityController.route('/')
+	})
 	.post(async (req, res, next) => {
 		try {
 	
@@ -159,23 +156,23 @@ ActivityController.route('/consulter')
 	});
 
 ActivityController.route('/produire')
-.post(async (req, res) => {
-    try {
-        const activityProduire = await ActivityProduireService.createProduire(req.body);
-    
-        res.status(201).send(activityProduire);
-    } catch (error) {
-        res.status(400).send(error);
-    }
-})
-.get(async (req, res, next) => {
-	try {
-		const activityProduireList = await ActivityProduireService.findAll();
-		res.json(activityProduireList);
-	} catch (err) {
-        next(err);
-    }
-});
+	.post(async (req, res) => {
+		try {
+			const activityProduire = await ActivityProduireService.createProduire(req.body);
+		
+			res.status(201).send(activityProduire);
+		} catch (error) {
+			res.status(400).send(error);
+		}
+	})
+	.get(async (req, res, next) => {
+		try {
+			const activityProduireList = await ActivityProduireService.findAll();
+			res.json(activityProduireList);
+		} catch (err) {
+			next(err);
+		}
+	});
 
 
 // ROUTE ACTIVITE SELON SON ID 
@@ -193,7 +190,7 @@ ActivityController.route('/:id([a-z0-9]{24})/')
 });
 
 
-// POST ET DELETE UNE  ACTIVITE A UNE MISSION
+// AJOUT ET RETRAIT D'UNE ACTIVITE A UNE MISSION
 
 ActivityController.route('/addMission/:idActivity([a-z0-9]{24})/:idMission([a-z0-9]{24})')
 .post(async (req, res) => {
@@ -252,7 +249,7 @@ ActivityController.route('/addMission/:idActivity([a-z0-9]{24})/:idMission([a-z0
         
         await mission.save();
         
-        return res.status(200).json(mission);
+        return res.status(200).json({ message: `L\'activité ${activity} a été retirée de la mission avec succès.` });
     } catch (error) {
         console.error('Error in Delete /activity/mission/idAct/idMiss:', error);
         return res.status(500).json({ message: 'Erreur du serveur' });

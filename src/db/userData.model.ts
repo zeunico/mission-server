@@ -2,6 +2,13 @@ import mongoose, { Schema } from 'mongoose';
 import { IUserData } from '~~/types/userData.interface';
 
 const UserDataSchema = new mongoose.Schema<IUserData>({
+
+	'activityId': {
+		type: Schema.Types.ObjectId,
+		ref: 'Activity',
+		required: true
+	},
+
 	'mediaId': {
 		type: Schema.Types.ObjectId,
 		ref: 'Media',
