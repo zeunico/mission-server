@@ -38,7 +38,7 @@ export class MissionService {
 		const deletedMission = await Mission.findByIdAndDelete(missionId);
 		return deletedMission;
 	}
-    // Statut Visible de la missin
+    // Statut Visible de la mission
 	async findVisibilityStatus(missionId: Types.ObjectId): Promise<Boolean> {
 		try {
 			const mission = await Mission.findById(missionId);

@@ -213,6 +213,55 @@ const roomService = new RoomService();
  *         visuel: 
  *          type: String,
  *          description: Visuel accompagnant la mission.
+ * get:
+ *   summary: Récupérer une liste de missions par code de salle
+ *   tags: [Mission]
+ *   parameters:
+ *     - in: path
+ *       name: roomCode
+ *       required: true
+ *       schema:
+ *         type: string
+ *       description: Le code de la salle pour laquelle récupérer les missions
+*   responses:
+ *    200:
+ *     description: Toutes les activités 
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: array
+ *        items:
+ *         type: object
+ *         properties:
+ *          _id:
+ *           type: string
+ *           description: L'ID de la mission
+ *          name:
+ *           type: string
+ *           description: Le nom de la mission
+ *          description:
+ *           type: string
+ *           description: La description de la mission
+ *     404:
+ *       description: Salle non trouvée
+ *       content:
+ *        application/json:
+ *         schema:
+ *          type: object
+ *          properties:
+ *           error:
+ *           type: string
+ *           description: Un message d'erreur
+ *     500:
+ *      description: Erreur interne du serveur
+ *      content:
+ *        application/json:
+ *         schema:
+ *          type: object
+ *          properties:
+ *           error:
+ *            type: string
+ *            description: Un message d'erreur
  * /mission/{id}:
  *  get:
  *   summary: Récupère une mission enregistrée en base de données à partir de son ID passé en paramètre.
@@ -225,7 +274,7 @@ const roomService = new RoomService();
  *      required: true
  *   responses:
  *    200:
- *     description: La mission enregistrée avec succès.
+ *     description: La mission trouvée avec succès.
  *     content:
  *      application/json:
  *       schema:
@@ -648,7 +697,48 @@ const roomService = new RoomService();
  *             schema:
  *               type: string
  *               example: Erreur interne du serveur
- * 
+ * /mission/{id}/activites:
+ *   get:
+ *     summary: Récupère les ID des activités dans une mission.
+ *     tags: [Mission]
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         description: ID de la mission
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Liste des ID des activités dans la mission
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 description: ID de l'activité
+ *       400:
+ *         description: Le champ ID est manquant.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       404:
+ *         description: Mission non trouvée.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Mission non trouvée.
+ *       500:
+ *         description: Erreur interne du serveur.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Internal Server Error
  */
 
 /**    
@@ -716,7 +806,8 @@ MissionController.route('/')
 	});
 
 
-// ROUTE POST MISSION DANS UNE SALLE IDENTIFIEE PAR SON ROOMCODE
+// ROUTE POST MISSION DANS UNE SALLE IDENTIFIEE PAR SON ROOMCODE &&
+// GET MISSION DANS UNE SALLE PAR UN ROOMCODE  
 MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
 	.post(async (req, res, next) => {
 		try {
@@ -736,9 +827,35 @@ MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
 			next(err);
 		}
 	})
+	.get(async (req, res, next) => {
+		try {
+			const room = await RoomService.findByCode(req.params.roomCode);
+			if (room) {
+				const missionList = room.mission;
+				console.log('missionList', missionList);
+	
+				// Fetch all missions asynchronously
+				const result = await Promise.all(missionList.map(async element => {
+					return service.find(element);
+				}));
+	
+				console.log('result', result);
+	
+				// Return the resolved array of missions
+				return res.status(201).json(result);
+			} else {
+				// If the room is not found, return a 404 status
+				return res.status(404).json({ error: 'Room not found' });
+			}
+		} catch (err) {
+			console.error('Error in GET /liste missions par roomCode:', err);
+			next(err);
+		}
+	});
+	
 
 
-// ROUTE RACINE MISSION PAR SON ID
+// ROUTE MISSION PAR SON ID
 MissionController.route('/:id([a-z0-9]{24})/')
 	.get(async (req, res, next) => {
 		try {
@@ -776,6 +893,7 @@ MissionController.route('/:id([a-z0-9]{24})/')
 	);
 
 // ROUTES ET FONCTIONS POUR STATUS VISIBLE, ACTIVE et GUIDEE 
+// STATUT VISIBLE CHECK
 MissionController.route('/:id([a-z0-9]{24})/isVisible/')
 	.get(async (req, res) => {
 		try {
@@ -959,7 +1077,7 @@ MissionController.route('/:id([a-z0-9]{24})/change-to-guidee/')
 		}
 	});
 // ROUTE CHANGE TO NOT GUIDEE
-	MissionController.route('/:id([a-z0-9]{24})/change-to-not-guidee/')
+MissionController.route('/:id([a-z0-9]{24})/change-to-not-guidee/')
 	.post(async (req, res) => {
 		const id = req.params.id;
 		const mission = await service.find(new Types.ObjectId(id));
@@ -985,5 +1103,30 @@ MissionController.route('/:id([a-z0-9]{24})/change-to-guidee/')
 			res.status(500).send('Internal Server Error');
 		}
 	});
+
+// TOUTES LES ACTIVITES DANS LA MISSION
+MissionController.route('/:id([a-z0-9]{24})/activites')
+    .get(async (req, res) => {
+        const id = req.params.id;
+
+        if (!id) {
+            return res.status(400).send('Le champ ID est manquant.');
+        }
+
+        try {
+            const mission = await service.find(new Types.ObjectId(id));
+            const activityList = mission?.activites;
+
+            if (mission) {
+                res.status(200).json(activityList);
+            } else {
+                res.status(404).json('Mission non trouvée.');
+            }
+        } catch (error) {
+            console.error(error);
+            res.status(500).json('Internal Server Error');
+        }
+    });
+
 
 export default MissionController;

@@ -13,6 +13,11 @@ import Mission from '~/db/mission.model';
 import Activity from '~/db/activity.model';
 
 
+// Instanciation des Services
+
+const service = new ActivityService();
+const missionService = new MissionService();
+
 
 
 // Création d'un objet multer Storage
@@ -70,11 +75,11 @@ const activityService = new ActivityService();
  * 
  * /activity:
  *  get:
- *   summary: Récupération de toutes les activités
- *   tags: [Instructions]
+ *   summary: Liste de toutes les activités
+ *   tags: [Activity]
  *   responses:
  *    200:
- *     description: Activités récupérées
+ *     description: Toutes les activités 
  *     content:
  *      application/json:
  *       schema:
@@ -85,17 +90,29 @@ const activityService = new ActivityService();
  *          _id:
  *           type: string
  *           description: ID de l'activité
- *          userTarget:
+ *          titre:
  *           type: string
- *           description: ID de l'utilisateur cible
- *          room:
+ *           description: Titre de l'activité
+ *          etat:
+ *           type: array
+ *           description: Etat (non commencée / en cours / terminée)
+ *          visible:
  *           type: string
- *           description: Code de la salle virtuelle
- *          consigne:
+ *           description: Visibilité de l'activité
+ *          active:
  *           type: string
- *           description: Consigne donné par le formateur à l'apprenant
+ *           description: Statut Actif de l'activité
+ *          guidée:
+ *           type: string
+ *           description: Statut Guidée de l'activité
+ *          description_detaillee_consulter:
+ *           type: string
+ *           description: Description détaillée de l'activité
+ *          type:
+ *           type: string
+ *           description: Type de fichier acceptés dans l'activité
  *    404:
- *     description: Consignes introuvables
+ *     description: Activités introuvables
  *     content:
  *      application/json:
  *       schema:
@@ -104,12 +121,649 @@ const activityService = new ActivityService();
  *         message:
  *          type: string
  *          description: Message d'erreur
+ *  post:
+ *   summary: Création d'une activité
+ *   tags: [Activity]
+ *   requestBody:
+ *    required: true
+ *    content:
+ *     application/json:
+ *      schema:
+ *       type: object
+ *       properties:
+ *        titre:
+ *         type: string
+ *         description: Titre de la nouvelle activité
+ *        description:
+ *         type: string
+ *         description: Description de l'activité
+ *        etat:
+ *         type: array
+ *         description: Etats d'avancement de l'activité pour chacun des participants
+ *        visible:
+ *         type: string
+ *         description: Statut de visibilité de l'activité
+ *        active:
+ *         type: string
+ *         description: Statut Actif de l'activité
+ *        guidée:
+ *         type: string
+ *         description: Statut Guidée de l'activité
+ *        description_detaillee_consulter:
+ *         type: string
+ *         description: Description détaillée de l'activité
+ *        type:
+ *         type: string
+ *         description: Type de fichier acceptés dans l'activité
+ *   responses:
+ *    201:
+ *     description: Activité créée
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de l'activité
+ *         titre:
+ *          type: string
+ *          description: Titre de la nouvelle activité
+ *         description:
+ *          type: string
+ *          description: Description de l'activité
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de l'activité pour chacun des participants
+ *         visible:
+ *          type: array
+ *          description: Statut de visibilité de l'activité
+ *         active:
+ *          type: string
+ *          description: Statut Actif de l'activité
+ *         guidée:
+ *          type: string
+ *          description: Statut Guidée de l'activité
+ *         description_detaillee_consulter:
+ *          type: string
+ *          description: Description détaillée de l'activité
+ *         type:
+ *          type: string
+ *          description: Type de fichier acceptés dans l'activité
+ *    500:
+ *     description: Erreur serveur
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+
+ * /activity/produire:
+ *  get:
+ *   summary: Liste de toutes les activités de type PRODUIRE
+ *   tags: [Activity]
+ *   responses:
+ *    200:
+ *     description: Toutes les activités de type Produire
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: array
+ *        items:
+ *         type: object
+ *         properties:
+ *          _id:
+ *           type: string
+ *           description: ID de l'activité Produire
+ *          titre:
+ *           type: string
+ *           description: Titre de l'activité Produire
+ *          etat:
+ *           type: array
+ *           description: Etat d'avancement des participants dans l'activité Produire (non commencée / en cours / terminée)
+ *          visible:
+ *           type: string
+ *           description: Visibilité de l'activité Produire
+ *          active:
+ *           type: string
+ *           description: Statut Actif de l'activité Produire
+ *          guidée:
+ *           type: string
+ *           description: Statut Guidée de l'activité Produire
+ *          description_detaillee_produire:
+ *           type: string
+ *           description: Description détaillée de l'activité Produire
+ *          types:
+ *           type: array
+ *           description: Type de fichier acceptés dans l'activité Produire
+ *    404:
+ *     description: Activités "Produire" introuvables
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+ *  post:
+ *   summary: Création d'une activité Produire
+ *   tags: [Activity]
+ *   requestBody:
+ *    required: true
+ *    content:
+ *     application/json:
+ *      schema:
+ *       type: object
+ *       properties:
+ *        titre:
+ *         type: string
+ *         description: Titre de la nouvelle activité Produire
+ *        description:
+ *         type: string
+ *         description: Description de l'activité
+ *        etat:
+ *         type: array
+ *         description: Etats d'avancement de l'activité pour chacun des participants
+ *        visible:
+ *         type: string
+ *         description: Statut de visibilité de l'activité
+ *        active:
+ *         type: string
+ *         description: Statut Actif de l'activité
+ *        guidée:
+ *         type: string
+ *         description: Statut Guidée de l'activité
+ *        description_detaillee_consulter:
+ *         type: string
+ *         description: Description détaillée de l'activité
+ *        types:
+ *         type: array
+ *         description: Type de fichier acceptés dans l'activité Produire
+ *   responses:
+ *    201:
+ *     description: Activité Produire créée
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de l'activité
+ *         titre:
+ *          type: string
+ *          description: Titre de la nouvelle activité Produire
+ *         description:
+ *          type: string
+ *          description: Description de l'activité Produire
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de l'activité pour chacun des participants
+ *         visible:
+ *          type: array
+ *          description: Statut de visibilité de l'activité
+ *         active:
+ *          type: string
+ *          description: Statut Actif de l'activité
+ *         guidée:
+ *          type: string
+ *          description: Statut Guidée de l'activité
+ *         description_detaillee_produire:
+ *          type: string
+ *          description: Description détaillée de l'activité Produire
+ *         types:
+ *          type: string
+ *          description: Type de fichier acceptés dans l'activité Produire
+ *    500:
+ *     description: Erreur serveur
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+ * /activity/consulter:
+ *  get:
+ *   summary: Liste de toutes les activités de type CONSULTER
+ *   tags: [Activity]
+ *   responses:
+ *    200:
+ *     description: Toutes les activités de type Consulter
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: array
+ *        items:
+ *         type: object
+ *         properties:
+ *          _id:
+ *           type: string
+ *           description: ID de l'activité Consulter
+ *          titre:
+ *           type: string
+ *           description: Titre de l'activité Consulter
+ *          etat:
+ *           type: array
+ *           description: Etat d'avancement des particiapants dans l'activité Consulter (non commencée / en cours / terminée)
+ *          visible:
+ *           type: string
+ *           description: Visibilité de l'activité
+ *          active:
+ *           type: string
+ *           description: Statut Actif de l'activité
+ *          guidée:
+ *           type: string
+ *           description: Statut Guidée de l'activité
+ *          description_detaillee_consulter:
+ *           type: string
+ *           description: Description détaillée de l'activité
+ *          type:
+ *           type: string
+ *           description: Type de fichier acceptés dans l'activité
+ *    404:
+ *     description: Activités "Produire" introuvables
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+ *  post:
+ *   summary: Création d'une activité CONSULTER
+ *   tags: [Activity]
+ *   requestBody:
+ *    required: true
+ *    content:
+ *     application/json:
+ *      schema:
+ *       type: object
+ *       properties:
+ *        titre:
+ *         type: string
+ *         description: Titre de la nouvelle activité Consulter
+ *        description:
+ *         type: string
+ *         description: Description de l'activité Consulter
+ *        etat:
+ *         type: array
+ *         description: Etats d'avancement de l'activité Consulter pour chacun des participants
+ *        visible:
+ *         type: string
+ *         description: Statut de visibilité de l'activité Consulter
+ *        active:
+ *         type: string
+ *         description: Statut Actif de l'activité Consulter
+ *        guidée:
+ *         type: string
+ *         description: Statut Guidée de l'activité Consulter
+ *        description_detaillee_consulter:
+ *         type: string
+ *         description: Description détaillée de l'activité Consulter
+ *        types:
+ *         type: array
+ *         description: Type de fichier acceptés dans l'activité Consulter
+ *   responses:
+ *    201:
+ *     description: Activité Consulter créée
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de l'activité Consulter
+ *         titre:
+ *          type: string
+ *          description: Titre de la nouvelle activité Consulter
+ *         description:
+ *          type: string
+ *          description: Description de l'activité Consulter
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de l'activité Consulter pour chacun des participants
+ *         visible:
+ *          type: array
+ *          description: Statut de visibilité de l'activité Consulter
+ *         active:
+ *          type: string
+ *          description: Statut Actif de l'activité Consulter
+ *         guidée:
+ *          type: string
+ *          description: Statut Guidée de l'activité Consulter
+ *         description_detaillee_consulter:
+ *          type: string
+ *          description: Description détaillée de l'activité Consulter
+ *         types:
+ *          type: string
+ *          description: Type de fichier acceptés dans l'activité Consulter
+ *    500:
+ *     description: Erreur serveur
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+ * /activity/{id}:
+ *  get:
+ *   summary: Récupère une activité à partir de son ID.
+ *   tags: [Activity]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      description: ID de l'activité
+ *      type: string
+ *      required: true
+ *   responses:
+ *    200:
+ *     description: L'activité trouvée avec succès.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de l'activité
+ *         titre:
+ *          type: string
+ *          description: Titre de la activité
+ *         description:
+ *          type: string
+ *          description: Description de l'activité Consulter ou Produire
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de l'activité Consulter ou Produire pour chacun des participants
+ *         visible:
+ *          type: array
+ *          description: Statut de visibilité de l'activité Consulter ou Produire
+ *         active:
+ *          type: string
+ *          description: Statut Actif de l'activité Consulter ou Produire
+ *         guidée:
+ *          type: string
+ *          description: Statut Guidée de l'activité Consulter ou Produire
+ *         description_detaillee_consulter:
+ *          type: string
+ *          description: Description détaillée de l'activité Consulter ou Produire
+ *         types:
+ *          type: string
+ *          description: Type de fichier acceptés dans l'activité Consulter ou Produire
+ *    404:
+ *     description: L'activité n'a pas été trouvée en base de données.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         error:
+ *          type: string
+ *          description: Message d'erreur
+ *  delete:
+ *   summary: Supprime une activité à partir de son ID passé en paramètre.
+ *   tags: [Activity]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      description: ID de l'activité
+ *      type: string
+ *      required: true
+ *   responses:
+ *    200:
+ *     description: L'activité supprimée avec succès.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de l'activité
+ *         titre:
+ *          type: string
+ *          description: Titre de la activité
+ *         description:
+ *          type: string
+ *          description: Description de l'activité Consulter ou Produire
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de l'activité Consulter ou Produire pour chacun des participants
+ *         visible:
+ *          type: array
+ *          description: Statut de visibilité de l'activité Consulter ou Produire
+ *         active:
+ *          type: string
+ *          description: Statut Actif de l'activité Consulter ou Produire
+ *         guidée:
+ *          type: string
+ *          description: Statut Guidée de l'activité Consulter ou Produire
+ *         description_detaillee_consulter:
+ *          type: string
+ *          description: Description détaillée de l'activité Consulter ou Produire
+ *         types:
+ *          type: string
+ *          description: Type de fichier acceptés dans l'activité Consulter ou Produire
+ 
+ * /activity/addToMission/{idActivity}/{idMission}:
+ *  post:
+ *   summary: Ajoute une mission à une activité en utilisant leurs IDs.
+ *   tags: [Activity]
+ *   parameters:
+ *    - name: idActivity
+ *      in: path
+ *      description: ID de l'activité
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *    - name: idMission
+ *      in: path
+ *      description: ID de la mission
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *   responses:
+ *    200:
+ *     description: La mission a été ajoutée avec succès à l'activité.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de la mission
+ *         activites:
+ *          type: array
+ *          items:
+ *            type: string
+ *          description: Liste des IDs des activités associées à la mission
+ *         nb_activites:
+ *          type: integer
+ *          description: Nombre total d'activités dans la mission
+ *    404:
+ *     description: Activité ou mission non trouvée.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         error:
+ *          type: string
+ *          description: Message d'erreur indiquant que l'activité ou la mission n'a pas été trouvée.
+ *    409:
+ *     description: Conflit. L'activité est déjà présente dans la mission.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur indiquant que l'activité est déjà présente dans la mission.
+ *    500:
+ *     description: Erreur du serveur.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur indiquant une erreur interne du serveur.
+ *  delete:
+ *   summary: Supprime une mission d'une activité en utilisant leurs IDs.
+ *   tags: [Activity]
+ *   parameters:
+ *    - name: idActivity
+ *      in: path
+ *      description: ID de l'activité
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *    - name: idMission
+ *      in: path
+ *      description: ID de la mission
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *   responses:
+ *    200:
+ *     description: L'activité a été retirée de la mission avec succès.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message indiquant que l'activité a été retirée de la mission.
+ *    404:
+ *     description: Activité ou mission non trouvée.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         error:
+ *          type: string
+ *          description: Message d'erreur indiquant que l'activité ou la mission n'a pas été trouvée.
+ *    409:
+ *     description: Conflit. L'activité n'est pas présente dans la mission.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur indiquant que l'activité n'est pas présente dans la mission.
+ *    500:
+ *     description: Erreur du serveur.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur indiquant une erreur interne du serveur.
+ * /activity/duplicate/{idActivity}:
+ *  post:
+ *   summary: Duplique une activité en utilisant son ID.
+ *   tags: [Activity]
+ *   parameters:
+ *    - name: idActivity
+ *      in: path
+ *      description: ID de l'activité à dupliquer
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *   responses:
+ *    200:
+ *     description: L'activité a été dupliquée avec succès.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de la nouvelle activité dupliquée
+ *         titre:
+ *          type: string
+ *          description: Titre de la nouvelle activité dupliquée
+ *         description:
+ *          type: string
+ *          description: Description de la nouvelle activité dupliquée
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de la nouvelle activité dupliquée
+ *          items:
+ *            type: string
+ *         description_detaillee_consulter:
+ *          type: string
+ *          description: Description détaillée de l'activité Consulter (si applicable)
+ *         description_detaillee_produire:
+ *          type: string
+ *          description: Description détaillée de l'activité Produire (si applicable)
+ *         active:
+ *          type: string
+ *          description: Statut Actif de la nouvelle activité dupliquée
+ *         guidee:
+ *          type: string
+ *          description: Statut Guidée de la nouvelle activité dupliquée
+ *         visible:
+ *          type: string
+ *          description: Statut de visibilité de la nouvelle activité dupliquée
+ *         type:
+ *          type: string
+ *          description: Type de fichier acceptés dans la nouvelle activité dupliquée (pour Consulter)
+ *         types:
+ *          type: string
+ *          description: Type de fichier acceptés dans la nouvelle activité dupliquée (pour Produire)
+ *    404:
+ *     description: Activité non trouvée.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         error:
+ *          type: string
+ *          description: Message d'erreur indiquant que l'activité n'a pas été trouvée.
+ *    500:
+ *     description: Erreur du serveur.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur indiquant une erreur interne du serveur.
+
  */
 
 ActivityController.route('/')
 	.get(async (req, res, next) => {
         try {
-			const activityList = await ActivityService.findAll();
+			const activityList = await service.findAll();
             return res.status(200).json(activityList);
           }
 		 catch (err) {
@@ -175,30 +829,52 @@ ActivityController.route('/produire')
 	});
 
 
-// ROUTE ACTIVITE SELON SON ID 
+// ROUTE ACTIVITE SELON SON ID ET DELETE BY ID => SUPPRESSION DE L ACTIVITE DANS LES MISSIONS QUI L ONT INTEGREE
 ActivityController.route('/:id([a-z0-9]{24})/')
 .get(async (req, res, next) => {
 	try {
 		const id = new Types.ObjectId(req.params.id);
 		
-		const room = await ActivityService.findById(id);
-	
-		return res.status(200).json(room);
+		const activity = await ActivityService.findById(id);	
+		return res.status(200).json(activity);
 	} catch (err) {
 		next(err);
 	}
-});
+})
+.delete(async (req, res, next) => {
+	const id = new Types.ObjectId(req.params.id);
+	const activity = await service.findById(id);
+	if (!activity) {
+		return res.status(404).json({ error: `Activité avec ID ${id} non trouvée` });
+		}
+	try {
+			
+	
+			// TO Do TO DO On retire l'activité si existe dans une  mission  
+			
+			
+			
+			await service.delete(id);
+
+
+			return res.status(200).json({ message:  `Activité  ${id} supprimée avec succès` });
+		} catch (error) {
+			console.error('Error in DELETE /activity/id:', error);
+			return res.status(500).json({ message: 'Erreur du serveur' });
+		}
+	}
+);
 
 
 // AJOUT ET RETRAIT D'UNE ACTIVITE A UNE MISSION
 
-ActivityController.route('/addMission/:idActivity([a-z0-9]{24})/:idMission([a-z0-9]{24})')
+ActivityController.route('/addToMission/:idActivity([a-z0-9]{24})/:idMission([a-z0-9]{24})')
 .post(async (req, res) => {
     try {
         const idActivity = req.params.idActivity;
         const idMission = req.params.idMission;
 
-        const activity = await ActivityService.findById(new Types.ObjectId(idActivity));
+        const activity = await service.findById(new Types.ObjectId(idActivity));
         if (!activity) {
             return res.status(404).json({ error: `Activité avec ID ${idActivity} non trouvée` });
         }
@@ -206,6 +882,20 @@ ActivityController.route('/addMission/:idActivity([a-z0-9]{24})/:idMission([a-z0
         const mission = await Mission.findById(new Types.ObjectId(idMission));
         if (!mission) {
             return res.status(404).json({ error: `Mission avec ID ${idMission} non trouvée` });
+        }
+
+        // Check if the activité is already part of any mission
+        const activityInOtherMission = await Mission.findOne({ activites: activity._id });
+        if (activityInOtherMission) {
+            if (activityInOtherMission._id.equals(mission._id)) {
+                // L'activité existe dans la mission
+                return res.status(409).json({ message: `L'activité avec ID ${idActivity} est déjà présente dans cette mission.` });
+            } else {
+                // L'activité existe dans une autre mission
+                return res.status(409).json({ 
+                    message: `L'activité avec ID ${idActivity} est déjà présente dans une autre mission. Utilisez la méthode de duplication pour ajouter une activité similaire à cette mission.` 
+                });
+            }
         }
 
         if (mission.activites.includes(activity._id)) {
@@ -229,7 +919,7 @@ ActivityController.route('/addMission/:idActivity([a-z0-9]{24})/:idMission([a-z0
         const idActivity = req.params.idActivity;
         const idMission = req.params.idMission;
 
-        const activity = await ActivityService.findById(new Types.ObjectId(idActivity));
+        const activity = await service.findById(new Types.ObjectId(idActivity));
         if (!activity) {
             return res.status(404).json({ error: `Activité avec ID ${idActivity} non trouvée` });
         }
@@ -243,7 +933,7 @@ ActivityController.route('/addMission/:idActivity([a-z0-9]{24})/:idMission([a-z0
             return res.status(409).json({ message: 'L\'activité n\'est pas présente dans la mission.' });
         }
 
-        // On retire l'activité car elle n'existe pas déjà 
+        // On retire l'activité car elle existe dans la mission  
 		mission.activites = mission.activites.filter(id => !id.equals(activity._id));
         mission.nb_activites -= 1;
         
@@ -266,7 +956,7 @@ ActivityController.route('/duplicate/:idActivity([a-z0-9]{24})')
 			console.log('idActivity',idActivity);
 
             // Find the activity to be duplicated
-            const activitytodup = await ActivityService.findById(new Types.ObjectId(idActivity));
+            const activitytodup = await service.findById(new Types.ObjectId(idActivity));
 			console.log('activitytodup',activitytodup);
 			const isConsulter = activitytodup?.description_detaillee_consulter;
 			const isProduire = activitytodup?.description_detaillee_produire;
@@ -315,5 +1005,246 @@ ActivityController.route('/duplicate/:idActivity([a-z0-9]{24})')
             return res.status(500).json({ message: 'Erreur du serveur' });
         }
     });
+
+
+	
+	// ROUTES STATUTS DES ACTIVITES VISIBLE ACTIVE GUIDEE : CHECK et CHANGEMENTS
+
+// ROUTE STATUT VISIBLE
+ActivityController.route('/:id([a-z0-9]{24})/isVisible')
+    .get(async (req, res) => {
+        try {
+            const id = new Types.ObjectId(req.params.id);
+			const activity = await service.findById(id);
+			if (!activity) {
+				return res.status(404).json('Activité introuvable');
+			}
+            const statusVisible = await service.findVisibilityStatus(id);
+            return res.status(200).json(statusVisible);
+        } catch (error) {
+            console.error('Error in GET /activity/{id}/isVisible:', error);
+            return res.status(500).json({ message: 'Erreur du serveur' });
+        }
+    });
+
+// ROUTE CHANGE TO VISIBLE
+ActivityController.route('/:id([a-z0-9]{24})/change-to-visible')
+    .post(async (req, res) => {
+        const id = req.params.id;
+        const activity = await service.find(new Types.ObjectId(id));
+
+        if (!id) {
+            return res.status(400).send('Le champ ID est manquant.');
+        }
+			if (!activity) {
+				return res.status(404).json('Activité introuvable');
+			}
+
+        try {
+            const statusVisible = await service.findVisibilityStatus(new Types.ObjectId(id));
+            console.log('status visible', statusVisible);
+            const titre = await service.findTitreById(new Types.ObjectId(id));
+            if (statusVisible === true) {
+                res.status(200).json('Activité :  ' + titre + ' est déjà visible');
+            } else {
+                if (activity) {
+                    activity.visible = true;
+                    await activity.save();
+                    res.status(201).json('Activité :  ' + titre + ' est désormais visible');
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Internal Server Error');
+        }
+    });
+
+// ROUTE CHANGE TO NOT VISIBLE
+ActivityController.route('/:id([a-z0-9]{24})/change-to-not-visible')
+    .post(async (req, res) => {
+        const id = req.params.id;
+        const activity = await service.find(new Types.ObjectId(id));
+
+        if (!id) {
+            return res.status(400).send('Le champ ID est manquant.');
+        }
+		if (!activity) {
+			return res.status(404).json('Activité introuvable');
+		}
+        try {
+            const statusVisible = await service.findVisibilityStatus(new Types.ObjectId(id));
+            const titre = await service.findTitreById(new Types.ObjectId(id));
+            console.log('statut visible', statusVisible);
+            if (!statusVisible) {
+                res.status(200).json('Activité :  ' + titre + ' est déjà non visible');
+            } else {
+			if (activity) {
+				activity.visible = false;
+				await activity.save();
+				res.status(201).json('Activité :  ' + titre + ' est désormais non visible');
+			}
+            }
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Internal Server Error');
+        }
+    });
+
+// ROUTE STATUT ACTIVE
+ActivityController.route('/:id([a-z0-9]{24})/isActive')
+    .get(async (req, res) => {
+        try {
+            const id = new Types.ObjectId(req.params.id);
+
+            const isActiveStatus = await service.findActiveStatus(id);
+            return res.status(200).json(isActiveStatus);
+        } catch (error) {
+            console.error('Error in GET /activity/{id}/isActive:', error);
+            return res.status(500).json({ message: 'Erreur du serveur' });
+        }
+    });
+
+// ROUTE CHANGE TO ACTIVE
+ActivityController.route('/:id([a-z0-9]{24})/change-to-active')
+    .post(async (req, res) => {
+        const id = req.params.id;
+        const activity = await service.find(new Types.ObjectId(id));
+
+        if (!id) {
+            return res.status(400).send('Le champ ID est manquant.');
+        }
+		if (!activity) {
+			return res.status(404).json('Activité introuvable');
+		}
+
+        try {
+            const statusActive = await service.findActiveStatus(new Types.ObjectId(id));
+            const titre = await service.findTitreById(new Types.ObjectId(id));
+            console.log('statut visible', statusActive);
+            if (statusActive === true) {
+                res.status(200).json('Activité :  ' + titre + ' est déjà active');
+            } else {           
+                if (activity) {
+                    activity.visible = true;
+                    await activity.save();
+                    res.status(201).json('Activité :  ' + titre + ' est désormais active');
+                }
+                
+            }
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Internal Server Error');
+        }
+    });
+// ROUTE CHANGE TO NOT ACTIVE
+ActivityController.route('/:id([a-z0-9]{24})/change-to-not-active')
+    .post(async (req, res) => {
+        const id = req.params.id;
+        const activity = await service.find(new Types.ObjectId(id));
+
+        if (!id) {
+            return res.status(400).send('Le champ ID est manquant.');
+        }
+		if (!activity) {
+			return res.status(404).json('Activité introuvable');
+		}
+        try {
+            const statusActive = await service.findActiveStatus(new Types.ObjectId(id));
+            const titre = await service.findTitreById(new Types.ObjectId(id));
+            console.log('statut visible', statusActive);
+            if (!statusActive) {
+                res.status(200).json('Activité :  ' + titre + ' est déjà non active');
+            } else {
+                if (activity) {
+                    activity.active = false;
+                    await activity.save();
+                    res.status(201).json('Activité :  ' + titre + ' est désormais non active');
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Internal Server Error');
+        }
+    });
+
+	// ROUTE STATUT GUIDEE
+ActivityController.route('/:id([a-z0-9]{24})/isGuidee')
+.get(async (req, res) => {
+	try {
+		const id = new Types.ObjectId(req.params.id);
+
+		const isGuideeStatus = await service.findGuideeStatus(id);
+		return res.status(200).json(isGuideeStatus);
+	} catch (error) {
+		console.error('Error in GET /activity/{id}/isActive:', error);
+		return res.status(500).json({ message: 'Erreur du serveur' });
+	}
+});
+
+// ROUTE CHANGE TO GUIDEE
+ActivityController.route('/:id([a-z0-9]{24})/change-to-guidee')
+.post(async (req, res) => {
+	const id = req.params.id;
+	const activity = await service.find(new Types.ObjectId(id));
+
+	if (!id) {
+		return res.status(400).send('Le champ ID est manquant.');
+	}
+	if (!activity) {
+		return res.status(404).json('Activité introuvable');
+	}
+
+	try {
+		const statusGuidee = await service.findActiveStatus(new Types.ObjectId(id));
+		const titre = await service.findTitreById(new Types.ObjectId(id));
+		console.log('statut visible', statusGuidee);
+		if (statusGuidee === true) {
+			res.status(200).json('Activité :  ' + titre + ' est déjà guidée');
+		} else {
+			
+			if (activity) {
+				activity.guidee = true;
+				await activity.save();
+				res.status(201).json('Activité :  ' + titre + ' est désormais guidée');
+			}
+			
+		}
+	} catch (error) {
+		console.error(error);
+		res.status(500).send('Internal Server Error');
+	}
+});
+// ROUTE CHANGE TO NOT GUIDEE
+ActivityController.route('/:id([a-z0-9]{24})/change-to-not-guidee')
+.post(async (req, res) => {
+	const id = req.params.id;
+	const activity = await service.find(new Types.ObjectId(id));
+
+	if (!id) {
+		return res.status(400).send('Le champ ID est manquant.');
+	}
+	if (!activity) {
+		return res.status(404).json('Activité introuvable');
+	}
+	try {
+		const statusGuidee = await service.findActiveStatus(new Types.ObjectId(id));
+		const titre = await service.findTitreById(new Types.ObjectId(id));
+		console.log('statut guidee', statusGuidee);
+		if (!statusGuidee) {
+			res.status(200).json('Activité :  ' + titre + ' est déjà non guidée');
+		} else {
+			if (activity) {
+				activity.guidee = false;
+				await activity.save();
+				res.status(201).json('Activité :  ' + titre + ' est désormais non guidée');
+			}
+		}
+	} catch (error) {
+		console.error(error);
+		res.status(500).send('Internal Server Error');
+	}
+});
+
+
 
 export default ActivityController;

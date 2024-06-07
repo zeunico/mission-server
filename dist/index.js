@@ -21,6 +21,7 @@ var __spreadValues = (a, b) => {
   return a;
 };
 var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
@@ -37,6 +38,10 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
+var __publicField = (obj, key, value) => {
+  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+  return value;
+};
 
 // src/config.ts
 var import_path = require("path");
@@ -82,36 +87,43 @@ var import_mongoose17 = __toESM(require("mongoose"));
 var import_multer = __toESM(require("multer"));
 
 // types/media.enum.ts
-var EMedia = /* @__PURE__ */ ((EMedia2) => {
+var EMedia;
+(function(EMedia2) {
   EMedia2["IMAGE"] = "image";
   EMedia2["VIDEO"] = "video";
   EMedia2["AUDIO"] = "audio";
   EMedia2["TEXT"] = "text";
   EMedia2["SLIDE"] = "slide";
-  return EMedia2;
-})(EMedia || {});
+})(EMedia || (EMedia = {}));
 var media_enum_default = EMedia;
 
 // src/utils/exceptions.ts
 var Exception = class extends Error {
   constructor(error, status) {
     super(error);
+    __publicField(this, "error");
+    __publicField(this, "status");
+    __publicField(this, "_error");
+    __publicField(this, "_status");
     this.error = error;
     this.status = status;
     this.error = error;
     this.status = status;
   }
 };
+__name(Exception, "Exception");
 var NotFoundException = class extends Exception {
   constructor(error) {
     super(error, 404);
   }
 };
+__name(NotFoundException, "NotFoundException");
 var BadRequestException = class extends Exception {
   constructor(error) {
     super(error, 400);
   }
 };
+__name(BadRequestException, "BadRequestException");
 
 // src/utils/file.utils.ts
 var import_path2 = require("path");
@@ -119,7 +131,7 @@ var import_axios = __toESM(require("axios"));
 var import_fs = require("fs");
 var import_os = require("os");
 var import_promises = require("fs/promises");
-var getFileTypeByExtension = (extension) => {
+var getFileTypeByExtension = /* @__PURE__ */ __name((extension) => {
   switch (extension) {
     case ".jpg":
     case ".JPG":
@@ -149,16 +161,18 @@ var getFileTypeByExtension = (extension) => {
     default:
       throw new BadRequestException("Le type de fichier n'est pas reconnu");
   }
-};
-var getFileNameFormatted = (filename, extension) => {
+}, "getFileTypeByExtension");
+var getFileNameFormatted = /* @__PURE__ */ __name((filename, extension) => {
   return filename.substring(0, filename.length - extension.length) + "_" + Date.now() + extension;
-};
-var downloadFile = async (url) => {
+}, "getFileNameFormatted");
+var downloadFile = /* @__PURE__ */ __name(async (url) => {
   const filename = url.split("/").pop();
   const tmpUri = (0, import_path2.join)((0, import_os.tmpdir)(), filename);
   const writer = (0, import_fs.createWriteStream)(tmpUri);
   try {
-    const res = await import_axios.default.get(url, { responseType: "stream" });
+    const res = await import_axios.default.get(url, {
+      responseType: "stream"
+    });
     await new Promise((resolve, reject) => {
       let error = null;
       res.data.pipe(writer);
@@ -174,12 +188,15 @@ var downloadFile = async (url) => {
     });
     const buffer = await (0, import_promises.readFile)(tmpUri);
     (0, import_promises.unlink)(tmpUri);
-    return [buffer, filename];
+    return [
+      buffer,
+      filename
+    ];
   } catch (err) {
     console.error(err);
     throw err;
   }
-};
+}, "downloadFile");
 
 // src/resources/media/media.controller.ts
 var import_express = require("express");
@@ -211,10 +228,12 @@ var UserSchema = new import_mongoose.default.Schema({
     type: import_mongoose.Schema.Types.ObjectId,
     ref: "Media"
   },
-  "instructions": [{
-    type: import_mongoose.Schema.Types.ObjectId,
-    ref: "Instruction"
-  }],
+  "instructions": [
+    {
+      type: import_mongoose.Schema.Types.ObjectId,
+      ref: "Instruction"
+    }
+  ],
   "instance": {
     type: String,
     required: true
@@ -224,7 +243,9 @@ var UserSchema = new import_mongoose.default.Schema({
     ref: "Room",
     required: true
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 var User = import_mongoose.default.model("User", UserSchema);
 var user_model_default = User;
 
@@ -243,11 +264,17 @@ var UsersService = class {
   }
   // trouve un utilisateur via l'email
   async findByEmail(email, instance, room) {
-    const researchedUser = await user_model_default.findOne({ email, instance, room });
+    const researchedUser = await user_model_default.findOne({
+      email,
+      instance,
+      room
+    });
     return researchedUser;
   }
   async findByInstance(instance) {
-    const userList = await user_model_default.find({ instance });
+    const userList = await user_model_default.find({
+      instance
+    });
     return userList;
   }
   // Crée un utilisateur
@@ -257,7 +284,9 @@ var UsersService = class {
   }
   // Met à jour un utilisateur en particulier
   async update(userData, _id) {
-    const modifiedUser = await user_model_default.findByIdAndUpdate(_id, userData, { new: true });
+    const modifiedUser = await user_model_default.findByIdAndUpdate(_id, userData, {
+      new: true
+    });
     console.log("yep c ici");
     console.log(await user_model_default.findOne(_id));
     return modifiedUser;
@@ -267,7 +296,9 @@ var UsersService = class {
     await user_model_default.findByIdAndDelete(_id);
   }
   async findUserImage(_id) {
-    const user = await user_model_default.findById(_id, { picture: 1 }).populate("picture").exec();
+    const user = await user_model_default.findById(_id, {
+      picture: 1
+    }).populate("picture").exec();
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
     }
@@ -277,6 +308,7 @@ var UsersService = class {
     return user.picture.path();
   }
 };
+__name(UsersService, "UsersService");
 
 // src/db/media.model.ts
 var import_mongoose2 = __toESM(require("mongoose"));
@@ -297,7 +329,9 @@ var MediaSchema = new import_mongoose2.default.Schema({
     ref: "User",
     required: true
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 MediaSchema.method("path", function() {
   return (0, import_path4.join)(config2.ATTACHEMENT_SRC, this.userId.toString(), this.type + "s", this.name);
 });
@@ -318,7 +352,9 @@ var MediaService = class {
   }
   // Trouve la liste des médias pour un utilisateur donné
   async findByUserId(userId) {
-    const mediaList = await media_model_default.find({ userId }).exec();
+    const mediaList = await media_model_default.find({
+      userId
+    }).exec();
     return mediaList;
   }
   // Créé un média
@@ -336,6 +372,7 @@ var MediaService = class {
     return deletedMedia;
   }
 };
+__name(MediaService, "MediaService");
 
 // src/resources/media/media.controller.ts
 var import_path5 = require("path");
@@ -352,7 +389,9 @@ var fileStorage = import_multer.default.diskStorage({
       req.body.type = folder;
       const dest = (0, import_path5.join)(config2.ATTACHEMENT_SRC, req.body.userId, folder + "s");
       if (!import_fs2.default.existsSync(dest)) {
-        import_fs2.default.mkdirSync(dest, { recursive: true });
+        import_fs2.default.mkdirSync(dest, {
+          recursive: true
+        });
       }
       cb(null, (0, import_path5.join)(dest));
     } catch (err) {
@@ -452,7 +491,9 @@ var ThumbSchema = new import_mongoose4.default.Schema({
     required: true,
     unique: true
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 ThumbSchema.method("path", function() {
   return (0, import_path6.join)(config2.ATTACHEMENT_SRC, this.userId.toString(), "thumbs");
 });
@@ -470,7 +511,9 @@ var ThumbService = class {
   }
   async update(thumbId, thumbData) {
     try {
-      const updatedThumb = await thumb_model_default.findByIdAndUpdate(thumbId, thumbData, { new: true });
+      const updatedThumb = await thumb_model_default.findByIdAndUpdate(thumbId, thumbData, {
+        new: true
+      });
       return updatedThumb;
     } catch (error) {
       console.error("Error updating thumb:", error);
@@ -510,6 +553,7 @@ var ThumbService = class {
     }
   }
 };
+__name(ThumbService, "ThumbService");
 
 // src/resources/thumb/thumb.controller.ts
 var import_path7 = require("path");
@@ -523,7 +567,9 @@ var fileStorage2 = import_multer2.default.diskStorage({
     try {
       const dest = (0, import_path7.join)(config2.ATTACHEMENT_SRC, req.body.userId, "thumbs");
       if (!import_fs3.default.existsSync(dest)) {
-        import_fs3.default.mkdirSync(dest, { recursive: true });
+        import_fs3.default.mkdirSync(dest, {
+          recursive: true
+        });
       }
       cb(null, (0, import_path7.join)(dest));
     } catch (err) {
@@ -601,15 +647,21 @@ var RoomSchema = new import_mongoose6.default.Schema({
     ref: "User",
     required: true
   },
-  "participants": [{
-    type: import_mongoose6.Schema.Types.ObjectId,
-    ref: "User"
-  }],
-  "mission": [{
-    type: import_mongoose6.Schema.Types.ObjectId,
-    ref: "Mission"
-  }]
-}, { timestamps: true });
+  "participants": [
+    {
+      type: import_mongoose6.Schema.Types.ObjectId,
+      ref: "User"
+    }
+  ],
+  "mission": [
+    {
+      type: import_mongoose6.Schema.Types.ObjectId,
+      ref: "Mission"
+    }
+  ]
+}, {
+  timestamps: true
+});
 var Room = import_mongoose6.default.model("Room", RoomSchema);
 var room_model_default = Room;
 
@@ -623,17 +675,23 @@ var RoomService = class {
   }
   // Met à jour une salle en particulier
   static async update(roomData, _id) {
-    const modifiedRoom = await room_model_default.findByIdAndUpdate(_id, roomData, { new: true });
+    const modifiedRoom = await room_model_default.findByIdAndUpdate(_id, roomData, {
+      new: true
+    });
     console.log("room service update");
     console.log(await room_model_default.findOne(_id));
     return modifiedRoom;
   }
   static async findByCode(roomCode) {
-    const researchedRoom = await room_model_default.findOne({ roomCode });
+    const researchedRoom = await room_model_default.findOne({
+      roomCode
+    });
     return researchedRoom;
   }
   static async findById(_id) {
-    const researchedRoom = await room_model_default.findOne({ _id });
+    const researchedRoom = await room_model_default.findOne({
+      _id
+    });
     return researchedRoom;
   }
   // Trouve tous les salles
@@ -642,6 +700,7 @@ var RoomService = class {
     return allRoom;
   }
 };
+__name(RoomService, "RoomService");
 
 // src/resources/users/users.controller.ts
 var import_path8 = require("path");
@@ -650,18 +709,21 @@ var import_promises2 = require("fs/promises");
 
 // src/middlewares/token.handler.ts
 var import_crypto = __toESM(require("crypto"));
-var TokenHandler = () => {
+var TokenHandler = /* @__PURE__ */ __name(() => {
   const iv = import_crypto.default.randomBytes(16);
   const timestamp = Date.now() / 1e3 | 0;
   const cipher = import_crypto.default.createCipheriv("aes-256-ctr", secretKeyMission, iv);
-  const encrypted = Buffer.concat([cipher.update(timestamp.toString()), cipher.final()]);
+  const encrypted = Buffer.concat([
+    cipher.update(timestamp.toString()),
+    cipher.final()
+  ]);
   const data = {
     iv: iv.toString("hex"),
     content: encrypted.toString("hex")
   };
   const convertToBase64 = Buffer.from(JSON.stringify(data));
   return convertToBase64.toString("base64");
-};
+}, "TokenHandler");
 
 // src/resources/users/users.controller.ts
 var import_axios2 = __toESM(require("axios"));
@@ -685,6 +747,7 @@ async function createDefaultRoom(roomCode) {
     console.error("Error creating room:", error);
   }
 }
+__name(createDefaultRoom, "createDefaultRoom");
 UsersController.route("/").get(async (req, res) => {
   const userList = await service.findAll();
   return res.status(200).json(userList);
@@ -717,7 +780,11 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
       await import_axios2.default.post("https://" + req.query.instance + "/html/mobiApp/connect", {
         "roomCode": req.query.roomCode,
         "userEmail": email
-      }, { headers: { "mission-token": TokenHandler() } }).then(async (resAxios) => {
+      }, {
+        headers: {
+          "mission-token": TokenHandler()
+        }
+      }).then(async (resAxios) => {
         console.log("mission-token", TokenHandler());
         console.log("resAxios", resAxios);
         if (!user) {
@@ -756,10 +823,14 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
             });
             const dest = media.path().split(import_path8.sep).slice(0, -1).join(import_path8.sep);
             if (!(0, import_fs4.existsSync)(dest)) {
-              await (0, import_promises2.mkdir)(dest, { recursive: true });
+              await (0, import_promises2.mkdir)(dest, {
+                recursive: true
+              });
             }
             await (0, import_promises2.writeFile)(media.path(), file);
-            user = await service.update({ picture: media._id }, user._id);
+            user = await service.update({
+              picture: media._id
+            }, user._id);
           }
         }
       }).catch((err) => {
@@ -783,7 +854,11 @@ UsersController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
       await import_axios2.default.post("https://" + user.instance + "/html/mobiApp/disconnect", {
         "roomCode": req.query.roomCode,
         "userId": id
-      }, { headers: { "mission-token": TokenHandler() } }).catch((err) => {
+      }, {
+        headers: {
+          "mission-token": TokenHandler()
+        }
+      }).catch((err) => {
         console.log(err);
       });
     }
@@ -807,7 +882,9 @@ UsersController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
       await mediaService2.delete(user.picture);
     }
     if (import_fs4.default.existsSync((0, import_path8.join)(config2.ATTACHEMENT_SRC, id.toString()))) {
-      import_fs4.default.rm((0, import_path8.join)(config2.ATTACHEMENT_SRC, id.toString()), { recursive: true }, (err) => {
+      import_fs4.default.rm((0, import_path8.join)(config2.ATTACHEMENT_SRC, id.toString()), {
+        recursive: true
+      }, (err) => {
         if (err) {
           throw err;
         }
@@ -838,7 +915,9 @@ UsersController.route("/:id([a-z0-9]{24})/ismoderator").get(async (req, res, nex
     await RoomService.findById(room);
     console.log("room", room);
     const isModeratorStatus = await isModerator(user, room);
-    return res.status(200).json({ isModerator: isModeratorStatus });
+    return res.status(200).json({
+      isModerator: isModeratorStatus
+    });
   } catch (err) {
     console.log(err);
     next(err);
@@ -852,6 +931,7 @@ async function isModerator(user, room) {
     return false;
   }
 }
+__name(isModerator, "isModerator");
 var users_controller_default = UsersController;
 
 // src/resources/userData/userData.controller.ts
@@ -894,19 +974,21 @@ var UserDataSchema = new import_mongoose8.default.Schema({
     type: String,
     required: true
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 var MUserData = import_mongoose8.default.model("UserData", UserDataSchema);
 var userData_model_default = MUserData;
 
 // src/resources/userData/userData.service.ts
 var UserDataService = class {
   /**
-   * Crée une réponse à partir des informations données par l'utilisateur
-   * @param userId 
-   * @param datas 
-   * @param activity
-   * @returns 
-   */
+  * Crée une réponse à partir des informations données par l'utilisateur
+  * @param userId 
+  * @param datas 
+  * @param activity
+  * @returns 
+  */
   async createUserData(user, activityId, mediaId, thumbId, datas) {
     const newUserData = __spreadProps(__spreadValues({}, datas), {
       activityId,
@@ -920,15 +1002,24 @@ var UserDataService = class {
   }
   // Trouve l'entièreté des réponses uploadées
   async findAll(room, instance) {
-    const userDataList = await userData_model_default.find({ room, instance }).populate("mediaId", "type _id").exec();
+    const userDataList = await userData_model_default.find({
+      room,
+      instance
+    }).populate("mediaId", "type _id").exec();
     return userDataList;
   }
   // Trouve la liste des réponses pour un utilisateur donné
   async findByUserId(user, room) {
     if (!room) {
-      return await userData_model_default.find({ userId: user._id }).populate("mediaId", "type").exec();
+      return await userData_model_default.find({
+        userId: user._id
+      }).populate("mediaId", "type").exec();
     }
-    const userDataList = await userData_model_default.find({ userId: user._id, instance: user.instance, room }).populate("mediaId", "type").exec();
+    const userDataList = await userData_model_default.find({
+      userId: user._id,
+      instance: user.instance,
+      room
+    }).populate("mediaId", "type").exec();
     return userDataList;
   }
   // Trouve une réponse en particulier pour un utilisateur donné
@@ -946,6 +1037,7 @@ var UserDataService = class {
     await userData_model_default.deleteMany({});
   }
 };
+__name(UserDataService, "UserDataService");
 
 // src/resources/userData/userData.controller.ts
 var import_path9 = require("path");
@@ -956,12 +1048,12 @@ var import_axios3 = __toESM(require("axios"));
 var import_mongoose9 = __toESM(require("mongoose"));
 
 // types/etat.enum.ts
-var EEtat = /* @__PURE__ */ ((EEtat2) => {
+var EEtat;
+(function(EEtat2) {
   EEtat2[EEtat2["NON_DEMARREE"] = 0] = "NON_DEMARREE";
   EEtat2[EEtat2["EN_COURS"] = 1] = "EN_COURS";
   EEtat2[EEtat2["TERMINEE"] = 2] = "TERMINEE";
-  return EEtat2;
-})(EEtat || {});
+})(EEtat || (EEtat = {}));
 var etat_enum_default = EEtat;
 
 // src/db/activity.model.ts
@@ -989,7 +1081,9 @@ var ActivitySchema = new import_mongoose9.default.Schema({
   "guidee": {
     type: Boolean
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 var Activity = import_mongoose9.default.model("Activity", ActivitySchema);
 var ActivityConsulterSchema = extendSchema(ActivitySchema, {
   "description_detaillee_consulter": {
@@ -1001,31 +1095,41 @@ var ActivityConsulterSchema = extendSchema(ActivitySchema, {
     enum: Object.values(media_enum_default),
     required: false
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 var ActivityProduireSchema = extendSchema(ActivitySchema, {
   "description_detaillee_produire": {
     type: String,
     required: true
   },
-  "types": [{
-    type: String,
-    enum: Object.values(media_enum_default),
-    required: false
-  }]
-}, { timestamps: true });
+  "types": [
+    {
+      type: String,
+      enum: Object.values(media_enum_default),
+      required: false
+    }
+  ]
+}, {
+  timestamps: true
+});
 var ActivityConsulter = Activity.discriminator("ActivityConsulter", ActivityConsulterSchema);
 var ActivityProduire = Activity.discriminator(" ActivityProduire", ActivityProduireSchema);
-var activity_model_default = { ActivityConsulter, ActivityProduire, Activity };
+var activity_model_default = {
+  ActivityConsulter,
+  ActivityProduire,
+  Activity
+};
 
 // src/resources/activity/activity.service.ts
 var ActivityService = class {
-  static async create(data) {
+  async create(data) {
     const newActivity = __spreadValues({}, data);
     console.log("new act in create", newActivity);
     return activity_model_default.Activity.create(newActivity);
   }
   // Trouve tous les activités (produire et consulter confondues)
-  static async findAll() {
+  async findAll() {
     const consulterActivities = await activity_model_default.Activity.find();
     const produireActivities = await activity_model_default.Activity.find();
     const allActivities = consulterActivities.concat(produireActivities);
@@ -1033,15 +1137,80 @@ var ActivityService = class {
     return allActivities;
   }
   // Trouve une activite par son ID
-  static async find(_id) {
+  async find(_id) {
     const researchedActivity = await activity_model_default.Activity.findById(_id);
     return researchedActivity;
   }
-  static async findById(_id) {
-    const researchedActivity = await activity_model_default.Activity.findOne({ _id });
+  async findById(_id) {
+    const researchedActivity = await activity_model_default.Activity.findOne({
+      _id
+    });
     return researchedActivity;
   }
+  // Supprimme une mission par son ID
+  async delete(activityId) {
+    console.log("missionId", activityId);
+    const deletedMission = await activity_model_default.Activity.findByIdAndDelete(activityId);
+    return deletedMission;
+  }
+  // Statut Visible de l'activité
+  async findVisibilityStatus(activityId) {
+    try {
+      const activity = await activity_model_default.Activity.findById(activityId);
+      if (!activity) {
+        throw new Error("Activit\xE9 introuvable");
+      } else {
+        return activity.visible;
+      }
+    } catch (error) {
+      console.error("Erreur lors de la recherche de l'activit\xE9:", error);
+      throw error;
+    }
+  }
+  // Statut Activité de l'activité
+  async findActiveStatus(activityId) {
+    try {
+      const activity = await activity_model_default.Activity.findById(activityId);
+      if (!activity) {
+        throw new Error("Activit\xE9 introuvable");
+      } else {
+        return activity.active;
+      }
+    } catch (error) {
+      console.error("Erreur lors de la recherche de l'activit\xE9:", error);
+      throw error;
+    }
+  }
+  // Statut Guidée de l'activité
+  async findGuideeStatus(activityId) {
+    try {
+      const activity = await activity_model_default.Activity.findById(activityId);
+      if (!activity) {
+        throw new Error("Activit\xE9 introuvable");
+      } else {
+        return activity.guidee;
+      }
+    } catch (error) {
+      console.error("Erreur lors de la recherche de l'activit\xE9:", error);
+      throw error;
+    }
+  }
+  // Titre de l'activité par ID de l'activité
+  async findTitreById(activityId) {
+    try {
+      const activity = await activity_model_default.Activity.findById(activityId);
+      if (!activity) {
+        throw new Error("Activit\xE9 introuvable");
+      }
+      const titre = activity.titre;
+      return titre;
+    } catch (error) {
+      console.error("Erreur lors de la recherche de l'activit\xE9:", error);
+      throw error;
+    }
+  }
 };
+__name(ActivityService, "ActivityService");
 var ActivityConsulterService = class extends ActivityService {
   static async createConsulter(data) {
     console.log("data", data);
@@ -1056,7 +1225,6 @@ var ActivityConsulterService = class extends ActivityService {
       console.log("new act in createCONSULTER via  ...", newActivityConsulter);
       return activity_model_default.ActivityConsulter.create(newActivityConsulter);
     }
-    ;
   }
   // Trouve tous les activités CONSULTER
   static async findAll() {
@@ -1065,10 +1233,13 @@ var ActivityConsulterService = class extends ActivityService {
     return allActivitiesConsulter;
   }
   static async findById(_id) {
-    const researchedActivity = await activity_model_default.ActivityConsulter.findOne({ _id });
+    const researchedActivity = await activity_model_default.ActivityConsulter.findOne({
+      _id
+    });
     return researchedActivity;
   }
 };
+__name(ActivityConsulterService, "ActivityConsulterService");
 var ActivityProduireService = class extends ActivityService {
   static async createProduire(data) {
     console.log("data", data);
@@ -1084,7 +1255,6 @@ var ActivityProduireService = class extends ActivityService {
       console.log("new act in createProduire ds clas produire", newActivityProduire);
       return activity_model_default.ActivityProduire.create(newActivityProduire);
     }
-    ;
   }
   // Trouve tous les activités (produire et consulter confondues)
   static async findAll() {
@@ -1093,6 +1263,7 @@ var ActivityProduireService = class extends ActivityService {
     return allActivities;
   }
 };
+__name(ActivityProduireService, "ActivityProduireService");
 
 // src/resources/userData/userData.controller.ts
 var UserDataController = (0, import_express4.Router)();
@@ -1110,7 +1281,9 @@ var fileStorage3 = import_multer3.default.diskStorage({
       const dest = (0, import_path9.join)(config2.ATTACHEMENT_SRC, req.body.userId, folder + "s");
       console.log("dest dans userData controller", dest);
       if (!import_fs5.default.existsSync(dest)) {
-        import_fs5.default.mkdirSync(dest, { recursive: true });
+        import_fs5.default.mkdirSync(dest, {
+          recursive: true
+        });
       }
       cb(null, (0, import_path9.join)(dest));
     } catch (err) {
@@ -1154,7 +1327,9 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
       media = await mediaService3.create(userId, req.body);
       thumb = await thumbService2.create(userId, req.body);
       if (!import_fs5.default.existsSync(thumb.path())) {
-        import_fs5.default.mkdirSync(thumb.path(), { recursive: true });
+        import_fs5.default.mkdirSync(thumb.path(), {
+          recursive: true
+        });
         console.log("mkdir thumbs created !!");
       }
       const originalFilePath = media.path();
@@ -1182,15 +1357,19 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
           console.log("Screenshots vid ok");
           async function updateThumbName(thumbId2, newName2) {
             try {
-              const result = await thumb_model_default.updateOne(
-                { _id: thumbId2 },
-                { $set: { name: newName2 } }
-              );
+              const result = await thumb_model_default.updateOne({
+                _id: thumbId2
+              }, {
+                $set: {
+                  name: newName2
+                }
+              });
               console.log(`Mise \xE0 jour du document MongoDB : ok`);
             } catch (error) {
               console.error("Mise \xE0 jour du document MongoDB : une erreur est survenue.", error);
             }
           }
+          __name(updateThumbName, "updateThumbName");
           updateThumbName(thumbId, newName);
         }).screenshots({
           count: 1,
@@ -1209,7 +1388,11 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
         "media": (_c2 = (_b2 = newUserData.mediaId) == null ? void 0 : _b2.toString()) != null ? _c2 : void 0,
         "description": newUserData.description
       }
-    }, { headers: { "mission-token": TokenHandler() } }).catch((err) => {
+    }, {
+      headers: {
+        "mission-token": TokenHandler()
+      }
+    }).catch((err) => {
       console.log(err);
     });
     return res.status(201).json(newUserData);
@@ -1242,7 +1425,11 @@ UserDataController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
     if (!userData) {
       throw new NotFoundException("R\xE9ponse introuvable");
     }
-    await import_axios3.default.delete("https://" + userData.instance + "/html/mobiApp/data/?roomCode=" + userData.room + "&userId=" + userData.userId + "&dataId=" + userDataId, { headers: { "mission-token": TokenHandler() } }).then(async () => {
+    await import_axios3.default.delete("https://" + userData.instance + "/html/mobiApp/data/?roomCode=" + userData.room + "&userId=" + userData.userId + "&dataId=" + userDataId, {
+      headers: {
+        "mission-token": TokenHandler()
+      }
+    }).then(async () => {
       try {
         await userDataService.delete(userDataId);
         if (userData.mediaId) {
@@ -1290,7 +1477,11 @@ UserDataController.route("/:room([a-z0-9]{6})").get(async (req, res, next) => {
       await import_axios3.default.post("https://" + req.query.instance + "/html/mobiApp/alldata", {
         "roomCode": req.params.room,
         "alldata": parsedDataList
-      }, { headers: { "mission-token": TokenHandler() } }).catch((err) => {
+      }, {
+        headers: {
+          "mission-token": TokenHandler()
+        }
+      }).catch((err) => {
         console.log(err);
         next(err);
       });
@@ -1341,15 +1532,17 @@ var InstructionSchema = new import_mongoose11.default.Schema({
     ref: "User",
     required: true
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 var MInstruction = import_mongoose11.default.model("Instruction", InstructionSchema);
 var instruction_model_default = MInstruction;
 
 // src/resources/instruction/instruction.service.ts
 var InstructionService = class {
   /**
-   * Crée une consigne à partir des informations données par l'utilisateur
-   */
+  * Crée une consigne à partir des informations données par l'utilisateur
+  */
   async createInstruction(userTarget, datas) {
     const newInstruction = __spreadProps(__spreadValues({}, datas), {
       userTarget
@@ -1358,12 +1551,17 @@ var InstructionService = class {
   }
   // Trouve l'entièreté des consignes uploadées
   async findAll(room) {
-    const instructionList = await instruction_model_default.find({ room }).exec();
+    const instructionList = await instruction_model_default.find({
+      room
+    }).exec();
     return instructionList;
   }
   // Trouve la liste des consignes pour un utilisateur donné
   async findByUserId(userTarget, room) {
-    const instructionList = await instruction_model_default.find({ userTarget, room }).exec();
+    const instructionList = await instruction_model_default.find({
+      userTarget,
+      room
+    }).exec();
     return instructionList;
   }
   // Trouve une consigne en particulier pour un utilisateur donné
@@ -1381,6 +1579,7 @@ var InstructionService = class {
     await instruction_model_default.deleteMany({});
   }
 };
+__name(InstructionService, "InstructionService");
 
 // src/resources/instruction/instruction.controller.ts
 var import_mongoose12 = require("mongoose");
@@ -1461,7 +1660,9 @@ MoodleController.route("/users").get(async (req, res) => {
   const userList = await userService4.findAll();
   const parsedList = [];
   if (userList.length === 0)
-    return res.status(404).json({ message: "moodle/users Pas de donn\xE9es participants dans cette instance" });
+    return res.status(404).json({
+      message: "moodle/users Pas de donn\xE9es participants dans cette instance"
+    });
   userList.forEach((user) => {
     parsedList.push({
       _id: user._id,
@@ -1480,7 +1681,9 @@ MoodleController.route("/medias").get(async (req, res) => {
     mediaList.push(await mediaService4.findByUserId(userList[i]._id));
   }
   if (mediaList.length === 0)
-    return res.status(404).json({ message: "Pas de media dans cette instance" });
+    return res.status(404).json({
+      message: "Pas de media dans cette instance"
+    });
   return res.status(200).json(mediaList);
 });
 MoodleController.route("/userDatas").get(async (req, res) => {
@@ -1490,7 +1693,9 @@ MoodleController.route("/userDatas").get(async (req, res) => {
     userDataList.push(await userDataService2.findByUserId(userList[i]));
   }
   if (userDataList.length === 0)
-    return res.status(404).json({ message: "Aucun participant ne s'est connect\xE9 \xE0  cette instance" });
+    return res.status(404).json({
+      message: "Aucun participant ne s'est connect\xE9 \xE0  cette instance"
+    });
   return res.status(200).json(userDataList);
 });
 MoodleController.route("/userDatas/:instance([a-zA-Z0-9]+.mobiteach.net)").get(async (req, res) => {
@@ -1531,10 +1736,12 @@ var MissionSchema = new import_mongoose13.default.Schema({
     required: true,
     ref: "room"
   },
-  "activites": [{
-    type: import_mongoose13.Schema.Types.ObjectId,
-    ref: "mission"
-  }],
+  "activites": [
+    {
+      type: import_mongoose13.Schema.Types.ObjectId,
+      ref: "mission"
+    }
+  ],
   "nb_activites": {
     type: Number,
     unique: false,
@@ -1557,7 +1764,9 @@ var MissionSchema = new import_mongoose13.default.Schema({
   "visuel": {
     type: String
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 var Mission = import_mongoose13.default.model("Mission", MissionSchema);
 var mission_model_default = Mission;
 
@@ -1586,7 +1795,7 @@ var MissionService = class {
     const deletedMission = await mission_model_default.findByIdAndDelete(missionId);
     return deletedMission;
   }
-  // Statut Visible de la missin
+  // Statut Visible de la mission
   async findVisibilityStatus(missionId) {
     try {
       const mission = await mission_model_default.findById(missionId);
@@ -1643,6 +1852,7 @@ var MissionService = class {
     }
   }
 };
+__name(MissionService, "MissionService");
 
 // src/resources/mission/mission.controller.ts
 var MissionController = (0, import_express7.Router)();
@@ -1671,18 +1881,24 @@ MissionController.route("/").get(async (req, res) => {
     const missionList = await service2.findAll();
     console.log("missionList;", missionList);
     if (missionList.length === 0) {
-      return res.status(404).json({ message: "Aucune mission trouv\xE9e" });
+      return res.status(404).json({
+        message: "Aucune mission trouv\xE9e"
+      });
     }
     return res.status(200).json(missionList);
   } catch (error) {
     console.error("Error in GET /missions:", error);
-    return res.status(500).json({ message: "Erreur du serveur" });
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
   }
 }).post(async (req, res, next) => {
   try {
     console.log("req.body", req.body);
     if (!req.body || Object.keys(req.body).length === 0) {
-      return res.status(400).json({ message: "Votre requ\xEAte est vide." });
+      return res.status(400).json({
+        message: "Votre requ\xEAte est vide."
+      });
     } else {
       const mission = await MissionService.createMission(req.body.roomId, req.body);
       const room = await RoomService.findById(req.body.roomId);
@@ -1697,7 +1913,9 @@ MissionController.route("/").get(async (req, res) => {
     }
   } catch (error) {
     console.error("Error in POST /missions:", error);
-    return res.status(500).json({ message: "Erreur de pram\xE0tres" });
+    return res.status(500).json({
+      message: "Erreur de pram\xE0tres"
+    });
   }
 });
 MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next) => {
@@ -1718,6 +1936,26 @@ MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next
     console.error("Error in POST /missions/roomCode:");
     next(err);
   }
+}).get(async (req, res, next) => {
+  try {
+    const room = await RoomService.findByCode(req.params.roomCode);
+    if (room) {
+      const missionList = room.mission;
+      console.log("missionList", missionList);
+      const result = await Promise.all(missionList.map(async (element) => {
+        return service2.find(element);
+      }));
+      console.log("result", result);
+      return res.status(201).json(result);
+    } else {
+      return res.status(404).json({
+        error: "Room not found"
+      });
+    }
+  } catch (err) {
+    console.error("Error in GET /liste missions par roomCode:", err);
+    next(err);
+  }
 });
 MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
   try {
@@ -1728,28 +1966,30 @@ MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
     console.error("Error in POST /missions/id:");
     next(err);
   }
-}).delete(
-  async (req, res, next) => {
-    const id = new import_mongoose14.Types.ObjectId(req.params.id);
-    const mission = await service2.find(id);
-    if (!mission) {
-      return res.status(404).json({ error: `Mission avec ID ${id} non trouv\xE9e` });
-    }
-    try {
-      await service2.delete(id);
-      const room = await RoomService.findById(mission.roomId);
-      console.log("room", room);
-      if (room) {
-        room.mission = room.mission.filter((id2) => !id2.equals(mission._id));
-        await room.save();
-      }
-      return res.status(200).json(mission);
-    } catch (error) {
-      console.error("Error in DELETE /missions/id:", error);
-      return res.status(500).json({ message: "Erreur du serveur" });
-    }
+}).delete(async (req, res, next) => {
+  const id = new import_mongoose14.Types.ObjectId(req.params.id);
+  const mission = await service2.find(id);
+  if (!mission) {
+    return res.status(404).json({
+      error: `Mission avec ID ${id} non trouv\xE9e`
+    });
   }
-);
+  try {
+    await service2.delete(id);
+    const room = await RoomService.findById(mission.roomId);
+    console.log("room", room);
+    if (room) {
+      room.mission = room.mission.filter((id2) => !id2.equals(mission._id));
+      await room.save();
+    }
+    return res.status(200).json(mission);
+  } catch (error) {
+    console.error("Error in DELETE /missions/id:", error);
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
+  }
+});
 MissionController.route("/:id([a-z0-9]{24})/isVisible/").get(async (req, res) => {
   try {
     const id = new import_mongoose14.Types.ObjectId(req.params.id);
@@ -1757,7 +1997,9 @@ MissionController.route("/:id([a-z0-9]{24})/isVisible/").get(async (req, res) =>
     return res.status(200).json(statusVisible);
   } catch (error) {
     console.error("Error in GET /missions/{id}/isVisible:", error);
-    return res.status(500).json({ message: "Erreur du serveur" });
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
   }
 });
 MissionController.route("/:id([a-z0-9]{24})/change-to-visible/").post(async (req, res) => {
@@ -1815,7 +2057,9 @@ MissionController.route("/:id([a-z0-9]{24})/isActive/").get(async (req, res) => 
     return res.status(200).json(isActiveStatus);
   } catch (error) {
     console.error("Error in GET /missions/{id}/isActive:", error);
-    return res.status(500).json({ message: "Erreur du serveur" });
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
   }
 });
 MissionController.route("/:id([a-z0-9]{24})/change-to-active/").post(async (req, res) => {
@@ -1873,7 +2117,9 @@ MissionController.route("/:id([a-z0-9]{24})/isGuidee/").get(async (req, res) => 
     return res.status(200).json(isGuideeStatus);
   } catch (error) {
     console.error("Error in GET /missions/{id}/isGuidee:", error);
-    return res.status(500).json({ message: "Erreur du serveur" });
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
   }
 });
 MissionController.route("/:id([a-z0-9]{24})/change-to-guidee/").post(async (req, res) => {
@@ -1924,6 +2170,24 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-not-guidee/").post(async (
     res.status(500).send("Internal Server Error");
   }
 });
+MissionController.route("/:id([a-z0-9]{24})/activites").get(async (req, res) => {
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  try {
+    const mission = await service2.find(new import_mongoose14.Types.ObjectId(id));
+    const activityList = mission == null ? void 0 : mission.activites;
+    if (mission) {
+      res.status(200).json(activityList);
+    } else {
+      res.status(404).json("Mission non trouv\xE9e.");
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json("Internal Server Error");
+  }
+});
 var mission_controller_default = MissionController;
 
 // src/resources/room/room.controller.ts
@@ -1935,12 +2199,16 @@ RoomController.route("/").get(async (req, res) => {
   try {
     const roomList = await RoomService.findAll();
     if (roomList.length === 0) {
-      return res.status(404).json({ message: "Aucune salle trouv\xE9e" });
+      return res.status(404).json({
+        message: "Aucune salle trouv\xE9e"
+      });
     }
     return res.status(200).json(roomList);
   } catch (error) {
     console.error("Error in GET /room:", error);
-    return res.status(500).json({ message: "Erreur du serveur" });
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
   }
 });
 RoomController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
@@ -2015,20 +2283,24 @@ RoomController.route("/:roomCode([A-Z0-9]{6})/missions").get(async (req, res, ne
 var room_controller_default = RoomController;
 
 // src/middlewares/exceptions.handler.ts
-var ExceptionsHandler = (err, req, res, next) => {
+var ExceptionsHandler = /* @__PURE__ */ __name((err, req, res, next) => {
   if (res.headersSent) {
     return next(err);
   }
   if (err.status && err.error) {
-    return res.status(err.status).json({ error: err.error });
+    return res.status(err.status).json({
+      error: err.error
+    });
   }
-  return res.status(500).json({ error: err });
-};
+  return res.status(500).json({
+    error: err
+  });
+}, "ExceptionsHandler");
 
 // src/middlewares/unknownRoutes.handler.ts
-var UnknownRoutesHandler = () => {
+var UnknownRoutesHandler = /* @__PURE__ */ __name(() => {
   throw new NotFoundException("La ressource demand\xE9e n'existe pas");
-};
+}, "UnknownRoutesHandler");
 
 // src/index.ts
 var import_body_parser = __toESM(require("body-parser"));
@@ -2044,6 +2316,8 @@ var import_mongoose16 = require("mongoose");
 var import_path10 = require("path");
 var import_fs6 = __toESM(require("fs"));
 var import_multer4 = __toESM(require("multer"));
+var service4 = new ActivityService();
+var missionService = new MissionService();
 var fileStorage4 = import_multer4.default.diskStorage({
   // définit le dossier de destination à partir de l'ID de l'utilisateur
   destination: function(req, file, cb) {
@@ -2055,7 +2329,9 @@ var fileStorage4 = import_multer4.default.diskStorage({
       req.body.type = folder;
       const dest = (0, import_path10.join)(config2.ATTACHEMENT_SRC, req.body.userId, folder + "s");
       if (!import_fs6.default.existsSync(dest)) {
-        import_fs6.default.mkdirSync(dest, { recursive: true });
+        import_fs6.default.mkdirSync(dest, {
+          recursive: true
+        });
       }
       cb(null, (0, import_path10.join)(dest));
     } catch (err) {
@@ -2080,7 +2356,7 @@ var ActivityController = (0, import_express9.Router)();
 var activityService = new ActivityService();
 ActivityController.route("/").get(async (req, res, next) => {
   try {
-    const activityList = await ActivityService.findAll();
+    const activityList = await service4.findAll();
     return res.status(200).json(activityList);
   } catch (err) {
     next(err);
@@ -2134,26 +2410,65 @@ ActivityController.route("/produire").post(async (req, res) => {
 ActivityController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
   try {
     const id = new import_mongoose16.Types.ObjectId(req.params.id);
-    const room = await ActivityService.findById(id);
-    return res.status(200).json(room);
+    const activity = await ActivityService.findById(id);
+    return res.status(200).json(activity);
   } catch (err) {
     next(err);
   }
+}).delete(async (req, res, next) => {
+  const id = new import_mongoose16.Types.ObjectId(req.params.id);
+  const activity = await service4.findById(id);
+  if (!activity) {
+    return res.status(404).json({
+      error: `Activit\xE9 avec ID ${id} non trouv\xE9e`
+    });
+  }
+  try {
+    await service4.delete(id);
+    return res.status(200).json({
+      message: `Activit\xE9  ${id} suppim\xE9e avec succ\xE8s`
+    });
+  } catch (error) {
+    console.error("Error in DELETE /activity/id:", error);
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
+  }
 });
-ActivityController.route("/addMission/:idActivity([a-z0-9]{24})/:idMission([a-z0-9]{24})").post(async (req, res) => {
+ActivityController.route("/addToMission/:idActivity([a-z0-9]{24})/:idMission([a-z0-9]{24})").post(async (req, res) => {
   try {
     const idActivity = req.params.idActivity;
     const idMission = req.params.idMission;
-    const activity = await ActivityService.findById(new import_mongoose16.Types.ObjectId(idActivity));
+    const activity = await service4.findById(new import_mongoose16.Types.ObjectId(idActivity));
     if (!activity) {
-      return res.status(404).json({ error: `Activit\xE9 avec ID ${idActivity} non trouv\xE9e` });
+      return res.status(404).json({
+        error: `Activit\xE9 avec ID ${idActivity} non trouv\xE9e`
+      });
     }
     const mission = await mission_model_default.findById(new import_mongoose16.Types.ObjectId(idMission));
     if (!mission) {
-      return res.status(404).json({ error: `Mission avec ID ${idMission} non trouv\xE9e` });
+      return res.status(404).json({
+        error: `Mission avec ID ${idMission} non trouv\xE9e`
+      });
+    }
+    const activityInOtherMission = await mission_model_default.findOne({
+      activites: activity._id
+    });
+    if (activityInOtherMission) {
+      if (activityInOtherMission._id.equals(mission._id)) {
+        return res.status(409).json({
+          message: `L'activit\xE9 avec ID ${idActivity} est d\xE9j\xE0 pr\xE9sente dans cette mission.`
+        });
+      } else {
+        return res.status(409).json({
+          message: `L'activit\xE9 avec ID ${idActivity} est d\xE9j\xE0 pr\xE9sente dans une autre mission. Utilisez la m\xE9thode de duplication pour ajouter une activit\xE9 similaire \xE0 cette mission.`
+        });
+      }
     }
     if (mission.activites.includes(activity._id)) {
-      return res.status(409).json({ message: "L'activit\xE9 est d\xE9j\xE0 pr\xE9sente dans la mission." });
+      return res.status(409).json({
+        message: "L'activit\xE9 est d\xE9j\xE0 pr\xE9sente dans la mission."
+      });
     }
     mission.activites.push(activity._id);
     mission.nb_activites += 1;
@@ -2161,37 +2476,49 @@ ActivityController.route("/addMission/:idActivity([a-z0-9]{24})/:idMission([a-z0
     return res.status(200).json(mission);
   } catch (error) {
     console.error("Error in Post /activity/mission/idAct/idMiss:", error);
-    return res.status(500).json({ message: "Erreur du serveur" });
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
   }
 }).delete(async (req, res) => {
   try {
     const idActivity = req.params.idActivity;
     const idMission = req.params.idMission;
-    const activity = await ActivityService.findById(new import_mongoose16.Types.ObjectId(idActivity));
+    const activity = await service4.findById(new import_mongoose16.Types.ObjectId(idActivity));
     if (!activity) {
-      return res.status(404).json({ error: `Activit\xE9 avec ID ${idActivity} non trouv\xE9e` });
+      return res.status(404).json({
+        error: `Activit\xE9 avec ID ${idActivity} non trouv\xE9e`
+      });
     }
     const mission = await mission_model_default.findById(new import_mongoose16.Types.ObjectId(idMission));
     if (!mission) {
-      return res.status(404).json({ error: `Mission avec ID ${idMission} non trouv\xE9e` });
+      return res.status(404).json({
+        error: `Mission avec ID ${idMission} non trouv\xE9e`
+      });
     }
     if (!mission.activites.includes(activity._id)) {
-      return res.status(409).json({ message: "L'activit\xE9 n'est pas pr\xE9sente dans la mission." });
+      return res.status(409).json({
+        message: "L'activit\xE9 n'est pas pr\xE9sente dans la mission."
+      });
     }
     mission.activites = mission.activites.filter((id) => !id.equals(activity._id));
     mission.nb_activites -= 1;
     await mission.save();
-    return res.status(200).json({ message: `L'activit\xE9 ${activity} a \xE9t\xE9 retir\xE9e de la mission avec succ\xE8s.` });
+    return res.status(200).json({
+      message: `L'activit\xE9 ${activity} a \xE9t\xE9 retir\xE9e de la mission avec succ\xE8s.`
+    });
   } catch (error) {
     console.error("Error in Delete /activity/mission/idAct/idMiss:", error);
-    return res.status(500).json({ message: "Erreur du serveur" });
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
   }
 });
 ActivityController.route("/duplicate/:idActivity([a-z0-9]{24})").post(async (req, res) => {
   try {
     const idActivity = req.params.idActivity;
     console.log("idActivity", idActivity);
-    const activitytodup = await ActivityService.findById(new import_mongoose16.Types.ObjectId(idActivity));
+    const activitytodup = await service4.findById(new import_mongoose16.Types.ObjectId(idActivity));
     console.log("activitytodup", activitytodup);
     const isConsulter = activitytodup == null ? void 0 : activitytodup.description_detaillee_consulter;
     const isProduire = activitytodup == null ? void 0 : activitytodup.description_detaillee_produire;
@@ -2199,11 +2526,11 @@ ActivityController.route("/duplicate/:idActivity([a-z0-9]{24})").post(async (req
     if (isProduire) {
       console.log("yyyy");
     }
-    ;
     if (!isConsulter && !isProduire) {
-      return res.status(404).json({ error: `Activit\xE9 avec ID ${idActivity} non trouv\xE9e` });
+      return res.status(404).json({
+        error: `Activit\xE9 avec ID ${idActivity} non trouv\xE9e`
+      });
     }
-    ;
     if (isConsulter) {
       const activityData = {
         _id: new import_mongoose16.Types.ObjectId(),
@@ -2236,7 +2563,211 @@ ActivityController.route("/duplicate/:idActivity([a-z0-9]{24})").post(async (req
     }
   } catch (error) {
     console.error("Error in POST activity/duplicate/:idActivity:", error);
-    return res.status(500).json({ message: "Erreur du serveur" });
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
+  }
+});
+ActivityController.route("/:id([a-z0-9]{24})/isVisible").get(async (req, res) => {
+  try {
+    const id = new import_mongoose16.Types.ObjectId(req.params.id);
+    const activity = await service4.findById(id);
+    if (!activity) {
+      return res.status(404).json("Activit\xE9 introuvable");
+    }
+    const statusVisible = await service4.findVisibilityStatus(id);
+    return res.status(200).json(statusVisible);
+  } catch (error) {
+    console.error("Error in GET /activity/{id}/isVisible:", error);
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
+  }
+});
+ActivityController.route("/:id([a-z0-9]{24})/change-to-visible").post(async (req, res) => {
+  const id = req.params.id;
+  const activity = await service4.find(new import_mongoose16.Types.ObjectId(id));
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  if (!activity) {
+    return res.status(404).json("Activit\xE9 introuvable");
+  }
+  try {
+    const statusVisible = await service4.findVisibilityStatus(new import_mongoose16.Types.ObjectId(id));
+    console.log("status visible", statusVisible);
+    const titre = await service4.findTitreById(new import_mongoose16.Types.ObjectId(id));
+    if (statusVisible === true) {
+      res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 visible");
+    } else {
+      if (activity) {
+        activity.visible = true;
+        await activity.save();
+        res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais visible");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+ActivityController.route("/:id([a-z0-9]{24})/change-to-not-visible").post(async (req, res) => {
+  const id = req.params.id;
+  const activity = await service4.find(new import_mongoose16.Types.ObjectId(id));
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  if (!activity) {
+    return res.status(404).json("Activit\xE9 introuvable");
+  }
+  try {
+    const statusVisible = await service4.findVisibilityStatus(new import_mongoose16.Types.ObjectId(id));
+    const titre = await service4.findTitreById(new import_mongoose16.Types.ObjectId(id));
+    console.log("statut visible", statusVisible);
+    if (!statusVisible) {
+      res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non visible");
+    } else {
+      if (activity) {
+        activity.visible = false;
+        await activity.save();
+        res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais non visible");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+ActivityController.route("/:id([a-z0-9]{24})/isActive").get(async (req, res) => {
+  try {
+    const id = new import_mongoose16.Types.ObjectId(req.params.id);
+    const isActiveStatus = await service4.findActiveStatus(id);
+    return res.status(200).json(isActiveStatus);
+  } catch (error) {
+    console.error("Error in GET /activity/{id}/isActive:", error);
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
+  }
+});
+ActivityController.route("/:id([a-z0-9]{24})/change-to-active").post(async (req, res) => {
+  const id = req.params.id;
+  const activity = await service4.find(new import_mongoose16.Types.ObjectId(id));
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  if (!activity) {
+    return res.status(404).json("Activit\xE9 introuvable");
+  }
+  try {
+    const statusActive = await service4.findActiveStatus(new import_mongoose16.Types.ObjectId(id));
+    const titre = await service4.findTitreById(new import_mongoose16.Types.ObjectId(id));
+    console.log("statut visible", statusActive);
+    if (statusActive === true) {
+      res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 active");
+    } else {
+      if (activity) {
+        activity.visible = true;
+        await activity.save();
+        res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais active");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+ActivityController.route("/:id([a-z0-9]{24})/change-to-not-active").post(async (req, res) => {
+  const id = req.params.id;
+  const activity = await service4.find(new import_mongoose16.Types.ObjectId(id));
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  if (!activity) {
+    return res.status(404).json("Activit\xE9 introuvable");
+  }
+  try {
+    const statusActive = await service4.findActiveStatus(new import_mongoose16.Types.ObjectId(id));
+    const titre = await service4.findTitreById(new import_mongoose16.Types.ObjectId(id));
+    console.log("statut visible", statusActive);
+    if (!statusActive) {
+      res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non active");
+    } else {
+      if (activity) {
+        activity.active = false;
+        await activity.save();
+        res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais non active");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+ActivityController.route("/:id([a-z0-9]{24})/isGuidee").get(async (req, res) => {
+  try {
+    const id = new import_mongoose16.Types.ObjectId(req.params.id);
+    const isGuideeStatus = await service4.findGuideeStatus(id);
+    return res.status(200).json(isGuideeStatus);
+  } catch (error) {
+    console.error("Error in GET /activity/{id}/isActive:", error);
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
+  }
+});
+ActivityController.route("/:id([a-z0-9]{24})/change-to-guidee").post(async (req, res) => {
+  const id = req.params.id;
+  const activity = await service4.find(new import_mongoose16.Types.ObjectId(id));
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  if (!activity) {
+    return res.status(404).json("Activit\xE9 introuvable");
+  }
+  try {
+    const statusGuidee = await service4.findActiveStatus(new import_mongoose16.Types.ObjectId(id));
+    const titre = await service4.findTitreById(new import_mongoose16.Types.ObjectId(id));
+    console.log("statut visible", statusGuidee);
+    if (statusGuidee === true) {
+      res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 guid\xE9e");
+    } else {
+      if (activity) {
+        activity.guidee = true;
+        await activity.save();
+        res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais guid\xE9e");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+ActivityController.route("/:id([a-z0-9]{24})/change-to-not-guidee").post(async (req, res) => {
+  const id = req.params.id;
+  const activity = await service4.find(new import_mongoose16.Types.ObjectId(id));
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  if (!activity) {
+    return res.status(404).json("Activit\xE9 introuvable");
+  }
+  try {
+    const statusGuidee = await service4.findActiveStatus(new import_mongoose16.Types.ObjectId(id));
+    const titre = await service4.findTitreById(new import_mongoose16.Types.ObjectId(id));
+    console.log("statut guidee", statusGuidee);
+    if (!statusGuidee) {
+      res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non guid\xE9e");
+    } else {
+      if (activity) {
+        activity.guidee = false;
+        await activity.save();
+        res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais non guid\xE9e");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
   }
 });
 var activity_controller_default = ActivityController;
@@ -2260,11 +2791,15 @@ var swaggerOptions = {
     ]
   },
   tryItOutEnabled: false,
-  apis: ["**/*.controller.ts"]
+  apis: [
+    "**/*.controller.ts"
+  ]
 };
 var specs = (0, import_swagger_jsdoc.default)(swaggerOptions);
 app.use(import_body_parser.default.json());
-app.use(import_body_parser.default.urlencoded({ extended: true }));
+app.use(import_body_parser.default.urlencoded({
+  extended: true
+}));
 app.use((0, import_cors.default)({
   // allow all subdomains of mobiteach.net
   origin: new RegExp("^(https?://)?([a-z0-9]+[.])*mobiteach[.]net$")
@@ -2279,8 +2814,14 @@ app.use("/activity", activity_controller_default);
 app.use("/room", room_controller_default);
 app.use("/moodle", moodle_controller_default);
 app.use("/docs", import_swagger_ui_express.default.serve);
-app.get("/docs", import_swagger_ui_express.default.setup(specs, { customCss: ".swagger-ui .topbar { display: none } .try-out { display: none }", customSiteTitle: "MISSIONS HUB DOCS", customfavIcon: "https://missions.mobiteach.fr/mobi.ico" }));
-app.use("/", import_express10.default.static(__dirname + "/../public", { dotfiles: "allow" }));
+app.get("/docs", import_swagger_ui_express.default.setup(specs, {
+  customCss: ".swagger-ui .topbar { display: none } .try-out { display: none }",
+  customSiteTitle: "MISSIONS HUB DOCS",
+  customfavIcon: "https://missions.mobiteach.fr/mobi.ico"
+}));
+app.use("/", import_express10.default.static(__dirname + "/../public", {
+  dotfiles: "allow"
+}));
 app.all("*", UnknownRoutesHandler);
 app.use(ExceptionsHandler);
 app.use((req, res, next) => {
@@ -2288,7 +2829,7 @@ app.use((req, res, next) => {
   res.charset = "utf-8";
   next();
 });
-var start = async () => {
+var start = /* @__PURE__ */ __name(async () => {
   try {
     httpServer.listen(config2.API_PORT);
     console.log("HTTP server is listening on port : " + config2.API_PORT);
@@ -2325,5 +2866,5 @@ var start = async () => {
     console.error(error);
     process.exit(1);
   }
-};
+}, "start");
 start();

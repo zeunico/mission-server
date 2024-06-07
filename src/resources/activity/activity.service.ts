@@ -9,8 +9,7 @@ import { IActivityProduire } from '~~/types/activity.interface';
 
 export class ActivityService {
 		
-
-	static async create(data:IActivity): Promise<IActivity> {
+	async create(data:IActivity): Promise<IActivity> {
 		const newActivity: IActivity = {
 			...data,
 		};
@@ -19,7 +18,7 @@ export class ActivityService {
 	}
 
 	// Trouve tous les activités (produire et consulter confondues)
-	static async findAll(): Promise<IActivity[]> {
+	async findAll(): Promise<IActivity[]> {
 		const consulterActivities = await ActivityConsulter.Activity.find();
 		const produireActivities = await ActivityProduire.Activity.find();
 		const allActivities = consulterActivities.concat(produireActivities);
@@ -28,15 +27,84 @@ export class ActivityService {
 	}
 
 	// Trouve une activite par son ID
-	static async find(_id: Types.ObjectId): Promise<IActivity | null> {
+	async find(_id: Types.ObjectId): Promise<IActivity | null> {
 		const researchedActivity = await Activity.Activity.findById(_id);
 		return researchedActivity;
 	}
 	
-	static async findById(_id: Types.ObjectId): Promise<IActivity | null> {
+	async findById(_id: Types.ObjectId): Promise<IActivity | null> {
 		const researchedActivity = await Activity.Activity.findOne({ _id});
 		return researchedActivity;
 	}
+
+	// Supprimme une mission par son ID
+	async delete(activityId: Types.ObjectId): Promise<IActivity | null> {
+		console.log('missionId', activityId);
+		const deletedMission = await Activity.Activity.findByIdAndDelete(activityId);
+		return deletedMission;
+	}
+
+		// Statut Visible de l'activité
+	async findVisibilityStatus(activityId: Types.ObjectId): Promise<boolean> {
+		try {
+			const activity = await Activity.Activity.findById(activityId);
+			if (!activity) {
+				throw new Error('Activité introuvable');
+			} else {
+				return activity.visible;
+			}
+		} catch (error) {
+			console.error('Erreur lors de la recherche de l\'activité:', error);
+			throw error;
+		}
+	}
+
+	// Statut Activité de l'activité
+	async findActiveStatus(activityId: Types.ObjectId): Promise<boolean> {
+		try {
+			const activity = await Activity.Activity.findById(activityId);
+			if (!activity) {
+				throw new Error('Activité introuvable');
+			} else {
+				return activity.active;
+			}
+		} catch (error) {
+			console.error('Erreur lors de la recherche de l\'activité:', error);
+			throw error;
+		}
+	}
+
+	// Statut Guidée de l'activité
+	async findGuideeStatus(activityId: Types.ObjectId): Promise<boolean> {
+		try {
+			const activity = await Activity.Activity.findById(activityId);
+			if (!activity) {
+				throw new Error('Activité introuvable');
+			} else {
+				return activity.guidee;
+			}
+		} catch (error) {
+			console.error('Erreur lors de la recherche de l\'activité:', error);
+			throw error;
+		}
+	}
+
+	// Titre de l'activité par ID de l'activité
+	async findTitreById(activityId: Types.ObjectId): Promise<IActivity["titre"]> {
+		try {
+			const activity = await Activity.Activity.findById(activityId);
+			if (!activity) {
+				throw new Error('Activité introuvable');
+			}
+			const titre = activity.titre;
+			return titre;
+		} catch (error) {
+			console.error('Erreur lors de la recherche de l\'activité:', error);
+			throw error;
+		}
+	}
+
+
 }
 
 
@@ -65,6 +133,7 @@ export class ActivityConsulterService extends ActivityService {
 		console.log('allAct', allActivitiesConsulter);
 		return allActivitiesConsulter;
 	}
+
 	static async findById(_id: Types.ObjectId): Promise<IActivityConsulter | null> {
 		const researchedActivity = await ActivityConsulter.ActivityConsulter.findOne({ _id});
 		return researchedActivity;
