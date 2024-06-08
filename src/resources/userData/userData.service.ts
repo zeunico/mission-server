@@ -44,7 +44,22 @@ export class UserDataService {
 		return userDataList;
 	}
 
-	// Trouve une réponse en particulier pour un utilisateur donné
+	// Trouve la liste des réponses pour un utilisateur et une activité donnés
+	async findByUserIdAndActivityId(
+		user: IUser, 
+		room: string, 
+		activity: string
+	): Promise<(Omit<IUserData, 'mediaId'> & { mediaId: Pick<IMedia, 'type'> })[]> {
+		
+		const userDataList = await MUserData.find({ userId: user._id, instance: user.instance, room}).populate<{ mediaId: Pick<IMedia, 'type'> }>('mediaId', 'type').exec();
+		const userActivityDataList = userDataList.filter(userData => userData.activityId.equals(activity));
+
+		return userActivityDataList;
+	}
+
+
+
+	// Trouve une réponse en particulier par son ID
 	async find(userDataId: Types.ObjectId): Promise<IUserData | null> {
 		const researchedData = await MUserData.findById(userDataId);
 		return researchedData;

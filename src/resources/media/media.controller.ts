@@ -8,6 +8,7 @@ import { NotFoundException } from '~/utils/exceptions';
 import { config } from '~/config';
 import { extname, join } from 'path';
 import fs from 'fs';
+import { UserDataService } from '../userData/userData.service';
 
 // Création d'un Router Express
 const MediaController: Router = Router();
@@ -15,6 +16,8 @@ const MediaController: Router = Router();
 // Instanciation du service
 const mediaService = new MediaService();
 const userService = new UsersService();
+const userDataService = new UserDataService();
+
 
 /**
  * @swagger
@@ -126,25 +129,12 @@ const userService = new UsersService();
  *      required: true
  *   responses:
  *    200:
- *     description: Média récupéré
+ *     description: Fichier média récupéré avec succès.
  *     content:
- *      application/json:
+ *      application/octet-stream:
  *       schema:
- *        type: object
- *        properties:
- *         _id:
- *          type: string
- *          description: ID du média
- *         name:
- *          type: string
- *          description: Nom du média
- *         type:
- *          type: string
- *          description: Type du média
- *          enum: [image, video, audio]
- *         userId:
- *          type: string
- *          description: ID de l'utilisateur propriétaire du média
+ *        type: string
+ *        format: binary
  *    404:
  *     description: Média non trouvé
  *     content:
@@ -255,6 +245,7 @@ MediaController.route('/user/:userId([a-z0-9]{24})')
 		}
 	});
 
+// GET AND DELETE MEDIA PAR LEUR ID
 MediaController.route('/:mediaId([a-z0-9]{24})')
 	.get(async (req, res, next) => {
 		try {
@@ -285,5 +276,43 @@ MediaController.route('/:mediaId([a-z0-9]{24})')
 			next(err);
 		}
 	});
+
+
+// GET MEDIA PAR ID DE LA REPONSE ASSOCIEE
+MediaController.route('/byResponseId/:responseId([a-z0-9]{24})')
+	.get(async (req, res, next) => {
+		try {
+			const userDataId = new Types.ObjectId(req.params.responseId);
+			const userData =  await userDataService.find(userDataId);
+			if (!userData) {
+				throw new NotFoundException('Réponse introuvable');
+			}
+            const mediaId = userData?.mediaId;
+	        const media = await mediaService.find(mediaId);
+			if (!media) {
+				throw new NotFoundException('Media introuvable');
+			}
+			res.sendFile(join(config.ATTACHEMENT_SRC, media.userId.toString(), media.type + 's', media.name));
+		} catch(err) {
+			next(err);
+		}
+	})
+	.delete(async (req, res, next) => {
+		try {
+			const mediaId = new Types.ObjectId(req.params.mediaId);
+			const media = await mediaService.find(mediaId);
+			
+			if (!media) {
+				throw new NotFoundException('Media introuvable');
+			}
+			
+			fs.unlinkSync(join(config.ATTACHEMENT_SRC, media.userId.toString(), media.type + 's', media.name));
+			await mediaService.delete(mediaId);
+			return res.status(200).json();
+		} catch (err) {
+			next(err);
+		}
+	});
+
 
 export default MediaController;

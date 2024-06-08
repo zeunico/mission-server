@@ -200,7 +200,7 @@ var downloadFile = /* @__PURE__ */ __name(async (url) => {
 
 // src/resources/media/media.controller.ts
 var import_express = require("express");
-var import_mongoose3 = require("mongoose");
+var import_mongoose4 = require("mongoose");
 
 // src/db/user.model.ts
 var import_mongoose = __toESM(require("mongoose"));
@@ -260,6 +260,7 @@ var UsersService = class {
   // trouve un utilisateur en particulier
   async find(_id) {
     const researchedUser = await user_model_default.findById(_id);
+    console.log("researchedser in service user find", researchedUser);
     return researchedUser;
   }
   // trouve un utilisateur via l'email
@@ -377,9 +378,122 @@ __name(MediaService, "MediaService");
 // src/resources/media/media.controller.ts
 var import_path5 = require("path");
 var import_fs2 = __toESM(require("fs"));
+
+// src/db/userData.model.ts
+var import_mongoose3 = __toESM(require("mongoose"));
+var UserDataSchema = new import_mongoose3.default.Schema({
+  "activityId": {
+    type: import_mongoose3.Schema.Types.ObjectId,
+    ref: "Activity",
+    required: true
+  },
+  "mediaId": {
+    type: import_mongoose3.Schema.Types.ObjectId,
+    ref: "Media",
+    required: false
+  },
+  "thumbId": {
+    type: import_mongoose3.Schema.Types.ObjectId,
+    ref: "Thumb",
+    required: false
+  },
+  "description": {
+    type: String,
+    required: true
+  },
+  "room": {
+    type: String,
+    required: true
+  },
+  "userId": {
+    type: import_mongoose3.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  },
+  "instance": {
+    type: String,
+    required: true
+  }
+}, {
+  timestamps: true
+});
+var MUserData = import_mongoose3.default.model("UserData", UserDataSchema);
+var userData_model_default = MUserData;
+
+// src/resources/userData/userData.service.ts
+var UserDataService = class {
+  /**
+  * Crée une réponse à partir des informations données par l'utilisateur
+  * @param userId 
+  * @param datas 
+  * @param activity
+  * @returns 
+  */
+  async createUserData(user, activityId, mediaId, thumbId, datas) {
+    const newUserData = __spreadProps(__spreadValues({}, datas), {
+      activityId,
+      mediaId: mediaId ? mediaId : void 0,
+      thumbId: thumbId ? thumbId : void 0,
+      userId: user._id,
+      instance: user.instance
+    });
+    console.log("new userdata", newUserData);
+    return await userData_model_default.create(newUserData);
+  }
+  // Trouve l'entièreté des réponses uploadées
+  async findAll(room, instance) {
+    const userDataList = await userData_model_default.find({
+      room,
+      instance
+    }).populate("mediaId", "type _id").exec();
+    return userDataList;
+  }
+  // Trouve la liste des réponses pour un utilisateur donné
+  async findByUserId(user, room) {
+    if (!room) {
+      return await userData_model_default.find({
+        userId: user._id
+      }).populate("mediaId", "type").exec();
+    }
+    const userDataList = await userData_model_default.find({
+      userId: user._id,
+      instance: user.instance,
+      room
+    }).populate("mediaId", "type").exec();
+    return userDataList;
+  }
+  // Trouve la liste des réponses pour un utilisateur et une activité donnés
+  async findByUserIdAndActivityId(user, room, activity) {
+    const userDataList = await userData_model_default.find({
+      userId: user._id,
+      instance: user.instance,
+      room
+    }).populate("mediaId", "type").exec();
+    const userActivityDataList = userDataList.filter((userData) => userData.activityId.equals(activity));
+    return userActivityDataList;
+  }
+  // Trouve une réponse en particulier par son ID
+  async find(userDataId) {
+    const researchedData = await userData_model_default.findById(userDataId);
+    return researchedData;
+  }
+  // supprime une réponse
+  async delete(userDataId) {
+    const deletedData = await userData_model_default.findByIdAndDelete(userDataId);
+    return deletedData;
+  }
+  // vide la table de réponses
+  async clear() {
+    await userData_model_default.deleteMany({});
+  }
+};
+__name(UserDataService, "UserDataService");
+
+// src/resources/media/media.controller.ts
 var MediaController = (0, import_express.Router)();
 var mediaService = new MediaService();
 var userService = new UsersService();
+var userDataService = new UserDataService();
 var fileStorage = import_multer.default.diskStorage({
   // définit le dossier de destination à partir de l'ID de l'utilisateur
   destination: function(req, file, cb) {
@@ -414,7 +528,7 @@ var fileUpload = (0, import_multer.default)({
 });
 MediaController.route("/").post(fileUpload.single("file"), async (req, res, next) => {
   try {
-    const userId = new import_mongoose3.Types.ObjectId(req.body.userId);
+    const userId = new import_mongoose4.Types.ObjectId(req.body.userId);
     const user = await userService.find(userId);
     if (!user) {
       console.log("mauvais id user -- media controller");
@@ -429,7 +543,7 @@ MediaController.route("/").post(fileUpload.single("file"), async (req, res, next
 });
 MediaController.route("/user/:userId([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const userId = new import_mongoose3.Types.ObjectId(req.params.userId);
+    const userId = new import_mongoose4.Types.ObjectId(req.params.userId);
     const user = await userService.find(userId);
     if (!user) {
       throw new NotFoundException("Mauvais ID utilisateur");
@@ -442,7 +556,7 @@ MediaController.route("/user/:userId([a-z0-9]{24})").get(async (req, res, next) 
 });
 MediaController.route("/:mediaId([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const mediaId = new import_mongoose3.Types.ObjectId(req.params.mediaId);
+    const mediaId = new import_mongoose4.Types.ObjectId(req.params.mediaId);
     const media = await mediaService.find(mediaId);
     if (!media) {
       throw new NotFoundException("Media introuvable");
@@ -453,7 +567,37 @@ MediaController.route("/:mediaId([a-z0-9]{24})").get(async (req, res, next) => {
   }
 }).delete(async (req, res, next) => {
   try {
-    const mediaId = new import_mongoose3.Types.ObjectId(req.params.mediaId);
+    const mediaId = new import_mongoose4.Types.ObjectId(req.params.mediaId);
+    const media = await mediaService.find(mediaId);
+    if (!media) {
+      throw new NotFoundException("Media introuvable");
+    }
+    import_fs2.default.unlinkSync((0, import_path5.join)(config2.ATTACHEMENT_SRC, media.userId.toString(), media.type + "s", media.name));
+    await mediaService.delete(mediaId);
+    return res.status(200).json();
+  } catch (err) {
+    next(err);
+  }
+});
+MediaController.route("/byResponseId/:responseId([a-z0-9]{24})").get(async (req, res, next) => {
+  try {
+    const userDataId = new import_mongoose4.Types.ObjectId(req.params.responseId);
+    const userData = await userDataService.find(userDataId);
+    if (!userData) {
+      throw new NotFoundException("R\xE9ponse introuvable");
+    }
+    const mediaId = userData == null ? void 0 : userData.mediaId;
+    const media = await mediaService.find(mediaId);
+    if (!media) {
+      throw new NotFoundException("Media introuvable");
+    }
+    res.sendFile((0, import_path5.join)(config2.ATTACHEMENT_SRC, media.userId.toString(), media.type + "s", media.name));
+  } catch (err) {
+    next(err);
+  }
+}).delete(async (req, res, next) => {
+  try {
+    const mediaId = new import_mongoose4.Types.ObjectId(req.params.mediaId);
     const media = await mediaService.find(mediaId);
     if (!media) {
       throw new NotFoundException("Media introuvable");
@@ -470,19 +614,19 @@ var media_controller_default = MediaController;
 // src/resources/thumb/thumb.controller.ts
 var import_multer2 = __toESM(require("multer"));
 var import_express2 = require("express");
-var import_mongoose5 = require("mongoose");
+var import_mongoose6 = require("mongoose");
 
 // src/db/thumb.model.ts
-var import_mongoose4 = __toESM(require("mongoose"));
+var import_mongoose5 = __toESM(require("mongoose"));
 var import_path6 = require("path");
-var ThumbSchema = new import_mongoose4.default.Schema({
+var ThumbSchema = new import_mongoose5.default.Schema({
   "type": {
     type: String,
     enum: Object.values(media_enum_default),
     required: true
   },
   "userId": {
-    type: import_mongoose4.Schema.Types.ObjectId,
+    type: import_mongoose5.Schema.Types.ObjectId,
     ref: "User",
     required: true
   },
@@ -497,7 +641,7 @@ var ThumbSchema = new import_mongoose4.default.Schema({
 ThumbSchema.method("path", function() {
   return (0, import_path6.join)(config2.ATTACHEMENT_SRC, this.userId.toString(), "thumbs");
 });
-var MThumb = import_mongoose4.default.model("Thumb", ThumbSchema);
+var MThumb = import_mongoose5.default.model("Thumb", ThumbSchema);
 var thumb_model_default = MThumb;
 
 // src/resources/thumb/thumb.service.ts
@@ -593,7 +737,7 @@ var fileUpload2 = (0, import_multer2.default)({
 ThumbController.route("/").post(fileUpload2.single("file"), async (req, res, next) => {
   try {
     console.log("ADC");
-    const userId = new import_mongoose5.Types.ObjectId(req.body.userId);
+    const userId = new import_mongoose6.Types.ObjectId(req.body.userId);
     const user = await userService2.find(userId);
     if (!user) {
       throw new NotFoundException("Mauvais ID utilisateur");
@@ -606,7 +750,7 @@ ThumbController.route("/").post(fileUpload2.single("file"), async (req, res, nex
 });
 ThumbController.route("/user/:userId([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const userId = new import_mongoose5.Types.ObjectId(req.params.userId);
+    const userId = new import_mongoose6.Types.ObjectId(req.params.userId);
     const user = await userService2.find(userId);
     if (!user) {
       throw new NotFoundException("Mauvais ID utilisateur");
@@ -619,7 +763,7 @@ ThumbController.route("/user/:userId([a-z0-9]{24})").get(async (req, res, next) 
 });
 ThumbController.route("/:thumbId([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const thumbId = new import_mongoose5.Types.ObjectId(req.params.thumbId);
+    const thumbId = new import_mongoose6.Types.ObjectId(req.params.thumbId);
     const thumb = await thumbService.find(thumbId);
     if (!thumb) {
       throw new NotFoundException("Thumb introuvable");
@@ -633,36 +777,36 @@ var thumb_controller_default = ThumbController;
 
 // src/resources/users/users.controller.ts
 var import_express3 = require("express");
-var import_mongoose7 = require("mongoose");
+var import_mongoose8 = require("mongoose");
 
 // src/db/room.model.ts
-var import_mongoose6 = __toESM(require("mongoose"));
-var RoomSchema = new import_mongoose6.default.Schema({
+var import_mongoose7 = __toESM(require("mongoose"));
+var RoomSchema = new import_mongoose7.default.Schema({
   "roomCode": {
     type: String,
     required: true
   },
   "moderatorId": {
-    type: import_mongoose6.Schema.Types.ObjectId,
+    type: import_mongoose7.Schema.Types.ObjectId,
     ref: "User",
     required: true
   },
   "participants": [
     {
-      type: import_mongoose6.Schema.Types.ObjectId,
+      type: import_mongoose7.Schema.Types.ObjectId,
       ref: "User"
     }
   ],
   "mission": [
     {
-      type: import_mongoose6.Schema.Types.ObjectId,
+      type: import_mongoose7.Schema.Types.ObjectId,
       ref: "Mission"
     }
   ]
 }, {
   timestamps: true
 });
-var Room = import_mongoose6.default.model("Room", RoomSchema);
+var Room = import_mongoose7.default.model("Room", RoomSchema);
 var room_model_default = Room;
 
 // src/resources/room/room.service.ts
@@ -735,8 +879,8 @@ async function createDefaultRoom(roomCode) {
     const users = service.findAll();
     console.log("users", users);
     const roomData = {
-      _id: new import_mongoose7.Types.ObjectId(),
-      moderatorId: new import_mongoose7.Types.ObjectId("633aef06eb42397b214af9f3"),
+      _id: new import_mongoose8.Types.ObjectId(),
+      moderatorId: new import_mongoose8.Types.ObjectId("633aef06eb42397b214af9f3"),
       roomCode,
       participants: [],
       mission: []
@@ -791,7 +935,7 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
           if (room) {
             console.log("resAxios.data.user.moderatorId", resAxios.data.user.isModerator);
             user = await service.create({
-              _id: new import_mongoose7.Types.ObjectId(resAxios.data.user.id),
+              _id: new import_mongoose8.Types.ObjectId(resAxios.data.user.id),
               email,
               firstname: resAxios.data.user.firstname,
               lastname: resAxios.data.user.lastname,
@@ -846,7 +990,7 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
 });
 UsersController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const id = new import_mongoose7.Types.ObjectId(req.params.id);
+    const id = new import_mongoose8.Types.ObjectId(req.params.id);
     const user = await service.find(id);
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
@@ -867,13 +1011,13 @@ UsersController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
     next(err);
   }
 }).put(async (req, res) => {
-  const id = new import_mongoose7.Types.ObjectId(req.params.id);
+  const id = new import_mongoose8.Types.ObjectId(req.params.id);
   const userData = req.body;
   const updatedUser = await service.update(userData, id);
   return res.status(200).json(updatedUser);
 }).delete(async (req, res, next) => {
   try {
-    const id = new import_mongoose7.Types.ObjectId(req.params.id);
+    const id = new import_mongoose8.Types.ObjectId(req.params.id);
     const user = await service.find(id);
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
@@ -898,7 +1042,7 @@ UsersController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
 });
 UsersController.route("/:id([a-z0-9]{24})/image").get(async (req, res, next) => {
   try {
-    const id = new import_mongoose7.Types.ObjectId(req.params.id);
+    const id = new import_mongoose8.Types.ObjectId(req.params.id);
     const path = await service.findUserImage(id);
     return res.sendFile(path);
   } catch (err) {
@@ -908,10 +1052,10 @@ UsersController.route("/:id([a-z0-9]{24})/image").get(async (req, res, next) => 
 });
 UsersController.route("/:id([a-z0-9]{24})/ismoderator").get(async (req, res, next) => {
   try {
-    const id = new import_mongoose7.Types.ObjectId(req.params.id);
+    const id = new import_mongoose8.Types.ObjectId(req.params.id);
     const user = await service.find(id);
     console.log("user id", user);
-    const room = new import_mongoose7.Types.ObjectId(req.params.roomId);
+    const room = new import_mongoose8.Types.ObjectId(req.params.roomId);
     await RoomService.findById(room);
     console.log("room", room);
     const isModeratorStatus = await isModerator(user, room);
@@ -938,108 +1082,6 @@ var users_controller_default = UsersController;
 var import_multer3 = __toESM(require("multer"));
 var import_express4 = require("express");
 var import_mongoose10 = require("mongoose");
-
-// src/db/userData.model.ts
-var import_mongoose8 = __toESM(require("mongoose"));
-var UserDataSchema = new import_mongoose8.default.Schema({
-  "activityId": {
-    type: import_mongoose8.Schema.Types.ObjectId,
-    ref: "Activity",
-    required: true
-  },
-  "mediaId": {
-    type: import_mongoose8.Schema.Types.ObjectId,
-    ref: "Media",
-    required: false
-  },
-  "thumbId": {
-    type: import_mongoose8.Schema.Types.ObjectId,
-    ref: "Thumb",
-    required: false
-  },
-  "description": {
-    type: String,
-    required: true
-  },
-  "room": {
-    type: String,
-    required: true
-  },
-  "userId": {
-    type: import_mongoose8.Schema.Types.ObjectId,
-    ref: "User",
-    required: true
-  },
-  "instance": {
-    type: String,
-    required: true
-  }
-}, {
-  timestamps: true
-});
-var MUserData = import_mongoose8.default.model("UserData", UserDataSchema);
-var userData_model_default = MUserData;
-
-// src/resources/userData/userData.service.ts
-var UserDataService = class {
-  /**
-  * Crée une réponse à partir des informations données par l'utilisateur
-  * @param userId 
-  * @param datas 
-  * @param activity
-  * @returns 
-  */
-  async createUserData(user, activityId, mediaId, thumbId, datas) {
-    const newUserData = __spreadProps(__spreadValues({}, datas), {
-      activityId,
-      mediaId: mediaId ? mediaId : void 0,
-      thumbId: thumbId ? thumbId : void 0,
-      userId: user._id,
-      instance: user.instance
-    });
-    console.log("new userdata", newUserData);
-    return await userData_model_default.create(newUserData);
-  }
-  // Trouve l'entièreté des réponses uploadées
-  async findAll(room, instance) {
-    const userDataList = await userData_model_default.find({
-      room,
-      instance
-    }).populate("mediaId", "type _id").exec();
-    return userDataList;
-  }
-  // Trouve la liste des réponses pour un utilisateur donné
-  async findByUserId(user, room) {
-    if (!room) {
-      return await userData_model_default.find({
-        userId: user._id
-      }).populate("mediaId", "type").exec();
-    }
-    const userDataList = await userData_model_default.find({
-      userId: user._id,
-      instance: user.instance,
-      room
-    }).populate("mediaId", "type").exec();
-    return userDataList;
-  }
-  // Trouve une réponse en particulier pour un utilisateur donné
-  async find(userDataId) {
-    const researchedData = await userData_model_default.findById(userDataId);
-    return researchedData;
-  }
-  // supprime une réponse
-  async delete(userDataId) {
-    const deletedData = await userData_model_default.findByIdAndDelete(userDataId);
-    return deletedData;
-  }
-  // vide la table de réponses
-  async clear() {
-    await userData_model_default.deleteMany({});
-  }
-};
-__name(UserDataService, "UserDataService");
-
-// src/resources/userData/userData.controller.ts
 var import_path9 = require("path");
 var import_fs5 = __toESM(require("fs"));
 var import_axios3 = __toESM(require("axios"));
@@ -1267,10 +1309,12 @@ __name(ActivityProduireService, "ActivityProduireService");
 
 // src/resources/userData/userData.controller.ts
 var UserDataController = (0, import_express4.Router)();
-var userDataService = new UserDataService();
+var userDataService2 = new UserDataService();
 var mediaService3 = new MediaService();
 var userService3 = new UsersService();
 var thumbService2 = new ThumbService();
+var activityService = new ActivityService();
+var roomService = new RoomService();
 var fileStorage3 = import_multer3.default.diskStorage({
   // définit le dossier de destination à partir de l'ID de l'utilisateur
   destination: function(req, file, cb) {
@@ -1307,19 +1351,31 @@ var fileupload = (0, import_multer3.default)({
 UserDataController.route("/").post(fileupload.single("file"), async (req, res, next) => {
   var _a9, _b2, _c2;
   try {
+    console.log("rea.body", req.body);
     const userId = new import_mongoose10.Types.ObjectId(req.body.userId);
     if (!req.body.userId) {
-      throw new NotFoundException("Utilisateur manquant");
+      throw new NotFoundException("ID Utilisateur manquant");
     }
     const user = await userService3.find(userId);
+    console.log("user", user);
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
     }
     const activityId = new import_mongoose10.Types.ObjectId(req.body.activityId);
     if (!req.body.activityId) {
-      throw new NotFoundException("Activit\xE9 manquante");
+      throw new NotFoundException("ID activit\xE9 manquante");
     }
-    const activity = await ActivityService.findById(activityId);
+    const activity = await activityService.findById(activityId);
+    console.log("activityId", activityId);
+    if (!activity) {
+      throw new NotFoundException("Activit\xE9 introuvable");
+    }
+    console.log("activity", activity);
+    const room = await RoomService.findByCode(req.body.room);
+    console.log("room", room);
+    if (!room) {
+      throw new NotFoundException("Salle introuvable");
+    }
     let media = void 0;
     console.log("ok");
     let thumb = void 0;
@@ -1378,7 +1434,8 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
         });
       }
     }
-    const newUserData = await userDataService.createUserData(user, activity._id, media == null ? void 0 : media._id, thumb == null ? void 0 : thumb._id, req.body);
+    const newUserData = await userDataService2.createUserData(user, activity._id, media == null ? void 0 : media._id, thumb == null ? void 0 : thumb._id, req.body);
+    console.log("newuserdata", newUserData);
     import_axios3.default.post("https://" + user.instance + "/html/mobiApp/data", {
       "roomCode": newUserData.room,
       "userId": newUserData.userId,
@@ -1401,7 +1458,7 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
   }
 }).delete(async (req, res, next) => {
   try {
-    await userDataService.clear();
+    await userDataService2.clear();
     return res.status(200).json();
   } catch (err) {
     next(err);
@@ -1410,7 +1467,7 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
 UserDataController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
   try {
     const userDataId = new import_mongoose10.Types.ObjectId(req.params.id);
-    const userData = await userDataService.find(userDataId);
+    const userData = await userDataService2.find(userDataId);
     if (!userData) {
       throw new NotFoundException("R\xE9ponse introuvable");
     }
@@ -1421,7 +1478,7 @@ UserDataController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
 }).delete(async (req, res, next) => {
   try {
     const userDataId = new import_mongoose10.Types.ObjectId(req.params.id);
-    const userData = await userDataService.find(userDataId);
+    const userData = await userDataService2.find(userDataId);
     if (!userData) {
       throw new NotFoundException("R\xE9ponse introuvable");
     }
@@ -1431,7 +1488,7 @@ UserDataController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
       }
     }).then(async () => {
       try {
-        await userDataService.delete(userDataId);
+        await userDataService2.delete(userDataId);
         if (userData.mediaId) {
           await mediaService3.delete(userData.mediaId);
           console.log("Media supprim\xE9 !");
@@ -1440,7 +1497,7 @@ UserDataController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
         console.log("Erreur \xE0 la suppression du media:", mediaErr);
       }
     }).catch(async (err) => {
-      await userDataService.delete(userDataId);
+      await userDataService2.delete(userDataId);
       console.log(err);
     });
     console.log("R\xE9ponse supprim\xE9e !");
@@ -1456,9 +1513,10 @@ UserDataController.route("/:room([a-z0-9]{6})").get(async (req, res, next) => {
     }
     let dataList;
     if (req.query.instance) {
-      dataList = await userDataService.findAll(req.params.room, req.query.instance.toString());
+      dataList = await userDataService2.findAll(req.params.room, req.query.instance.toString());
+      console.log("dataList", dataList);
     } else {
-      dataList = await userDataService.findAll(req.params.room);
+      dataList = await userDataService2.findAll(req.params.room);
     }
     const parsedDataList = dataList.map((data) => {
       var _a9, _b2, _c2;
@@ -1504,7 +1562,29 @@ UserDataController.route("/:room([a-z0-9]{6})/:userId([a-z0-9]{24})").get(async 
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
     }
-    const dataList = await userDataService.findByUserId(user, req.params.room);
+    const dataList = await userDataService2.findByUserId(user, req.params.room);
+    console.log("dataList", dataList);
+    return res.status(200).json(dataList);
+  } catch (err) {
+    next(err);
+  }
+});
+UserDataController.route("/:room([a-z0-9]{6})/:userId([a-z0-9]{24})/:activityId([a-z0-9]{24})").get(async (req, res, next) => {
+  try {
+    if (req.params.room !== req.params.room.toUpperCase()) {
+      throw new NotFoundException("Room code invalide");
+    }
+    const userId = new import_mongoose10.Types.ObjectId(req.params.userId);
+    const user = await userService3.find(userId);
+    const activityId = new import_mongoose10.Types.ObjectId(req.params.activityId);
+    console.log("activityId", activityId);
+    const activity = await activityService.find(activityId);
+    console.log("activity", activity);
+    console.log("activity._id", activity == null ? void 0 : activity._id);
+    if (!user) {
+      throw new NotFoundException("Utilisateur introuvable");
+    }
+    const dataList = await userDataService2.findByUserIdAndActivityId(user, req.params.room, req.params.activityId);
     console.log("dataList", dataList);
     return res.status(200).json(dataList);
   } catch (err) {
@@ -1655,7 +1735,7 @@ var import_express6 = require("express");
 var MoodleController = (0, import_express6.Router)();
 var userService4 = new UsersService();
 var mediaService4 = new MediaService();
-var userDataService2 = new UserDataService();
+var userDataService3 = new UserDataService();
 MoodleController.route("/users").get(async (req, res) => {
   const userList = await userService4.findAll();
   const parsedList = [];
@@ -1690,7 +1770,7 @@ MoodleController.route("/userDatas").get(async (req, res) => {
   const userList = await userService4.findAll();
   const userDataList = [];
   for (let i = 0; i < userList.length; i++) {
-    userDataList.push(await userDataService2.findByUserId(userList[i]));
+    userDataList.push(await userDataService3.findByUserId(userList[i]));
   }
   if (userDataList.length === 0)
     return res.status(404).json({
@@ -1702,7 +1782,7 @@ MoodleController.route("/userDatas/:instance([a-zA-Z0-9]+.mobiteach.net)").get(a
   const userList = await userService4.findByInstance(req.params.instance);
   const userDataList = [];
   for (let i = 0; i < userList.length; i++) {
-    const userData = await userDataService2.findByUserId(userList[i]);
+    const userData = await userDataService3.findByUserId(userList[i]);
     userData.forEach((data) => {
       console.log("DATA: ", data.mediaId);
       userDataList.push({
@@ -1857,7 +1937,7 @@ __name(MissionService, "MissionService");
 // src/resources/mission/mission.controller.ts
 var MissionController = (0, import_express7.Router)();
 var service2 = new MissionService();
-var roomService = new RoomService();
+var roomService2 = new RoomService();
 MissionController.route("/").get(async (req, res) => {
   if ((await service2.findAll()).length === 0) {
     const missionData = {
@@ -2353,7 +2433,7 @@ var fileUpload3 = (0, import_multer4.default)({
   storage: fileStorage4
 });
 var ActivityController = (0, import_express9.Router)();
-var activityService = new ActivityService();
+var activityService2 = new ActivityService();
 ActivityController.route("/").get(async (req, res, next) => {
   try {
     const activityList = await service4.findAll();
@@ -2426,7 +2506,7 @@ ActivityController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
   try {
     await service4.delete(id);
     return res.status(200).json({
-      message: `Activit\xE9  ${id} suppim\xE9e avec succ\xE8s`
+      message: `Activit\xE9  ${id} supprim\xE9e avec succ\xE8s`
     });
   } catch (error) {
     console.error("Error in DELETE /activity/id:", error);

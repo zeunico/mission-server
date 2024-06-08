@@ -19,8 +19,6 @@ import axios from 'axios';
 import { TokenHandler } from '~/middlewares/token.handler';
 import { ActivityService } from '../activity/activity.service';
 
-
-
 // Création d'un Router Express
 const UserDataController: Router = Router();
 
@@ -29,6 +27,9 @@ const userDataService = new UserDataService();
 const mediaService = new MediaService();
 const userService = new UsersService();
 const thumbService = new ThumbService();
+const activityService = new ActivityService();
+const roomService = new RoomService();
+
 
 /**
  * @swagger
@@ -59,6 +60,9 @@ const thumbService = new ThumbService();
  *         format: binary
  *         description: Fichier à envoyer (photo ou vidéo)
  *         required: false
+ *        room: 
+ *         type: string
+ *         description: RoomCode de la salle
  *   responses:
  *    201:
  *     description: Réponse utilisateur créée
@@ -159,7 +163,7 @@ const thumbService = new ThumbService();
  *          type: string
  *          description: Message d'erreur
  * 
- * /datas/{room}:
+ * /datas/{room}/{instance}:
  *  get:
  *   summary: Récupération des réponses utilisateurs d'une salle à partir du code de la salle virtuelle passé en paramètre.
  *   tags: [UserData]
@@ -168,6 +172,13 @@ const thumbService = new ThumbService();
  *      in: path
  *      description: code de la salle virtuelle
  *      required: true
+ *    - name: instance
+ *      in: path
+ *      description: Nom de l'instance Mobiteach
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"  
  *   responses:
  *    200:
  *     description: Réponses utilisateurs trouvées
@@ -248,6 +259,58 @@ const thumbService = new ThumbService();
  *        message:
  *         type: string
  *         description: Message d'erreur
+ * /datas/{room}/{userId}/{activityId}:
+ *  get:
+ *   summary: Récupération des réponses utilisateurs d'une salle à partir du code de la salle virtuelle et de l'ID de l'utilisateur passés en paramètres.
+ *   tags: [UserData]
+ *   parameters:
+ *    - name: room
+ *      in: path
+ *      description: Code de la salle virtuelle
+ *      required: true
+ *      type: string
+ *    - name: userId
+ *      in: path
+ *      description: ID de l'utilisateur
+ *      required: true
+ *      type: string
+ *    - name: activityId
+ *      in: path
+ *      description: ID de l'actvité
+ *      required: true
+ *      type: string
+ *  responses:
+ *   200:
+ *    description: Réponses utilisateurs trouvées pour l'&ctivité
+ *    content:
+ *     application/json:
+ *      schema:
+ *       type: array
+ *       items:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de la réponse utilisateur
+ *         description:
+ *          type: string
+ *          description: Description de la réponse utilisateur
+ *         userId:
+ *          type: string
+ *          description: ID de l'utilisateur
+ *         mediaId:
+ *          type: string
+ *          description: ID du média
+ *   404:
+ *    description: Réponses utilisateurs introuvables pour cette activité
+ *    content:
+ *     application/json:
+ *      schema:
+ *       type: object
+ *       properties:
+ *        message:
+ *         type: string
+ *         description: Message d'erreur
  */
 
 // Création d'un objet multer Storage
@@ -300,20 +363,35 @@ UserDataController.route('/')
 	.post(fileupload.single('file'), async (req, res, next) => {
 			
 		try {
+			console.log('rea.body', req.body);
+			
 			const userId = new Types.ObjectId(req.body.userId);
 			if (!req.body.userId) {
-				throw new NotFoundException('Utilisateur manquant');
+				throw new NotFoundException('ID Utilisateur manquant');
 			}
 			const user = await userService.find(userId);
+			console.log('user', user);
 			if (!user) {
 				throw new NotFoundException('Utilisateur introuvable');
 			}
 
 			const activityId  = new Types.ObjectId(req.body.activityId);
 			if (!req.body.activityId) {
-				throw new NotFoundException('Activité manquante');
+				throw new NotFoundException('ID activité manquante');
 			}
-			const activity = await ActivityService.findById(activityId);
+			const activity = await activityService.findById(activityId);
+			console.log('activityId', activityId);
+			if (!activity) {
+				throw new NotFoundException('Activité introuvable');
+			}
+			console.log('activity', activity);
+
+
+			const room = await RoomService.findByCode(req.body.room);
+			console.log('room', room);
+			if (!room) {
+				throw new NotFoundException('Salle introuvable');
+			}
 			
 			let media: IMedia | undefined = undefined;
 			console.log('ok');
@@ -395,6 +473,7 @@ UserDataController.route('/')
 			}
 
 			const newUserData = await userDataService.createUserData(user, activity._id, media?._id, thumb?._id, req.body);
+			console.log('newuserdata', newUserData);
 
         	// Connexion Axios à Mobiteach
 
@@ -488,6 +567,7 @@ UserDataController.route('/:room([a-z0-9]{6})')
 			let dataList;
 			if (req.query.instance) {
 				dataList = await userDataService.findAll(req.params.room, req.query.instance.toString());
+				console.log('dataList', dataList);
 			} else {
 				dataList = await userDataService.findAll(req.params.room);
 			}
@@ -521,7 +601,7 @@ UserDataController.route('/:room([a-z0-9]{6})')
 			next(err);
 		}
 	});
-
+// ROUTE LISTE DES REPONSES PAR ROOM ET UTILISATEUR
 UserDataController.route('/:room([a-z0-9]{6})/:userId([a-z0-9]{24})')
 	.get(async (req, res, next) => {
 		try {
@@ -538,6 +618,33 @@ UserDataController.route('/:room([a-z0-9]{6})/:userId([a-z0-9]{24})')
 			}
 
 			const dataList = await userDataService.findByUserId(user, req.params.room);
+			console.log('dataList',dataList);
+			return res.status(200).json(dataList);
+		} catch (err) {
+			next(err);
+		}
+	});
+
+// ROUTE LISTE DES REPONSES PAR ROOM UTILISATEUR ET PAR ACTIVITE
+UserDataController.route('/:room([a-z0-9]{6})/:userId([a-z0-9]{24})/:activityId([a-z0-9]{24})')
+	.get(async (req, res, next) => {
+		try {
+			if (req.params.room !== req.params.room.toUpperCase()) {
+				throw new NotFoundException('Room code invalide');
+			}
+			const userId = new Types.ObjectId(req.params.userId);
+			const user = await userService.find(userId);
+
+			const activityId = new Types.ObjectId(req.params.activityId);
+			console.log('activityId',activityId);
+			const activity = await activityService.find(activityId);
+			console.log('activity',activity);
+			console.log('activity._id',activity?._id);
+			if (!user) {
+				throw new NotFoundException('Utilisateur introuvable');
+			}
+
+			const dataList = await userDataService.findByUserIdAndActivityId(user, req.params.room, req.params.activityId);
 			console.log('dataList',dataList);
 			return res.status(200).json(dataList);
 		} catch (err) {
