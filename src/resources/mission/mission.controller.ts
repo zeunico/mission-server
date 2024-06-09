@@ -751,7 +751,9 @@ const roomService = new RoomService();
 MissionController.route('/')
 	.get(async (req, res) => {
 		if ((await service.findAll()).length === 0) {
-			const missionData: IMission = {
+			
+			// MiSSION TEST 
+			const missionTest: IMission = {
 				_id: new Types.ObjectId(), 
 				titre: "Mission Test avec misionsArray",
 				nb_activites: 4,
@@ -761,11 +763,16 @@ MissionController.route('/')
 				guidee: false,
 				visuel: "/blabla/uimg.jpg",
 			};
-			const roomId = new Types.ObjectId("665b33caeff613234dc9535e");
-			const createdMission = await MissionService.createMission(new Types.ObjectId(roomId), missionData);
+			//Création d'une  mission  test et Ajout de la mission à la room
+					// TO DO Création par roomcode du premier user
+					// const roomList = await service.findAll();
+		
+			const roomId = new Types.ObjectId("66658c9bb637b521f3183ab1");
+			const createdMission = await MissionService.createMission(new Types.ObjectId(roomId), missionTest);
 			const room = await RoomService.findById(roomId);
-			room?.mission.push(missionData._id);	
+			room?.mission.push(missionTest._id);	
 			await RoomService.update(room, roomId);
+
 			console.log('Created Mission:', createdMission);
 		}
 		try {

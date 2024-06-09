@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Types, isObjectIdOrHexString } from 'mongoose';
 import { UsersService } from '~/resources/users/users.service';
 import { RoomService } from '~/resources/room/room.service';
+import { InstanceService } from '~/resources/instance/instance.service';
 import { NotFoundException } from '~/utils/exceptions';
 import { extname, join, sep } from 'path';
 import { config } from '~/config';
@@ -15,11 +16,13 @@ import { TokenHandler } from '~/middlewares/token.handler';
 import axios from 'axios';
 import { IRoom } from '~~/types/room.interface';
 import { IMission } from '~~/types/mission.interface';
+
 import MRoom from '~/db/room.model';
 import Mission from '~/db/mission.model';
 import { ReadableStreamBYOBRequest } from 'stream/web';
 import Room from '~/db/room.model';
 import { ObjectId } from "mongoose";
+import { IInstance } from '~~/types/instance.interface';
 
 
 // Création d'un Router Express
@@ -342,13 +345,27 @@ async function createDefaultRoom(roomCode) {
 	console.log('users', users);
 	const roomData: IRoom = {
 	  _id: new Types.ObjectId(),
-	  moderatorId: new Types.ObjectId("633aef06eb42397b214af9f3"),
+	  moderatorId: new Types.ObjectId(),
 	  roomCode: roomCode,
 	  participants: [],
 	  mission: []
 	};
 	const createdRoom = await RoomService.create(roomData);
 	console.log('Created Room:', createdRoom);
+	} catch (error) {
+	  console.error('Error creating room:', error);
+	}
+  }
+
+async function createDefaultInstance(instanceName) {
+	try {
+	const instanceData: IInstance = {
+	  _id: new Types.ObjectId(),
+	  name: instanceName,
+	  rooms: []
+	};
+	const createdInstance = await InstanceService.create(instanceData);
+	console.log('Created Instance :', createdInstance);
 	} catch (error) {
 	  console.error('Error creating room:', error);
 	}
@@ -376,11 +393,14 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 			if (req.query.instance) {
 				user = await service.findByEmail(email, req.query.instance.toString());
 				console.log('req.query.instance.toString()', req.query.instance.toString());
-				console.log('user by findByEmail', user);
+				console.log('user by findByEmail reqquery', user);
 			} else {
 				user = await service.findByEmail(email);
+				console.log('user by findByEmail ', user);
+
 			}
 
+        // CREATION ROOM DEFAULT
 			const roomCode = req.query.roomCode?.toString();
 			let room: IRoom | null;
 			if (roomCode) {
@@ -390,6 +410,7 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 					room = await RoomService.findByCode(roomCode);					
 				}
 			}
+
 
         	if (req.query.roomCode) {
 				await axios.post('https://' + req.query.instance + '/html/mobiApp/connect', {
@@ -402,35 +423,77 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 						if (!user) {
 								if (room) {
 									console.log('resAxios.data.user.moderatorId',  resAxios.data.user.isModerator );
+									// @ts-ignore
 									user = await service.create({
-									_id: new Types.ObjectId(resAxios.data.user.id),
-									email,
-									firstname: resAxios.data.user.firstname,
-									lastname: resAxios.data.user.lastname, 
-									moderator: resAxios.data.user.isModerator,
-									picture: null,
-									instructions: [],
-									instance: req.query.instance !== undefined ? req.query.instance.toString() : config.MOBITEACH_URL,
-									roomId: room._id,
-								});
-								console.log('room',room);
-								console.log('user._id', user._id);
-
-								// On ajoute le user à la liste des participants seulement si il n'est pas moderator
-								console.log('user._id', user._id);
-								console.log('modo', room.moderatorId);
+										_id: new Types.ObjectId(resAxios.data.user.id),
+										email,
+										firstname: resAxios.data.user.firstname,
+										lastname: resAxios.data.user.lastname, 
+										moderator: resAxios.data.user.isModerator,
+										picture: null,
+										instructions: [],
+										instance: req.query.instance !== undefined ? req.query.instance.toString() : config.MOBITEACH_URL,
+										roomId: room._id,
+								});			
+								// Le modérateur est ajouté à la salle
+								// On ajoute le user à la liste des participants dans la salle SEULEMENT SI il n'est pas moderator
 								if (user.moderator) {
-									console.log('Cet user est le moderator de la salle, il ne sera pas ajouté à la liste des participants');
-									
-								} else {room.participants.push(user._id);}
-
-								RoomService.update(room, room._id);
+									console.log('Cet user est le moderator de la salle ! Il est ajouté dans la salle ');
+									room.moderatorId = user._id;
+								
+									const updatedRoom = await RoomService.update({ moderatorId: user._id }, room._id);
+									console.log('Updated room:', updatedRoom);
 								} else {
-									console.error("Pas de Room, room is null");
+									room.participants.push(user._id);
 								}
 
-							const userPicture = resAxios.data.user.image;
+								RoomService.update(room, room._id);
+								const roomCode = room.roomCode;
+								console.log('rommcode', roomCode);
 
+								// CREATION INSTANCE DEFAULT
+								const instanceName = user.instance;
+								console.log('instance name', instanceName);
+								
+								if (instanceName) {
+									const instance = await InstanceService.findByName(instanceName);
+									console.log('instance', instance);
+									if (instance === null) {
+										const newInstance = await createDefaultInstance(instanceName);
+										const instance = await InstanceService.findByName(instanceName);
+
+										console.log('instance by name', instance);
+
+										console.log('roomcode', roomCode);
+										const roomId = room._id;
+									
+
+										async function addRoomToInstance(instanceName: string, roomId: Types.ObjectId) {
+											try {
+											  const instance = await InstanceService.findByName(instanceName);
+											  console.log('Instance by name:', instance);
+										  
+											  if (instance) {
+												instance.rooms.push(roomId);
+										  
+												const updatedInstance = await InstanceService.update({ rooms: instance.rooms }, instance._id);
+												console.log('Updated instance:', updatedInstance);
+											  } else {
+												console.log('No instance found with the given name.');
+											  }
+											} catch (error) {
+											  console.error('Error updating instance:', error);
+											}
+										  }
+										  addRoomToInstance(instanceName, new Types.ObjectId(roomId));
+									}
+								}
+							} else {
+								console.error("Pas de Room, room is null");
+							}
+							
+							const userPicture = resAxios.data.user.image;
+							// L'image de profil existe dans la réponse 
 							if (userPicture && userPicture !== '') {
 								// On télécharge l'image
 								const [file, filename] = await downloadFile(resAxios.data.user.image);
@@ -559,28 +622,13 @@ UsersController.route('/:id([a-z0-9]{24})/ismoderator')
 			await RoomService.findById(room);		
 			console.log('room', room);
 
-			const isModeratorStatus = await isModerator(user, room);
+			const isModeratorStatus = user?.moderator;
 
-			return res.status(200).json({ isModerator: isModeratorStatus });
+			return res.status(200).json(isModeratorStatus);
 		} catch (err) {
 			console.log(err);
 			next(err);
 		}
 	});
-
-
-
-async function isModerator(user, room) {
-
-	const researchedRoom = await MRoom.findById(room);
-	
-	if (researchedRoom && (researchedRoom.moderatorId.toString() === user._id.toString())) {
-		return true;
-	} else {
-		return false;
-	}
-	
-}
-
 
 export default UsersController;

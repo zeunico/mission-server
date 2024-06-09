@@ -227,41 +227,41 @@ const roomService = new RoomService();
  *      description: ID de l'utilisateur
  *      required: true
  *      type: string
- *  responses:
- *   200:
- *    description: Réponses utilisateurs trouvées
- *    content:
- *     application/json:
- *      schema:
- *       type: array
- *       items:
+ *   responses:
+ *    200:
+ *     description: Réponses utilisateurs trouvées
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: array
+ *        items:
+ *         type: object
+ *         properties:
+ *          _id:
+ *           type: string
+ *           description: ID de la réponse utilisateur
+ *          description:
+ *           type: string
+ *           description: Description de la réponse utilisateur
+ *          userId:
+ *           type: string
+ *           description: ID de l'utilisateur
+ *          mediaId:
+ *           type: string
+ *           description: ID du média
+ *    404:
+ *     description: Réponses utilisateurs introuvables
+ *     content:
+ *      application/json:
+ *       schema:
  *        type: object
  *        properties:
- *         _id:
+ *         message:
  *          type: string
- *          description: ID de la réponse utilisateur
- *         description:
- *          type: string
- *          description: Description de la réponse utilisateur
- *         userId:
- *          type: string
- *          description: ID de l'utilisateur
- *         mediaId:
- *          type: string
- *          description: ID du média
- *   404:
- *    description: Réponses utilisateurs introuvables
- *    content:
- *     application/json:
- *      schema:
- *       type: object
- *       properties:
- *        message:
- *         type: string
- *         description: Message d'erreur
+ *          description: Message d'erreur
  * /datas/{room}/{userId}/{activityId}:
  *  get:
- *   summary: Récupération des réponses utilisateurs d'une salle à partir du code de la salle virtuelle et de l'ID de l'utilisateur passés en paramètres.
+ *   summary: Récupération des réponses d'un utilisateur pour une activité
  *   tags: [UserData]
  *   parameters:
  *    - name: room
@@ -279,38 +279,38 @@ const roomService = new RoomService();
  *      description: ID de l'actvité
  *      required: true
  *      type: string
- *  responses:
- *   200:
- *    description: Réponses utilisateurs trouvées pour l'&ctivité
- *    content:
- *     application/json:
- *      schema:
- *       type: array
- *       items:
+ *   responses:
+ *    200:
+ *     description: Réponses utilisateurs trouvées pour l'&ctivité
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: array
+ *        items:
+ *         type: object
+ *         properties:
+ *          _id:
+ *           type: string
+ *           description: ID de la réponse utilisateur
+ *          description:
+ *           type: string
+ *           description: Description de la réponse utilisateur
+ *          userId:
+ *           type: string
+ *           description: ID de l'utilisateur
+ *          mediaId:
+ *           type: string
+ *           description: ID du média
+ *    404:
+ *     description: Réponses utilisateurs introuvables pour cette activité
+ *     content:
+ *      application/json:
+ *       schema:
  *        type: object
  *        properties:
- *         _id:
+ *         message:
  *          type: string
- *          description: ID de la réponse utilisateur
- *         description:
- *          type: string
- *          description: Description de la réponse utilisateur
- *         userId:
- *          type: string
- *          description: ID de l'utilisateur
- *         mediaId:
- *          type: string
- *          description: ID du média
- *   404:
- *    description: Réponses utilisateurs introuvables pour cette activité
- *    content:
- *     application/json:
- *      schema:
- *       type: object
- *       properties:
- *        message:
- *         type: string
- *         description: Message d'erreur
+ *          description: Message d'erreur
  */
 
 // Création d'un objet multer Storage
@@ -625,7 +625,7 @@ UserDataController.route('/:room([a-z0-9]{6})/:userId([a-z0-9]{24})')
 		}
 	});
 
-// ROUTE LISTE DES REPONSES PAR ROOM UTILISATEUR ET PAR ACTIVITE
+// ROUTE LISTE DES REPONSES PAR ROOM, UTILISATEUR ET PAR ACTIVITE
 UserDataController.route('/:room([a-z0-9]{6})/:userId([a-z0-9]{24})/:activityId([a-z0-9]{24})')
 	.get(async (req, res, next) => {
 		try {

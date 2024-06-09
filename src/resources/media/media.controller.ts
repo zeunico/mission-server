@@ -171,6 +171,34 @@ const userDataService = new UserDataService();
  *         message:
  *          type: string
  *          description: Message d'erreur
+ * /medias/byResponseId/{id}:
+ *  get:
+ *   summary: Récupération des médias d'un utilisateur à partir de l'ID de la réponse associées.
+ *   tags: [Medias]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      description: ID de la réponse (UserData)
+ *      required: true
+ *   responses:
+ *    200:
+ *     description: Fichier média récupéré avec succès.
+ *     content:
+ *      application/octet-stream:
+ *       schema:
+ *        type: string
+ *        format: binary
+ *    404:
+ *     description: Média non trouvé
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+ * 
  */
 
 // Création d'un objet multer Storage

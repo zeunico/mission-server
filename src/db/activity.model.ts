@@ -76,6 +76,6 @@ const ActivityProduireSchema = extendSchema(ActivitySchema,{
 // Create models for the new schemas
 
 const ActivityConsulter = Activity.discriminator<IActivityConsulter>('ActivityConsulter', ActivityConsulterSchema);
-const ActivityProduire = Activity.discriminator<IActivityProduire>(' ActivityProduire', ActivityProduireSchema);
+const ActivityProduire = Activity.discriminator<IActivityProduire>('ActivityProduire', ActivityProduireSchema);
 
 export default { ActivityConsulter, ActivityProduire, Activity };
