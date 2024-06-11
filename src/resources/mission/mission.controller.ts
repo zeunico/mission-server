@@ -766,15 +766,22 @@ MissionController.route('/')
 			//Création d'une  mission  test et Ajout de la mission à la room
 					// TO DO Création par roomcode du premier user
 					// const roomList = await service.findAll();
+					const roomList = await RoomService.findAll();
+					if (roomList.length === 0)
+						{
+						return res.status(400).json({ message: 'Phase développement : Veuillez connecter un utilisateur dans la salle; cette mission sera créée dans cette salle' });
+						}
+						else {
+							const roomId = roomList[0]._id; 
+			
+							const createdMission = await MissionService.createMission(new Types.ObjectId(roomId), missionTest);
+							const room = await RoomService.findById(roomId);
+							room?.mission.push(missionTest._id);	
+							await RoomService.update(room, roomId);
 		
-			const roomId = new Types.ObjectId("66658c9bb637b521f3183ab1");
-			const createdMission = await MissionService.createMission(new Types.ObjectId(roomId), missionTest);
-			const room = await RoomService.findById(roomId);
-			room?.mission.push(missionTest._id);	
-			await RoomService.update(room, roomId);
-
-			console.log('Created Mission:', createdMission);
-		}
+							console.log('Created Mission:', createdMission);
+						}
+				}
 		try {
 			const missionList = await service.findAll();
 			console.log('missionList;', missionList);

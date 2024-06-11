@@ -137,7 +137,7 @@ const mediaService = new MediaService();
  *          type: array
  *          description: Liste des consignes de l'utilisateur
  * 
- * /users/{email}/{room}/{instance}:
+ * /users/{email}/:
  *  get:
  *   summary: Récupère un utilisateur enregistré en base de données à partir de l'adresse email passée en paramètre.
  *   tags: [Users]
@@ -145,16 +145,6 @@ const mediaService = new MediaService();
  *    - name: email
  *      in: path
  *      description: Adresse email de l'utilisateur
- *      type: string
- *      required: true
- *    - name: room
- *      in: path
- *      description: Salle virtuelle de l'utilisateur
- *      type: string
- *      required: true
- *    - name: instance
- *      in: path
- *      description: Instance Mobiteach
  *      type: string
  *      required: true
  *   responses:

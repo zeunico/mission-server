@@ -2044,12 +2044,19 @@ MissionController.route("/").get(async (req, res) => {
       guidee: false,
       visuel: "/blabla/uimg.jpg"
     };
-    const roomId = new import_mongoose15.Types.ObjectId("66658c9bb637b521f3183ab1");
-    const createdMission = await MissionService.createMission(new import_mongoose15.Types.ObjectId(roomId), missionTest);
-    const room = await RoomService.findById(roomId);
-    room == null ? void 0 : room.mission.push(missionTest._id);
-    await RoomService.update(room, roomId);
-    console.log("Created Mission:", createdMission);
+    const roomList = await RoomService.findAll();
+    if (roomList.length === 0) {
+      return res.status(400).json({
+        message: "Phase d\xE9veloppement : Veuillez connecter un utilisateur dans la salle; cette mission sera cr\xE9\xE9e dans cette salle"
+      });
+    } else {
+      const roomId = roomList[0]._id;
+      const createdMission = await MissionService.createMission(new import_mongoose15.Types.ObjectId(roomId), missionTest);
+      const room = await RoomService.findById(roomId);
+      room == null ? void 0 : room.mission.push(missionTest._id);
+      await RoomService.update(room, roomId);
+      console.log("Created Mission:", createdMission);
+    }
   }
   try {
     const missionList = await service2.findAll();
