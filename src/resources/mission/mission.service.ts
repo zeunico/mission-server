@@ -1,22 +1,27 @@
 import  Mission  from '~/db/mission.model';
 import { IMission } from '~~/types/mission.interface';
+import { IMedia } from '~~/types/media.interface';
 import { Types } from 'mongoose';
 import { config } from '~/config';
 import { NotFoundException } from '~/utils/exceptions';
 import { RoomService } from '../room/room.service';
+import { MediaService } from '../media/media.service';
 import { IRoom } from '~~/types/room.interface';
 import  Room  from '~/db/room.model';
 import RoomController from '../room/room.controller';
 import EEtat from '~~/types/etat.enum';
 
+const mediaService = new MediaService();
+
 export class MissionService {
 
     // Creation d une nouvelle mission
 
-	static async createMission(roomId: Types.ObjectId, datas: IMission): Promise<IMission> {
+	static async createMission(roomId: Types.ObjectId, datas: IMission,  visuel: Types.ObjectId | undefined): Promise<IMission> {
 		const newMission: IMission = {
 			...datas,
-			roomId: roomId
+
+			visuel: visuel? visuel: undefined,
 		};
 		return await Mission.create(newMission);
 	}
@@ -119,5 +124,37 @@ export class MissionService {
 			throw error;
 		}	
 	}
-;
+
+
+
+
+  	//  LE VISUEL DE LA MISSION 	
+	  async visuel(missionId: Types.ObjectId): Promise<IMedia> {
+		try {
+			const mission = await Mission.findById(missionId);
+			
+			if (!mission) {
+				throw new Error('Mission introuvable');
+			} else if (mission) {
+				console.log('mission', mission);
+				const mediaId = mission.visuel;
+				console.log('mediaId', mediaId);
+				if (mediaId)
+					{
+						const media = await mediaService.find(mediaId);
+						console.log('meedia',media);
+						if (media) {return media;}
+						else {throw new Error('Mission introuvable');}
+					
+					} 
+				else {throw new Error('Mission introuvable');}
+			}
+		}
+			catch (error) {
+			console.error('Erreur lors de la recherche de la mission:', error);
+			throw error;
+			}	
+		}
+
+
 }

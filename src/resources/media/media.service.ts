@@ -7,18 +7,18 @@ import { Types } from 'mongoose';
 
 export class MediaService {
 
-	// Trouve tout les médias d'un utilisateur
+	// Trouve tout les média d'un utilisateur
 	async findAll(userId: Types.ObjectId): Promise<IMedia[]> {
 		const mediaList = (await MMedia.find()).filter(media => media.userId.equals(userId));
 		return mediaList;
 	}
 
-	// trouve un media en particulier pour un utilisateur donné
+	// trouve un media en particulier 
 	async find(mediaId: Types.ObjectId): Promise<IMedia | null> {
 		const researchedMedia = await MMedia.findById(mediaId);
 		return researchedMedia;
 	}
-
+	
 	// Trouve la liste des médias pour un utilisateur donné
 	async findByUserId(userId: Types.ObjectId): Promise<IMedia[]> {
 		const mediaList = (await MMedia.find({ userId }).exec());

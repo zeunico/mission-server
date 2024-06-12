@@ -5,12 +5,15 @@ import  ActivityProduire from '~/db/activity.model';
 import { IActivity } from '~~/types/activity.interface';
 import { IActivityConsulter } from '~~/types/activity.interface';
 import { IActivityProduire } from '~~/types/activity.interface';
+import { UsersService } from '../users/users.service';
 
 
 export class ActivityService {
+
 		
 	async create(data:IActivity): Promise<IActivity> {
 		const newActivity: IActivity = {
+
 			...data,
 		};
 		console.log('new act in create', newActivity);
@@ -39,9 +42,9 @@ export class ActivityService {
 
 	// Supprimme une mission par son ID
 	async delete(activityId: Types.ObjectId): Promise<IActivity | null> {
-		console.log('missionId', activityId);
-		const deletedMission = await Activity.Activity.findByIdAndDelete(activityId);
-		return deletedMission;
+		console.log('activityId', activityId);
+		const deletedActivity = await Activity.Activity.findByIdAndDelete(activityId);
+		return deletedActivity;
 	}
 
 		// Statut Visible de l'activité
@@ -62,39 +65,60 @@ export class ActivityService {
 
 		// GESTION DES ETATS
 
-    async putNonDemarreeStatus(activityId: Types.ObjectId, userId: Types.ObjectId) {
-		try {
-		const activity =  Activity.Activity.findById(activityId);
-
-		  if (!activity) {
-            throw new Error('Activity not found');
-        } else if (!activity.etat || typeof activity.etat !== 'object') {
-            	activity.etat = {};
-        			}
-
-        // Initialize the "0" status array if it doesn't exist
-        if (!Array.isArray(activity.etat['0'])) {
-            activity.etat['0'] = [];
-        }
-
-        // Add the userId to the "0" status array if it doesn't already exist
-        if (!activity.etat['0'].includes(userId.toString())) {
-            activity.etat['0'].push(userId.toString());
-        }
-
-        await activity.save();
-        console.log('Updated activity:', activity);
-	
-	
-	
-	} catch (error) {
-				console.error('Erreur lors du put de l état NON_DEMARREE', error);
-				throw error;
-			}
-
+	async etatByUser(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<String> {
+				let foundKey = null;
+				const activity = await Activity.Activity.findById(activityId);	
+					// Iterate over each key-value pair in activity.etat
+					for (const [key, value] of activity.etat.entries()) {
+					// Check if userId exists in the array associated with the current key
+						if (value.includes(userId)) {
+							foundKey = key; 
+							console.log('key', key);	
+						}
+					}
+					if (foundKey !== null) {
+						console.log(`User   ${userId} dans l etat "${foundKey}" `);
+						return foundKey;
+					}
+					else return '';
+	}
+		// AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
+    async putNonDemarreeEtat(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {
+		const activity = await Activity.Activity.findById(activityId);
+		if (activity) {
+			console.log('activite',activity);
+			// Ajout du userId a l' array NON_DEMARREE
+			activity.etat.set("NON_DEMARREE", activity.etat.get("NON_DEMARREE").concat(userId));
+			activity.save();
+			return activity;}
+		else return null;
 	}
 
+		// PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
+	async startActivity(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {
+		const activity = await Activity.Activity.findById(activityId);
+		if (activity) {
+			console.log('activiteyy',activity);
+			// Ajout du userId a l' array EN_COURS
+			activity.etat.set("EN_COURS", activity.etat.get("EN_COURS").concat(userId));   
+			activity.etat.set("NON_DEMARREE", activity.etat.get("NON_DEMARREE").filter((id: Types.ObjectId) => !id.equals(userId)));
+			activity.save();
+			return activity;}
+		else return null;
+	}
 
+	// PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
+	async endActivity(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {
+		const activity = await Activity.Activity.findById(activityId);
+		if (activity) {
+			console.log('activiteyy',activity);
+			// Ajout du userId a l' array EN_COURS
+			activity.etat.set("TERMINEE", activity.etat.get("TERMINEE").concat(userId));   
+			activity.etat.set("EN_COURS", activity.etat.get("EN_COURS").filter((id: Types.ObjectId) => !id.equals(userId)));
+			activity.save();
+			return activity;}
+		else return null;
+	}
 
 
 	// Statut Activité de l'activité
@@ -142,22 +166,6 @@ export class ActivityService {
 		}
 	}
 
-	async startActivity(activityId: Types.ObjectId, userId: Types.ObjectId):  Promise<IActivity> {
-		try {
-			const activity = await Activity.Activity.findById(activityId);
-			if (!activity) {
-				throw new Error('Activité introuvable');
-			} else if (activity.etat[1].includes(userId)) {
-						return true;
-			}
-			
-
-			return activity;
-		} catch (error) {
-			console.error('Erreur lors de la recherche de l\'activité:', error);
-			throw error;
-		}
-	  };
 }
 
 

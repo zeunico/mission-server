@@ -10,7 +10,7 @@ export interface IMission {
     visible: boolean,
 	active: boolean,
 	guidee: boolean,
-	visuel: string | null
+	visuel?: Types.ObjectId,
 	createAt: Date,
 	updateAt: Date
 }

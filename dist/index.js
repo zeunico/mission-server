@@ -341,12 +341,12 @@ var media_model_default = MMedia;
 
 // src/resources/media/media.service.ts
 var MediaService = class {
-  // Trouve tout les médias d'un utilisateur
+  // Trouve tout les média d'un utilisateur
   async findAll(userId) {
     const mediaList = (await media_model_default.find()).filter((media) => media.userId.equals(userId));
     return mediaList;
   }
-  // trouve un media en particulier pour un utilisateur donné
+  // trouve un media en particulier 
   async find(mediaId) {
     const researchedMedia = await media_model_default.findById(mediaId);
     return researchedMedia;
@@ -1195,9 +1195,9 @@ var import_mongoose11 = __toESM(require("mongoose"));
 // types/etat.enum.ts
 var EEtat;
 (function(EEtat2) {
-  EEtat2[EEtat2["NON_DEMARREE"] = 0] = "NON_DEMARREE";
-  EEtat2[EEtat2["EN_COURS"] = 1] = "EN_COURS";
-  EEtat2[EEtat2["TERMINEE"] = 2] = "TERMINEE";
+  EEtat2["NON_DEMARREE"] = "NON_DEMARREE";
+  EEtat2["EN_COURS"] = "EN_COURS";
+  EEtat2["TERMINEE"] = "TERMINEE";
 })(EEtat || (EEtat = {}));
 var etat_enum_default = EEtat;
 
@@ -1213,10 +1213,16 @@ var ActivitySchema = new import_mongoose11.default.Schema({
     required: true
   },
   "etat": {
-    type: import_mongoose11.default.Schema.Types.Mixed,
-    enum: Object.values(etat_enum_default),
-    default: [],
-    required: true
+    type: Map,
+    of: [
+      import_mongoose11.Schema.Types.ObjectId
+    ],
+    required: true,
+    default: {
+      "EN_COURS": [],
+      "NON_DEMARREE": [],
+      "TERMINEE": []
+    }
   },
   "visible": {
     type: Boolean,
@@ -1265,6 +1271,20 @@ var ActivityProduireSchema = extendSchema(ActivitySchema, {
 }, {
   timestamps: true
 });
+ActivitySchema.pre("save", function(next) {
+  const etatKeys = Object.values(etat_enum_default);
+  console.log("etat keys", etatKeys);
+  const enumKeys = Array.from(this.etat.keys());
+  console.log("enumkeys", enumKeys);
+  for (const key of etatKeys) {
+    if (!enumKeys.includes(key)) {
+      console.log("key", key);
+      const error = new Error(`Invalid key in etat`);
+      return next(error);
+    }
+  }
+  next();
+});
 var ActivityConsulter = Activity.discriminator("ActivityConsulter", ActivityConsulterSchema);
 var ActivityProduire = Activity.discriminator("ActivityProduire", ActivityProduireSchema);
 var activity_model_default = {
@@ -1301,9 +1321,9 @@ var ActivityService = class {
   }
   // Supprimme une mission par son ID
   async delete(activityId) {
-    console.log("missionId", activityId);
-    const deletedMission = await activity_model_default.Activity.findByIdAndDelete(activityId);
-    return deletedMission;
+    console.log("activityId", activityId);
+    const deletedActivity = await activity_model_default.Activity.findByIdAndDelete(activityId);
+    return deletedActivity;
   }
   // Statut Visible de l'activité
   async findVisibilityStatus(activityId) {
@@ -1318,6 +1338,57 @@ var ActivityService = class {
       console.error("Erreur lors de la recherche de l'activit\xE9:", error);
       throw error;
     }
+  }
+  // GESTION DES ETATS
+  async etatByUser(activityId, userId) {
+    let foundKey = null;
+    const activity = await activity_model_default.Activity.findById(activityId);
+    for (const [key, value] of activity.etat.entries()) {
+      if (value.includes(userId)) {
+        foundKey = key;
+        console.log("key", key);
+      }
+    }
+    if (foundKey !== null) {
+      console.log(`User   ${userId} dans l etat "${foundKey}" `);
+      return foundKey;
+    } else
+      return "";
+  }
+  // AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
+  async putNonDemarreeEtat(activityId, userId) {
+    const activity = await activity_model_default.Activity.findById(activityId);
+    if (activity) {
+      console.log("activite", activity);
+      activity.etat.set("NON_DEMARREE", activity.etat.get("NON_DEMARREE").concat(userId));
+      activity.save();
+      return activity;
+    } else
+      return null;
+  }
+  // PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
+  async startActivity(activityId, userId) {
+    const activity = await activity_model_default.Activity.findById(activityId);
+    if (activity) {
+      console.log("activiteyy", activity);
+      activity.etat.set("EN_COURS", activity.etat.get("EN_COURS").concat(userId));
+      activity.etat.set("NON_DEMARREE", activity.etat.get("NON_DEMARREE").filter((id) => !id.equals(userId)));
+      activity.save();
+      return activity;
+    } else
+      return null;
+  }
+  // PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
+  async endActivity(activityId, userId) {
+    const activity = await activity_model_default.Activity.findById(activityId);
+    if (activity) {
+      console.log("activiteyy", activity);
+      activity.etat.set("TERMINEE", activity.etat.get("TERMINEE").concat(userId));
+      activity.etat.set("EN_COURS", activity.etat.get("EN_COURS").filter((id) => !id.equals(userId)));
+      activity.save();
+      return activity;
+    } else
+      return null;
   }
   // Statut Activité de l'activité
   async findActiveStatus(activityId) {
@@ -1356,20 +1427,6 @@ var ActivityService = class {
       }
       const titre = activity.titre;
       return titre;
-    } catch (error) {
-      console.error("Erreur lors de la recherche de l'activit\xE9:", error);
-      throw error;
-    }
-  }
-  async startActivity(activityId, userId) {
-    try {
-      const activity = await activity_model_default.Activity.findById(activityId);
-      if (!activity) {
-        throw new Error("Activit\xE9 introuvable");
-      } else if (activity.etat[1].includes(userId)) {
-        return true;
-      }
-      return activity;
     } catch (error) {
       console.error("Erreur lors de la recherche de l'activit\xE9:", error);
       throw error;
@@ -1949,30 +2006,43 @@ var MissionSchema = new import_mongoose15.default.Schema({
   "activites": [
     {
       type: import_mongoose15.Schema.Types.ObjectId,
-      ref: "mission"
+      ref: "mission",
+      required: true,
+      default: []
     }
   ],
   "nb_activites": {
     type: Number,
     unique: false,
-    required: false
+    required: true,
+    default: 0
   },
   "etat": {
     type: String,
     enum: Object.values(etat_enum_default),
-    required: true
+    required: true,
+    default: "NON_DEMARREE"
   },
   "visible": {
-    type: Boolean
+    type: Boolean,
+    required: true,
+    default: false
   },
   "active": {
-    type: Boolean
+    type: Boolean,
+    required: true,
+    default: false
   },
   "guidee": {
-    type: Boolean
+    type: Boolean,
+    required: true,
+    default: false
   },
   "visuel": {
-    type: String
+    type: import_mongoose15.Schema.Types.ObjectId,
+    ref: "Media",
+    required: true,
+    default: Object("6669e0ae822a94c1c7824a88")
   }
 }, {
   timestamps: true
@@ -1981,11 +2051,12 @@ var Mission = import_mongoose15.default.model("Mission", MissionSchema);
 var mission_model_default = Mission;
 
 // src/resources/mission/mission.service.ts
+var mediaService5 = new MediaService();
 var MissionService = class {
   // Creation d une nouvelle mission
-  static async createMission(roomId, datas) {
+  static async createMission(roomId, datas, visuel) {
     const newMission = __spreadProps(__spreadValues({}, datas), {
-      roomId
+      visuel: visuel ? visuel : void 0
     });
     return await mission_model_default.create(newMission);
   }
@@ -2076,10 +2147,38 @@ var MissionService = class {
       throw error;
     }
   }
+  //  LE VISUEL DE LA MISSION 	
+  async visuel(missionId) {
+    try {
+      const mission = await mission_model_default.findById(missionId);
+      if (!mission) {
+        throw new Error("Mission introuvable");
+      } else if (mission) {
+        console.log("mission", mission);
+        const mediaId = mission.visuel;
+        console.log("mediaId", mediaId);
+        if (mediaId) {
+          const media = await mediaService5.find(mediaId);
+          console.log("meedia", media);
+          if (media) {
+            return media;
+          } else {
+            throw new Error("Mission introuvable");
+          }
+        } else {
+          throw new Error("Mission introuvable");
+        }
+      }
+    } catch (error) {
+      console.error("Erreur lors de la recherche de la mission:", error);
+      throw error;
+    }
+  }
 };
 __name(MissionService, "MissionService");
 
 // src/resources/mission/mission.controller.ts
+var import_path10 = require("path");
 var MissionController = (0, import_express7.Router)();
 var service2 = new MissionService();
 var roomService2 = new RoomService();
@@ -2428,18 +2527,18 @@ MissionController.route("/:id([a-z0-9]{24})/demarrer").post(async (req, res) => 
       return res.status(404).json({
         message: "La mission est introuvable"
       });
-    } else if (mission.etat === "1") {
+    } else if (mission.etat === "EN_COURS") {
       return res.status(400).json({
         message: "La mission est d\xE9j\xE0 d\xE9marr\xE9e",
         mission
       });
-    } else if (mission.etat === "2") {
+    } else if (mission.etat === "TERMINEE") {
       return res.status(400).json({
         message: "La mission est termin\xE9e, vous le pouvez pas la red\xE9marrer",
         mission
       });
     } else {
-      mission.etat = "1";
+      mission.etat = "EN_COURS";
       await mission.save();
       return res.status(200).json({
         message: "La mission a d\xE9marr\xE9e avec succ\xE8s",
@@ -2461,18 +2560,18 @@ MissionController.route("/:id([a-z0-9]{24})/terminer").post(async (req, res) => 
       return res.status(404).json({
         message: "La mission est introuvable"
       });
-    } else if (mission.etat === "2") {
+    } else if (mission.etat === "TERMINEE") {
       return res.status(400).json({
         message: "La mission est d\xE9j\xE0 termin\xE9e",
         mission
       });
-    } else if (mission.etat === "0") {
+    } else if (mission.etat === "NoN_DEMARREE") {
       return res.status(400).json({
         message: "Par o\xF9 t pass\xE9 !! Cette mission n a jamais \xE9t\xE9 d\xE9marr\xE9e !",
         mission
       });
     } else {
-      mission.etat = "2";
+      mission.etat = "TERMINEE";
       await mission.save();
       return res.status(200).json({
         message: "La mission a \xE9t\xE9 termin\xE9e avec succ\xE8s",
@@ -2481,6 +2580,25 @@ MissionController.route("/:id([a-z0-9]{24})/terminer").post(async (req, res) => 
     }
   } catch (error) {
     console.error("Erreur au d\xE9marrage de la mission:", error);
+    return res.status(500).json({
+      message: "Erreur Interne du server"
+    });
+  }
+});
+MissionController.route("/:id([a-z0-9]{24})/visuel").get(async (req, res) => {
+  const missionId = req.params.id;
+  const mission = await service2.find(new import_mongoose16.Types.ObjectId(missionId));
+  try {
+    if (!mission) {
+      return res.status(404).json({
+        message: "La mission est introuvable"
+      });
+    } else {
+      const visuel = await service2.visuel(mission._id);
+      res.sendFile((0, import_path10.join)(config2.ATTACHEMENT_SRC, visuel.userId.toString(), visuel.type + "s", visuel.name));
+    }
+  } catch (error) {
+    console.error("Erreur autelechargment du visuel d la mission:", error);
     return res.status(500).json({
       message: "Erreur Interne du server"
     });
@@ -2611,7 +2729,7 @@ var import_swagger_ui_express = __toESM(require("swagger-ui-express"));
 // src/resources/activity/activity.controller.ts
 var import_express9 = require("express");
 var import_mongoose18 = require("mongoose");
-var import_path10 = require("path");
+var import_path11 = require("path");
 var import_fs6 = __toESM(require("fs"));
 var import_multer4 = __toESM(require("multer"));
 var service4 = new ActivityService();
@@ -2620,25 +2738,25 @@ var userService5 = new UsersService();
 var fileStorage4 = import_multer4.default.diskStorage({
   // définit le dossier de destination à partir de l'ID de l'utilisateur
   destination: function(req, file, cb) {
-    const extension = (0, import_path10.extname)(file.originalname);
+    const extension = (0, import_path11.extname)(file.originalname);
     try {
       const folder = getFileTypeByExtension(extension);
       console.log("extension", extension);
       console.log("folder", folder);
       req.body.type = folder;
-      const dest = (0, import_path10.join)(config2.ATTACHEMENT_SRC, req.body.userId, folder + "s");
+      const dest = (0, import_path11.join)(config2.ATTACHEMENT_SRC, req.body.userId, folder + "s");
       if (!import_fs6.default.existsSync(dest)) {
         import_fs6.default.mkdirSync(dest, {
           recursive: true
         });
       }
-      cb(null, (0, import_path10.join)(dest));
+      cb(null, (0, import_path11.join)(dest));
     } catch (err) {
       cb(err, "");
     }
   },
   filename: function(req, file, cb) {
-    const extension = (0, import_path10.extname)(file.originalname);
+    const extension = (0, import_path11.extname)(file.originalname);
     try {
       const fileName = getFileNameFormatted(file.originalname, extension);
       req.body.name = fileName;
@@ -3114,14 +3232,81 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-guidee").post(async (
     res.status(500).send("Internal Server Error");
   }
 });
-ActivityController.route("/:activityId([a-z0-9]{24})/demarrerPourUser/:userId([a-z0-9]{24})/").post(async (req, res) => {
+ActivityController.route("/:activityId([a-z0-9]{24})/queletat/:userId([a-z0-9]{24})/").get(async (req, res) => {
   const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
   const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
   try {
-    await service4.startActivity(activityId, userId);
+    const etatByUser = await service4.etatByUser(activityId, userId);
+    res.status(200).send(etatByUser);
   } catch (error) {
     console.error(error);
-    s;
+    res.status(500).send("Internal Server Error");
+  }
+});
+ActivityController.route("/:activityId([a-z0-9]{24})/putNonDemarreeEtat/:userId([a-z0-9]{24})/").post(async (req, res) => {
+  try {
+    const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
+    const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
+    const isInEtat = await service4.etatByUser(activityId, userId);
+    if (isInEtat === "NON_DEMARREE" || isInEtat === "EN_COURS" || isInEtat === "TERMINEE") {
+      console.log("User d\xE9j\xE0 in array", isInEtat);
+      res.status(500).send("Activit\xE9 d\xE9j\xE0 non_demarree pour cet User");
+    } else {
+      const actvityEtatNonDem = await service4.putNonDemarreeEtat(activityId, userId);
+      if (actvityEtatNonDem) {
+        res.status(200).send(actvityEtatNonDem);
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+ActivityController.route("/:activityId([a-z0-9]{24})/demarrerPourUser/:userId([a-z0-9]{24})/").post(async (req, res) => {
+  try {
+    const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
+    const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
+    const isInEtat = await service4.etatByUser(activityId, userId);
+    console.log("Isinetat", isInEtat);
+    if (isInEtat === "EN_COURS") {
+      console.log("User d\xE9j\xE0 in array", isInEtat);
+      res.status(500).send("Activit\xE9 d\xE9j\xE0 en cours pour cet User");
+    } else if (isInEtat === "TERMINEE") {
+      console.log("User d\xE9j\xE0 in array", isInEtat);
+      res.status(500).send("Activit\xE9 d\xE9j\xE0 termin\xE9e pour cet User");
+    } else if (isInEtat === "NON_DEMARREE") {
+      const actvityEnCoursPourUser = await service4.startActivity(activityId, userId);
+      if (actvityEnCoursPourUser) {
+        res.status(200).send(actvityEnCoursPourUser);
+      }
+    } else
+      res.status(500).send("Le user na pas \xE9t\xE9 inscrit \xE0 l activit car il nest pas pr\xE9sent dan sles etats de celle ci");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+ActivityController.route("/:activityId([a-z0-9]{24})/terminerPourUser/:userId([a-z0-9]{24})/").post(async (req, res) => {
+  try {
+    const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
+    const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
+    const isInEtat = await service4.etatByUser(activityId, userId);
+    console.log("Isinetat", isInEtat);
+    if (isInEtat === "NON_DEMARREE") {
+      console.log("User n a pas commenc\xE9 l activit\xE9", isInEtat);
+      res.status(500).send("Activit\xE9 d\xE9j\xE0 en cours pour cet User");
+    } else if (isInEtat === "TERMINEE") {
+      console.log("User d\xE9j\xE0 in array", isInEtat);
+      res.status(500).send("Activit\xE9 d\xE9j\xE0 termin\xE9e pour cet User");
+    } else if (isInEtat === "EN_COURS") {
+      const actvityTermineePourUser = await service4.endActivity(activityId, userId);
+      if (actvityTermineePourUser) {
+        res.status(200).send(actvityTermineePourUser);
+      }
+    } else
+      res.status(500).send("Le user na pas \xE9t\xE9 inscrit \xE0 l activit car il nest pas pr\xE9sent dan sles etats de celle ci");
+  } catch (error) {
+    console.error(error);
     res.status(500).send("Internal Server Error");
   }
 });

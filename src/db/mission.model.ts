@@ -18,40 +18,50 @@ const MissionSchema = new mongoose.Schema<IMission>({
 
 	'activites': [{
 		type: Schema.Types.ObjectId,
-		ref: 'mission'
-
+		ref: 'mission',
+		required: true,
+		default: []
 	}],
 	 
 	'nb_activites': {
 		type: Number,
 		unique: false,
-		required: false
+		required: true,
+		default: 0
 	},
 
     'etat': {
         type: String,
         enum: Object.values(EEtat), 
-        required: true
+        required: true,
+		default: "NON_DEMARREE"
     },
 	
 	'visible': {
 		type: Boolean,
+		required: true,
+		default: false
 		
 	},
 	
 	'active':  {
 		type: Boolean,
+		required: true,
+		default: false
 		
 	},
 
 	'guidee': {
 		type: Boolean,
-		
+		required: true,
+		default: false	
 	},
 	
 	'visuel': {
-		type: String,
-	
+		type: Schema.Types.ObjectId,
+		ref: 'Media',
+		required: true,
+		default: Object("6669e0ae822a94c1c7824a88")
 	}
 }, { timestamps: true });
 

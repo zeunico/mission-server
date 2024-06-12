@@ -19,12 +19,16 @@ const ActivitySchema = new mongoose.Schema<IActivity>({
 	},
 
 	'etat': {
-		type: mongoose.Schema.Types.Mixed, 
-		enum: Object.values(EEtat),
-		default: [],
+		type: Map,
+		of: [Schema.Types.ObjectId],	
 		required: true,
-	},
-	
+		default:  {
+			"EN_COURS": [],
+			"NON_DEMARREE": [],
+			"TERMINEE": []
+			},
+	  },
+
 	'visible': {
 		type: Boolean,
 		default: false,
@@ -34,15 +38,13 @@ const ActivitySchema = new mongoose.Schema<IActivity>({
 	'active':  {
 		type: Boolean,
 		default: false,
-		required: true,
-		
+		required: true,	
 	},
 
 	'guidee': {
 		type: Boolean,
 		default: false,
-		required: true,
-		
+		required: true,	
 	},
 }, { timestamps: true });
 
@@ -78,6 +80,29 @@ const ActivityProduireSchema = extendSchema(ActivitySchema,{
 	}],
 }, { timestamps: true });
 
+
+
+
+// Pre-save hook de validation des keys états
+ActivitySchema.pre('save', function (next) {
+	// Liste des états dau type EEtat
+	const etatKeys = Object.values(EEtat) as string[];
+	
+
+	console.log('etat keys', etatKeys);
+	const enumKeys = Array.from(this.etat.keys());
+
+
+	console.log('enumkeys', enumKeys);
+	for (const key of etatKeys) {
+		if (!enumKeys.includes(key)) {
+			console.log('key',key);
+		  const error = new Error(`Invalid key in etat`);
+		  return next(error);
+		}
+	  }
+  next();
+  });
 
 // Create models for the new schemas
 

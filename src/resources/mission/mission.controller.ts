@@ -3,6 +3,9 @@ import { Types } from 'mongoose';
 import { MissionService } from '../mission/mission.service';
 import { RoomService } from '../room/room.service';
 import { IMission } from '~~/types/mission.interface';
+import { extname, join } from 'path';
+import fs from 'fs';
+import { config } from '~/config';
 
 
 // Création d'un Router Express
@@ -1151,12 +1154,12 @@ MissionController.route('/:id([a-z0-9]{24})/demarrer')
 			
 			if (!mission) {
 				return res.status(404).json({ message: 'La mission est introuvable' });
-			} else if (mission.etat === "1") {
+			} else if (mission.etat === "EN_COURS") {
 				return res.status(400).json({ message: 'La mission est déjà démarrée', mission });
-			} else if (mission.etat === "2") {
+			} else if (mission.etat === "TERMINEE") {
 				return res.status(400).json({ message: 'La mission est terminée, vous le pouvez pas la redémarrer', mission });
 			} else {  
-				mission.etat = "1";
+				mission.etat = "EN_COURS";
 				await mission.save();
 				return res.status(200).json({ message: 'La mission a démarrée avec succès', mission });
 			}
@@ -1177,18 +1180,39 @@ MissionController.route('/:id([a-z0-9]{24})/terminer')
 			
 			if (!mission) {
 				return res.status(404).json({ message: 'La mission est introuvable'});
-			} else if (mission.etat === "2") {
+			} else if (mission.etat === "TERMINEE") {
 				return res.status(400).json({ message: 'La mission est déjà terminée', mission });
-			} else if (mission.etat === "0") {
+			} else if (mission.etat === "NoN_DEMARREE") {
 				return res.status(400).json({ message: 'Par où t passé !! Cette mission n a jamais été démarrée !', mission });
 			} else {  
-				mission.etat = "2";
+				mission.etat = "TERMINEE";
 				await mission.save();
 				return res.status(200).json({ message: 'La mission a été terminée avec succès', mission });
 			}
 		}
 		 catch (error) {
 			console.error('Erreur au démarrage de la mission:', error);
+			return res.status(500).json({ message: 'Erreur Interne du server' });
+		}
+	});
+
+
+// Get VISUEL MISSION 
+MissionController.route('/:id([a-z0-9]{24})/visuel')
+	.get(async (req, res) => {
+		const missionId = req.params.id;
+		const mission = await service.find(new Types.ObjectId(missionId));
+
+		try {		
+			
+			if (!mission) {
+				return res.status(404).json({ message: 'La mission est introuvable'});
+			} else  {
+				const visuel = await service.visuel(mission._id);
+				res.sendFile(join(config.ATTACHEMENT_SRC, visuel.userId.toString(), visuel.type + 's', visuel.name));				}
+		}
+		 catch (error) {
+			console.error('Erreur autelechargment du visuel d la mission:', error);
 			return res.status(500).json({ message: 'Erreur Interne du server' });
 		}
 	});

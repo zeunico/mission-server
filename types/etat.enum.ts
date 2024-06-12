@@ -1,7 +1,7 @@
 enum EEtat {
-	NON_DEMARREE = 0,
-	EN_COURS = 1,
-    TERMINEE = 2
+	NON_DEMARREE = "NON_DEMARREE",
+	EN_COURS = "EN_COURS",
+    TERMINEE = "TERMINEE"
 }
 
 export default EEtat;

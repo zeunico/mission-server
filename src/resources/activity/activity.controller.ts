@@ -1541,97 +1541,178 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-not-active')
 
 	// ROUTE STATUT GUIDEE
 ActivityController.route('/:id([a-z0-9]{24})/isGuidee')
-.get(async (req, res) => {
-	try {
-		const id = new Types.ObjectId(req.params.id);
+	.get(async (req, res) => {
+		try {
+			const id = new Types.ObjectId(req.params.id);
 
-		const isGuideeStatus = await service.findGuideeStatus(id);
-		return res.status(200).json(isGuideeStatus);
-	} catch (error) {
-		console.error('Error in GET /activity/{id}/isActive:', error);
-		return res.status(500).json({ message: 'Erreur du serveur' });
-	}
-});
+			const isGuideeStatus = await service.findGuideeStatus(id);
+			return res.status(200).json(isGuideeStatus);
+		} catch (error) {
+			console.error('Error in GET /activity/{id}/isActive:', error);
+			return res.status(500).json({ message: 'Erreur du serveur' });
+		}
+	});
 
 // ROUTE CHANGE TO GUIDEE
 ActivityController.route('/:id([a-z0-9]{24})/change-to-guidee')
-.post(async (req, res) => {
-	const id = req.params.id;
-	const activity = await service.find(new Types.ObjectId(id));
+	.post(async (req, res) => {
+		const id = req.params.id;
+		const activity = await service.find(new Types.ObjectId(id));
 
-	if (!id) {
-		return res.status(400).send('Le champ ID est manquant.');
-	}
-	if (!activity) {
-		return res.status(404).json('Activité introuvable');
-	}
-
-	try {
-		const statusGuidee = await service.findActiveStatus(new Types.ObjectId(id));
-		const titre = await service.findTitreById(new Types.ObjectId(id));
-		console.log('statut visible', statusGuidee);
-		if (statusGuidee === true) {
-			res.status(200).json('Activité :  ' + titre + ' est déjà guidée');
-		} else {
-			
-			if (activity) {
-				activity.guidee = true;
-				await activity.save();
-				res.status(201).json('Activité :  ' + titre + ' est désormais guidée');
-			}
-			
+		if (!id) {
+			return res.status(400).send('Le champ ID est manquant.');
 		}
-	} catch (error) {
-		console.error(error);
-		res.status(500).send('Internal Server Error');
-	}
-});
+		if (!activity) {
+			return res.status(404).json('Activité introuvable');
+		}
+
+		try {
+			const statusGuidee = await service.findActiveStatus(new Types.ObjectId(id));
+			const titre = await service.findTitreById(new Types.ObjectId(id));
+			console.log('statut visible', statusGuidee);
+			if (statusGuidee === true) {
+				res.status(200).json('Activité :  ' + titre + ' est déjà guidée');
+			} else {
+				
+				if (activity) {
+					activity.guidee = true;
+					await activity.save();
+					res.status(201).json('Activité :  ' + titre + ' est désormais guidée');
+				}
+				
+			}
+		} catch (error) {
+			console.error(error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
 // ROUTE CHANGE TO NOT GUIDEE
 ActivityController.route('/:id([a-z0-9]{24})/change-to-not-guidee')
-.post(async (req, res) => {
-	const id = req.params.id;
-	const activity = await service.find(new Types.ObjectId(id));
+	.post(async (req, res) => {
+		const id = req.params.id;
+		const activity = await service.find(new Types.ObjectId(id));
 
-	if (!id) {
-		return res.status(400).send('Le champ ID est manquant.');
-	}
-	if (!activity) {
-		return res.status(404).json('Activité introuvable');
-	}
-	try {
-		const statusGuidee = await service.findActiveStatus(new Types.ObjectId(id));
-		const titre = await service.findTitreById(new Types.ObjectId(id));
-		console.log('statut guidee', statusGuidee);
-		if (!statusGuidee) {
-			res.status(200).json('Activité :  ' + titre + ' est déjà non guidée');
-		} else {
-			if (activity) {
-				activity.guidee = false;
-				await activity.save();
-				res.status(201).json('Activité :  ' + titre + ' est désormais non guidée');
-			}
+		if (!id) {
+			return res.status(400).send('Le champ ID est manquant.');
 		}
-	} catch (error) {
-		console.error(error);
-		res.status(500).send('Internal Server Error');
-	}
-});
+		if (!activity) {
+			return res.status(404).json('Activité introuvable');
+		}
+		try {
+			const statusGuidee = await service.findActiveStatus(new Types.ObjectId(id));
+			const titre = await service.findTitreById(new Types.ObjectId(id));
+			console.log('statut guidee', statusGuidee);
+			if (!statusGuidee) {
+				res.status(200).json('Activité :  ' + titre + ' est déjà non guidée');
+			} else {
+				if (activity) {
+					activity.guidee = false;
+					await activity.save();
+					res.status(201).json('Activité :  ' + titre + ' est désormais non guidée');
+				}
+			}
+		} catch (error) {
+			console.error(error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
+
+//  GESTION DES ETATS 
+// QUEL ETAT POUR UN USER
+ActivityController.route('/:activityId([a-z0-9]{24})/queletat/:userId([a-z0-9]{24})/') 
+	.get(async (req, res) => {
+		const activityId = new Types.ObjectId(req.params.activityId);
+		const userId = new Types.ObjectId(req.params.userId);
+		try {
+			const etatByUser = await service.etatByUser(activityId, userId);
+			
+			res.status(200).send(etatByUser);
+		} catch (error) {
+			console.error(error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
 
 
-// ROUTE ACTIVITE DEMARRE POUR UN USER 
-// Passage de l UserId de  état["0": {userId}] à  état["1": {userId}] 
+// ROUTE PUT ON_DEMARREE POUR UN USER
+ActivityController.route('/:activityId([a-z0-9]{24})/putNonDemarreeEtat/:userId([a-z0-9]{24})/') 
+	.post(async (req, res) => {
+		try {
+			const activityId = new Types.ObjectId(req.params.activityId);
+			const userId = new Types.ObjectId(req.params.userId);
+			// S assurer que le userId n est pas déjà dans les etats
+			const isInEtat = await service.etatByUser(activityId, userId);
+			if (isInEtat === 'NON_DEMARREE' || isInEtat === 'EN_COURS' || isInEtat === 'TERMINEE') {
+				console.log('User déjà in array', isInEtat );
+				res.status(500).send('Activité déjà non_demarree pour cet User');
+
+			} else {
+				const actvityEtatNonDem = await service.putNonDemarreeEtat(activityId, userId);
+				if (actvityEtatNonDem)
+				{res.status(200).send(actvityEtatNonDem);}
+			}
+		} catch (error) {
+			console.error(error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
+// ROUTE ACTIVITE EN COURS POUR UN USER 
+// Passage de l UserId de  état["NON_DEMARREE": {userId}] à  état["EN_COURS": {userId}] 
 ActivityController.route('/:activityId([a-z0-9]{24})/demarrerPourUser/:userId([a-z0-9]{24})/')
-.post(async (req, res) => {
-	const activityId = new Types.ObjectId(req.params.activityId);
-	const userId = new Types.ObjectId(req.params.userId);
-	try {
-		await service.startActivity(activityId, userId);
+	.post(async (req, res) => {
+		try {
+			const activityId = new Types.ObjectId(req.params.activityId);
+			const userId = new Types.ObjectId(req.params.userId);
+			// S assurer que le userId n est pas déjà dans les etats
+			const isInEtat = await service.etatByUser(activityId, userId);
+			console.log('Isinetat',isInEtat);
+			if (isInEtat === 'EN_COURS') {
+				console.log('User déjà in array', isInEtat );
+				res.status(500).send('Activité déjà en cours pour cet User');
 
-	} catch (error) {
-		console.error(error);s
-		res.status(500).send('Internal Server Error');
-	}
-});
+			} else  if (isInEtat === 'TERMINEE'){
+				console.log('User déjà in array', isInEtat );
+				res.status(500).send('Activité déjà terminée pour cet User');
 
+			} else  if (isInEtat === 'NON_DEMARREE') {
+				const actvityEnCoursPourUser = await service.startActivity(activityId, userId);
+				if (actvityEnCoursPourUser)
+				{res.status(200).send(actvityEnCoursPourUser);}
+			}
+			else res.status(500).send('Le user na pas été inscrit à l activit car il nest pas présent dan sles etats de celle ci');
+		} catch (error) {
+			console.error(error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
+// ROUTE ACTIVITE TERMINEE POUR UN USER 
+// Passage de l UserId de  état["EN_COURS": {userId}] à  état["TERMINEE": {userId}] 
+ActivityController.route('/:activityId([a-z0-9]{24})/terminerPourUser/:userId([a-z0-9]{24})/')
+	.post(async (req, res) => {
+		try {
+			const activityId = new Types.ObjectId(req.params.activityId);
+			const userId = new Types.ObjectId(req.params.userId);
+			// S assurer que le userId n est pas déjà dans les etats
+			const isInEtat = await service.etatByUser(activityId, userId);
+			console.log('Isinetat',isInEtat);
+			if (isInEtat === 'NON_DEMARREE') {
+				console.log('User n a pas commencé l activité', isInEtat );
+				res.status(500).send('Activité déjà en cours pour cet User');
+
+			} else  if (isInEtat === 'TERMINEE'){
+				console.log('User déjà in array', isInEtat );
+				res.status(500).send('Activité déjà terminée pour cet User');
+
+			} else  if (isInEtat === 'EN_COURS') {
+				const actvityTermineePourUser = await service.endActivity(activityId, userId);
+				if (actvityTermineePourUser)
+				{res.status(200).send(actvityTermineePourUser);}
+			}
+			else res.status(500).send('Le user na pas été inscrit à l activit car il nest pas présent dan sles etats de celle ci');
+		} catch (error) {
+			console.error(error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
 
 export default ActivityController;

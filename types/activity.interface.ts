@@ -1,10 +1,11 @@
 import { Types } from 'mongoose';
+import EEtat from './etat.enum';
 
 export interface IActivity {
 	_id: Types.ObjectId,
 	titre: string,
 	description: string,
-    etat: number,
+	etat: Partial<Record<EEtat, Types.ObjectId[]>>,
 	visible: boolean,
 	active: boolean,
 	guidee: boolean,
