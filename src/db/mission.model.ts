@@ -28,11 +28,11 @@ const MissionSchema = new mongoose.Schema<IMission>({
 		required: false
 	},
 
-	'etat': {
-		type: String,
-		enum: Object.values(EEtat),
-		required: true
-	},
+    'etat': {
+        type: String,
+        enum: Object.values(EEtat), 
+        required: true
+    },
 	
 	'visible': {
 		type: Boolean,

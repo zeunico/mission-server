@@ -56,8 +56,46 @@ export class ActivityService {
 		} catch (error) {
 			console.error('Erreur lors de la recherche de l\'activité:', error);
 			throw error;
-		}
+		}	
 	}
+
+
+		// GESTION DES ETATS
+
+    async putNonDemarreeStatus(activityId: Types.ObjectId, userId: Types.ObjectId) {
+		try {
+		const activity =  Activity.Activity.findById(activityId);
+
+		  if (!activity) {
+            throw new Error('Activity not found');
+        } else if (!activity.etat || typeof activity.etat !== 'object') {
+            	activity.etat = {};
+        			}
+
+        // Initialize the "0" status array if it doesn't exist
+        if (!Array.isArray(activity.etat['0'])) {
+            activity.etat['0'] = [];
+        }
+
+        // Add the userId to the "0" status array if it doesn't already exist
+        if (!activity.etat['0'].includes(userId.toString())) {
+            activity.etat['0'].push(userId.toString());
+        }
+
+        await activity.save();
+        console.log('Updated activity:', activity);
+	
+	
+	
+	} catch (error) {
+				console.error('Erreur lors du put de l état NON_DEMARREE', error);
+				throw error;
+			}
+
+	}
+
+
+
 
 	// Statut Activité de l'activité
 	async findActiveStatus(activityId: Types.ObjectId): Promise<boolean> {
@@ -104,7 +142,22 @@ export class ActivityService {
 		}
 	}
 
+	async startActivity(activityId: Types.ObjectId, userId: Types.ObjectId):  Promise<IActivity> {
+		try {
+			const activity = await Activity.Activity.findById(activityId);
+			if (!activity) {
+				throw new Error('Activité introuvable');
+			} else if (activity.etat[1].includes(userId)) {
+						return true;
+			}
+			
 
+			return activity;
+		} catch (error) {
+			console.error('Erreur lors de la recherche de l\'activité:', error);
+			throw error;
+		}
+	  };
 }
 
 
@@ -168,4 +221,8 @@ export class ActivityProduireService extends ActivityService {
 		return allActivities;
 	}
 	
+	static async findById(_id: Types.ObjectId): Promise<IActivityProduire | null> {
+		const researchedActivity = await ActivityConsulter.ActivityProduire.findOne({ _id});
+		return researchedActivity;
+	}
 }

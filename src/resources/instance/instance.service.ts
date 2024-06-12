@@ -3,6 +3,25 @@ import { Types } from 'mongoose';
 import { IInstance } from '~~/types/instance.interface';
 
 export class InstanceService {
+
+
+	// Creation d une nouvelle salle par NOM
+
+	static async createInstanceByName(instanceName) {
+		try {
+		const instanceData: IInstance = {
+		  _id: new Types.ObjectId(),
+		  name: instanceName,
+		  rooms: [new Types.ObjectId]
+		};
+		const createdInstance = await InstanceService.create(instanceData);
+		console.log('Created Instance :', createdInstance);
+		} catch (error) {
+		  console.error('Error creating room:', error);
+		}
+	  }
+
+
     // Creation d une nouvelle salle
 
 	static async create(data: IInstance): Promise<IInstance> {
@@ -39,6 +58,25 @@ export class InstanceService {
 		return allInstance;
 	}
 
+	// AJOUT D'UNE SALLE A UNE INSTANCE
+
+	static async  addRoomToInstance(instanceName: string, roomId: Types.ObjectId) {
+		try {
+		  const instance = await InstanceService.findByName(instanceName);
+		  console.log('Instance by name:', instance);
+	  
+		  if (instance) {
+			instance.rooms.push(roomId);
+	  
+			const updatedInstance = await InstanceService.update({ rooms: instance.rooms }, instance._id);
+			console.log('Updated instance:', updatedInstance);
+		  } else {
+			console.log('No instance found with the given name.');
+		  }
+		} catch (error) {
+		  console.error('Error updating instance:', error);
+		}
+	  }
 }
 
 

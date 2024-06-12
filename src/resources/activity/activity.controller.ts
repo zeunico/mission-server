@@ -11,12 +11,14 @@ import { ReadableStreamBYOBRequest } from 'stream/web';
 import { MissionService } from '../mission/mission.service';
 import Mission from '~/db/mission.model';
 import Activity from '~/db/activity.model';
+import { UsersService } from '../users/users.service';
 
 
 // Instanciation des Services
 
 const service = new ActivityService();
 const missionService = new MissionService();
+const userService = new UsersService();
 
 
 
@@ -554,7 +556,6 @@ const activityService = new ActivityService();
  *         types:
  *          type: string
  *          description: Type de fichier acceptés dans l'activité Consulter ou Produire
- 
  * /activity/addToMission/{idActivity}/{idMission}:
  *  post:
  *   summary: Ajoute une mission à une activité en utilisant leurs IDs.
@@ -757,7 +758,347 @@ const activityService = new ActivityService();
  *         message:
  *          type: string
  *          description: Message d'erreur indiquant une erreur interne du serveur.
-
+  * /activity/{id}/isVisible:
+ *  get:
+ *   summary: Vérifie si une activité est visible.
+ *   tags: [Activity]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      required: true
+ *      description: L'ID de l'activité dont on vérifie la visibilité
+ *      type: string
+ *   responses:
+ *    200:
+ *     description: Status de visibilité de l'activité.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: boolean
+ *        example: false 
+ *        description: Visibilité de l'activité
+ *    404:
+ *     description: L'activité n'a pas été trouvée en base de données.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         error:
+ *          type: string
+ *          description: Message d'erreur 
+ * 
+ * /activity/{id}/change-to-visible:
+ *   post:
+ *     summary: Changer la visibilité de l'activité à visible
+ *     tags: [Activity]
+ *     description: Ce point de terminaison change l'état de visibilité d'une activité en visible.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de l'activité
+ *     responses:
+ *       200:
+ *         description: L'ctivité est déjà visible
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Activité {titre} est déjà visible
+ *       201:
+ *         description: La activité est maintenant visible
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Activité {titre} est désormais visible
+ *       400:
+ *         description: Le champ ID est manquant
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
+* /activity/{id}/change-to-not-visible:
+ *   post:
+ *     summary: Changer la visibilité de l'activité à non visible
+ *     tags: [Activity]
+ *     description: Ce point de terminaison change l'état de visibilité d'une activité en non visible.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de l'activité
+ *     responses:
+ *       200:
+ *         description: L'activité est déjà non visible
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Activité {titre} est déjà non visible
+ *       201:
+ *         description: L'activité est maintenant non visible
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Activité {titre} est désormais non visible
+ *       400:
+ *         description: Le champ ID est manquant
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
+ * /activity/{id}/isActive:
+ *  get:
+ *   summary: Vérifie si une activité est active.
+ *   tags: [Activity]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      required: true
+ *      description: L'ID de l'activité dont on vérifie le statut d'activité
+ *      type: string
+ *   responses:
+ *    200:
+ *     description: Status de l'activité d la activité.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: boolean
+ *        example: false 
+ *        description: Status de la activité (active ou pas)
+ *    404:
+ *     description: L'activité n'a pas été trouvée en base de données.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         error:
+ *          type: string
+ *          description: Message d'erreur
+ * /activity/{id}/change-to-active:
+ *   post:
+ *     summary: Changer la statut Actif de l'activité à visible
+ *     tags: [Activity]
+ *     description: Ce point de terminaison change l'état de l'activité d'une activity en active.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de l'activité
+ *     responses:
+ *       200:
+ *         description: L'activité est déjà active
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Activité {titre} est déjà active
+ *       201:
+ *         description: L'activité est maintenant active
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Activité {titre} est désormais active
+ *       400:
+ *         description: Le champ ID est manquant
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
+ * /activity/{id}/change-to-not-active:
+ *   post:
+ *     summary: Changer la visibilité de l'activité à non active
+ *     tags: [Activity]
+ *     description: Ce point de terminaison change l'état de visibilité d'une activité en non active.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de l'activité
+ *     responses:
+ *       200:
+ *         description: L'activité est déjà non active
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Activité {titre} est déjà non active
+ *       201:
+ *         description: L'activité est maintenant non active
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Activité {titre} est désormais non active
+ *       400:
+ *         description: Le champ ID est manquant
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
+ * 
+ * /activity/{id}/isGuidee:
+ *  get:
+ *   summary: Vérifie si une activité est guidée.
+ *   tags: [Activity]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      required: true
+ *      description: L'ID de l'activité dont on vérifie le statut guidée ou pas
+ *      type: string
+ *   responses:
+ *    200:
+ *     description: Status de l'activité (guidée ou pas)
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: boolean
+ *        example: false
+ *        description: Status de l activité (guidée ou pas)
+ *    404:
+ *     description: L'activité n'a pas été trouvée en base de données.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         error:
+ *          type: string
+ *          description: Message d'erreur
+ * /activity/{id}/change-to-guidee:
+ *   post:
+ *     summary: Changer la statut Actif de l'activité à guidée
+ *     tags: [Activity]
+ *     description: Ce point de terminaison change l'état de l'activité d'une activité en guidée.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de la activité
+ *     responses:
+ *       200:
+ *         description: L'activité est déjà guidée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Activité {titre} est déjà guidée
+ *       201:
+ *         description: L'activité est maintenant guidée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Activité {titre} est désormais guidée
+ *       400:
+ *         description: Le champ ID est manquant
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
+ * /activity/{id}/change-to-not-guidee:
+ *   post:
+ *     summary: Changer la visibilité de la activité à non guidée
+ *     tags: [Activity]
+ *     description: Ce point de terminaison change l'état de visibilité d'une activité en non guidée.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de la activité
+ *     responses:
+ *       200:
+ *         description: L'activité est déjà non guidée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Activité {titre} est déjà non guidée
+ *       201:
+ *         description: L'activité est maintenant non guidée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Activité {titre} est désormais non guidée
+ *       400:
+ *         description: Le champ ID est manquant
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur 
  */
 
 ActivityController.route('/')
@@ -773,11 +1114,11 @@ ActivityController.route('/')
 	.post(async (req, res, next) => {
 		try {
 	
-			if (req.body.description_detaillee_consulter && req.body.type) {	   
+			if (req.body.description_detaillee_consulter) {	   
 				const savedConsulter = await ActivityConsulterService.createConsulter(req.body);
 				return res.status(201).json(savedConsulter);
 			} else {
-				if (req.body.description_detaillee_produire && req.body.types) {
+				if (req.body.description_detaillee_produire) {
 
 					const savedProduire = await ActivityProduireService.createProduire(req.body);
 					console.log('Controller / ActivityProduire return from ActProdSer:', savedProduire);
@@ -947,64 +1288,95 @@ ActivityController.route('/addToMission/:idActivity([a-z0-9]{24})/:idMission([a-
 });
 
 
-// DUPLIQUER UNE ACTIVITE
+// Route TEST POUR CREATION ACTIVITE TEST
+ActivityController.route('/test')
+.get(async (req, res) => {
+	try {
+			// ACTIVITE TEST 
+			const activityTest = {
+				titre: "Test Activity",
+				description: "This is a test activity",
+				etat: {
+					"0": ["userId1", "userId2", "userId3"],
+					"1": ["userId4", "userId5", "userId6"],
+					"2": ["userId7", "userId8", "userId9"]
+				},
+				description_detaillee_produire: "Vraie détaillée  PRODUIRE",
+				types: ["audio","video","slide"],
+				visible: true,
+				active: false,
+				guidee: true
+			};
+				const newActivityTest = await ActivityProduireService.createProduire(activityTest);
+			if (newActivityTest) {
+				return res.status(200).json({ message:  `Activité Test Créée avec Succès ${newActivityTest} ` });
 
-ActivityController.route('/duplicate/:idActivity([a-z0-9]{24})')
-    .post(async (req, res) => {
-        try {
-            const idActivity = req.params.idActivity;
-			console.log('idActivity',idActivity);
+			}
 
-            // Find the activity to be duplicated
-            const activitytodup = await service.findById(new Types.ObjectId(idActivity));
-			console.log('activitytodup',activitytodup);
-			const isConsulter = activitytodup?.description_detaillee_consulter;
-			const isProduire = activitytodup?.description_detaillee_produire;
-			
-			console.log('isConsulter',isConsulter);
-			if (isProduire ) {
-               console.log('yyyy');
-            };
-			if (!isConsulter && !isProduire ) {
-                return res.status(404).json({ error: `Activité avec ID ${idActivity} non trouvée` });
-            };
-			if (isConsulter) {	
-					const activityData: IActivityConsulter = {
-						_id: new Types.ObjectId(), 
-						titre: activitytodup.titre + '-Copie',
-						description: activitytodup.description,
-						etat: activitytodup.etat,
-						description_detaillee_consulter: activitytodup.description_detaillee_consulter,
-						active: activitytodup.active,
-						guidee: activitytodup.guidee,
-						visible: activitytodup.visible,
-						type: activitytodup.type,	
-					}
-					const duplicatedActivityConsulter = await ActivityConsulterService.createConsulter(activityData);
-					return res.status(200).json(duplicatedActivityConsulter);
-				}
-				if (isProduire) {	
-					const activityData: IActivityProduire = {
-						_id: new Types.ObjectId(), 
-						titre: activitytodup.titre + '-Copie',
-						description: activitytodup.description,
-						etat: activitytodup.etat,
-						description_detaillee_produire: activitytodup.description_detaillee_produire,
-						active: activitytodup.active,
-						guidee: activitytodup.guidee,
-						visible: activitytodup.visible,
-						types: activitytodup.types,	
-					}
-					const duplicatedActivityConsulter = await ActivityProduireService.createProduire(activityData);
-					return res.status(200).json(duplicatedActivityConsulter);
-				}
-
-			
         } catch (error) {
-            console.error('Error in POST activity/duplicate/:idActivity:', error);
-            return res.status(500).json({ message: 'Erreur du serveur' });
+            console.error('Error in GET /activity/test:', error);
+			return res.status(500).json({ message: 'Erreur du serveur' });
         }
     });
+
+
+// DUPLIQUER UNE ACTIVITE
+ActivityController.route('/duplicate/:idActivity([a-z0-9]{24})')
+.post(async (req, res) => {
+	try {
+		const idActivity = req.params.idActivity;
+		console.log('idActivity',idActivity);
+
+		// Find the activity to be duplicated
+		const activitytodup = await service.findById(new Types.ObjectId(idActivity));
+		console.log('activitytodup',activitytodup);
+		const isConsulter = activitytodup?.description_detaillee_consulter;
+		const isProduire = activitytodup?.description_detaillee_produire;
+		
+		console.log('isConsulter',isConsulter);
+		if (isProduire ) {
+			console.log('yyyy');
+		};
+		if (!isConsulter && !isProduire ) {
+			return res.status(404).json({ error: `Activité avec ID ${idActivity} non trouvée` });
+		};
+		if (isConsulter) {	
+				const activityData: IActivityConsulter = {
+					_id: new Types.ObjectId(), 
+					titre: activitytodup.titre + '-Copie',
+					description: activitytodup.description,
+					etat: activitytodup.etat,
+					description_detaillee_consulter: activitytodup.description_detaillee_consulter,
+					active: activitytodup.active,
+					guidee: activitytodup.guidee,
+					visible: activitytodup.visible,
+					type: activitytodup.type,	
+				}
+				const duplicatedActivityConsulter = await ActivityConsulterService.createConsulter(activityData);
+				return res.status(200).json(duplicatedActivityConsulter);
+			}
+			if (isProduire) {	
+				const activityData: IActivityProduire = {
+					_id: new Types.ObjectId(), 
+					titre: activitytodup.titre + '-Copie',
+					description: activitytodup.description,
+					etat: activitytodup.etat,
+					description_detaillee_produire: activitytodup.description_detaillee_produire,
+					active: activitytodup.active,
+					guidee: activitytodup.guidee,
+					visible: activitytodup.visible,
+					types: activitytodup.types,	
+				}
+				const duplicatedActivityConsulter = await ActivityProduireService.createProduire(activityData);
+				return res.status(200).json(duplicatedActivityConsulter);
+			}
+
+		
+	} catch (error) {
+		console.error('Error in POST activity/duplicate/:idActivity:', error);
+		return res.status(500).json({ message: 'Erreur du serveur' });
+	}
+	});
 
 
 	
@@ -1245,6 +1617,21 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-not-guidee')
 	}
 });
 
+
+// ROUTE ACTIVITE DEMARRE POUR UN USER 
+// Passage de l UserId de  état["0": {userId}] à  état["1": {userId}] 
+ActivityController.route('/:activityId([a-z0-9]{24})/demarrerPourUser/:userId([a-z0-9]{24})/')
+.post(async (req, res) => {
+	const activityId = new Types.ObjectId(req.params.activityId);
+	const userId = new Types.ObjectId(req.params.userId);
+	try {
+		await service.startActivity(activityId, userId);
+
+	} catch (error) {
+		console.error(error);s
+		res.status(500).send('Internal Server Error');
+	}
+});
 
 
 export default ActivityController;

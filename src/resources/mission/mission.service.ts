@@ -7,6 +7,7 @@ import { RoomService } from '../room/room.service';
 import { IRoom } from '~~/types/room.interface';
 import  Room  from '~/db/room.model';
 import RoomController from '../room/room.controller';
+import EEtat from '~~/types/etat.enum';
 
 export class MissionService {
 
@@ -97,7 +98,26 @@ export class MissionService {
 			console.error('Erreur lors de la recherche de la mission:', error);
 			throw error;
 		}	
-	};
+	}
+
+	
+
+	// ETAT D'AVANCEMENT D'UNE MISSION
+
+	// Statut Etat de la Mission
+	async findEtat(missionId: Types.ObjectId): Promise<IMission["etat"]> {
+		try {
+			const mission = await Mission.findById(missionId);
+			if (!mission) {
+				throw new Error('Mission introuvable');
+			} else {
+				return mission.etat;
+				}
+			}
+			catch (error) {
+			console.error('Erreur lors de la recherche de la mission:', error);
+			throw error;
+		}	
+	}
+;
 }
-
-

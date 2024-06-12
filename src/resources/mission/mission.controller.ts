@@ -355,7 +355,6 @@ const roomService = new RoomService();
  *         visuel :
  *          type: string
  *          description: Visuel
- * 
  * /mission/{id}/isVisible:
  *  get:
  *   summary: Vérifie si une mission est visible.
@@ -1142,5 +1141,56 @@ MissionController.route('/:id([a-z0-9]{24})/activites')
         }
     });
 
+// DEMARRER UNE MISSION ETAT 0 => 1 
+MissionController.route('/:id([a-z0-9]{24})/demarrer')
+	.post(async (req, res) => {
+		const missionId = req.params.id;
+		const mission = await service.find(new Types.ObjectId(missionId));
+
+		try {		
+			
+			if (!mission) {
+				return res.status(404).json({ message: 'La mission est introuvable' });
+			} else if (mission.etat === "1") {
+				return res.status(400).json({ message: 'La mission est déjà démarrée', mission });
+			} else if (mission.etat === "2") {
+				return res.status(400).json({ message: 'La mission est terminée, vous le pouvez pas la redémarrer', mission });
+			} else {  
+				mission.etat = "1";
+				await mission.save();
+				return res.status(200).json({ message: 'La mission a démarrée avec succès', mission });
+			}
+		}
+		 catch (error) {
+			console.error('Erreur au démarrage de la mission:', error);
+			return res.status(500).json({ message: 'Erreur Interne du server' });
+		}
+	});
+
+// TERMINER UNE MISSION ETAT 1 => 2 
+MissionController.route('/:id([a-z0-9]{24})/terminer')
+	.post(async (req, res) => {
+		const missionId = req.params.id;
+		const mission = await service.find(new Types.ObjectId(missionId));
+
+		try {		
+			
+			if (!mission) {
+				return res.status(404).json({ message: 'La mission est introuvable'});
+			} else if (mission.etat === "2") {
+				return res.status(400).json({ message: 'La mission est déjà terminée', mission });
+			} else if (mission.etat === "0") {
+				return res.status(400).json({ message: 'Par où t passé !! Cette mission n a jamais été démarrée !', mission });
+			} else {  
+				mission.etat = "2";
+				await mission.save();
+				return res.status(200).json({ message: 'La mission a été terminée avec succès', mission });
+			}
+		}
+		 catch (error) {
+			console.error('Erreur au démarrage de la mission:', error);
+			return res.status(500).json({ message: 'Erreur Interne du server' });
+		}
+	});
 
 export default MissionController;

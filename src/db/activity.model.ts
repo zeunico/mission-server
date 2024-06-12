@@ -19,23 +19,29 @@ const ActivitySchema = new mongoose.Schema<IActivity>({
 	},
 
 	'etat': {
-		type: String,
+		type: mongoose.Schema.Types.Mixed, 
 		enum: Object.values(EEtat),
-		required: false
+		default: [],
+		required: true,
 	},
 	
 	'visible': {
 		type: Boolean,
-		
+		default: false,
+		required: true,
 	},
 	
 	'active':  {
 		type: Boolean,
+		default: false,
+		required: true,
 		
 	},
 
 	'guidee': {
 		type: Boolean,
+		default: false,
+		required: true,
 		
 	},
 }, { timestamps: true });

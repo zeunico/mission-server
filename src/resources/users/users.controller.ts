@@ -347,20 +347,6 @@ async function createDefaultRoom(roomCode) {
 	}
   }
 
-async function createDefaultInstance(instanceName) {
-	try {
-	const instanceData: IInstance = {
-	  _id: new Types.ObjectId(),
-	  name: instanceName,
-	  rooms: []
-	};
-	const createdInstance = await InstanceService.create(instanceData);
-	console.log('Created Instance :', createdInstance);
-	} catch (error) {
-	  console.error('Error creating room:', error);
-	}
-  }
-
 
 UsersController.route('/')
 	.get(async (req, res) => {
@@ -441,42 +427,31 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 								const roomCode = room.roomCode;
 								console.log('rommcode', roomCode);
 
-								// CREATION INSTANCE DEFAULT
+								
 								const instanceName = user.instance;
 								console.log('instance name', instanceName);
 								
 								if (instanceName) {
 									const instance = await InstanceService.findByName(instanceName);
 									console.log('instance', instance);
+									const roomId = room._id;
 									if (instance === null) {
-										const newInstance = await createDefaultInstance(instanceName);
+										// CREATION NOUVELLE INSTANCE PAR NOM user.instance
+										const newInstance = await InstanceService.createInstanceByName(instanceName);
 										const instance = await InstanceService.findByName(instanceName);
+										// AJOUT SALLE DANS INSTANCE
+										InstanceService.addRoomToInstance(instanceName, new Types.ObjectId(roomId));
 
-										console.log('instance by name', instance);
-
-										console.log('roomcode', roomCode);
-										const roomId = room._id;
-									
-
-										async function addRoomToInstance(instanceName: string, roomId: Types.ObjectId) {
-											try {
-											  const instance = await InstanceService.findByName(instanceName);
-											  console.log('Instance by name:', instance);
-										  
-											  if (instance) {
-												instance.rooms.push(roomId);
-										  
-												const updatedInstance = await InstanceService.update({ rooms: instance.rooms }, instance._id);
-												console.log('Updated instance:', updatedInstance);
-											  } else {
-												console.log('No instance found with the given name.');
-											  }
-											} catch (error) {
-											  console.error('Error updating instance:', error);
+									} else {
+											// L'instance existe! On vérifie si la room est déjà dans l'array de l'instance, si non on l'ajoute
+											const isRoomCodePresent = instance.rooms.includes(roomCode);
+											if (isRoomCodePresent) {
+											  console.log('La salle existe déjà dans cette instance');
+											} else {
+													InstanceService.addRoomToInstance(instanceName, roomId);
+											  		console.log('La salle a été ajoutée à cette instance');
+													}
 											}
-										  }
-										  addRoomToInstance(instanceName, new Types.ObjectId(roomId));
-									}
 								}
 							} else {
 								console.error("Pas de Room, room is null");
