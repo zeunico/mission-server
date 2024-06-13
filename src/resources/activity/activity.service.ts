@@ -63,8 +63,9 @@ export class ActivityService {
 	}
 
 
-		// GESTION DES ETATS
-
+	// GESTION DES ETATS
+	
+		// ETAT d un USER dans une activité
 	async etatByUser(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<String> {
 				let foundKey = null;
 				const activity = await Activity.Activity.findById(activityId);	
@@ -80,7 +81,7 @@ export class ActivityService {
 						console.log(`User   ${userId} dans l etat "${foundKey}" `);
 						return foundKey;
 					}
-					else return '';
+					else return 'Cet utilisateur n a pas été inscrit à l activité';
 	}
 		// AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
     async putNonDemarreeEtat(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {

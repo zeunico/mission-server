@@ -12,6 +12,8 @@ import { MissionService } from '../mission/mission.service';
 import Mission from '~/db/mission.model';
 import Activity from '~/db/activity.model';
 import { UsersService } from '../users/users.service';
+import EEtat from '~~/types/etat.enum';
+
 
 
 // Instanciation des Services
@@ -1098,9 +1100,227 @@ const activityService = new ActivityService();
  *           text/plain:
  *             schema:
  *               type: string
- *               example: Erreur interne du serveur 
+ *               example: Erreur interne du serveur
+ * /activity/{idActivity}/etat/{idUser}:
+ *  get:
+ *   summary: L'état d'avancement d'un particpant dans une activité
+ *   tags: [Activity]
+ *   parameters:
+ *    - name: idActivity
+ *      in: path
+ *      description: ID de l'activité
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *    - name: idUser
+ *      in: path
+ *      description: ID du participant
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *   responses:
+ *    200:
+ *      description: L'état d'avancement d'un participant dans une activité
+ *      content:
+ *       application/json:
+ *         schema:
+ *           type: string
+ *           example: EN_COURS
+ * /activity/{idActivity}/inscrire/{idUser}:
+ *  post:
+ *   summary: Inscription d'un participant à une activité, etat = non_demarree
+ *   tags: [Activity]
+ *   parameters:
+ *    - name: idActivity
+ *      in: path
+ *      description: ID de l'activité
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *    - name: idUser
+ *      in: path
+ *      description: ID du participant
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *   responses:
+ *    201:
+ *     description: Activité avec ajout du particpant à l'état NON_DEMARREE
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de l'activité
+ *         titre:
+ *          type: string
+ *          description: Titre de l'a nouvelle 'activité
+ *         description:
+ *          type: string
+ *          description: Description de l'activité
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de l'activité pour chacun des participants
+ *         visible:
+ *          type: array
+ *          description: Statut de visibilité de l'activité
+ *         active:
+ *          type: string
+ *          description: Statut Actif de l'activité
+ *         guidée:
+ *          type: string
+ *          description: Statut Guidée de l'activité
+ *         description_detaillee_consulter:
+ *          type: string
+ *          description: Description détaillée de l'activité
+ *         type:
+ *          type: string
+ *          description: Type de fichier acceptés dans l'activité
+ *    500:
+ *     description: Erreur du serveur.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur indiquant une erreur interne du serveur.
+ * /activity/{idActivity}/start/{idUser}:
+ *  post:
+ *   summary: Le participant commence une activité, etat = en_cours
+ *   tags: [Activity]
+ *   parameters:
+ *    - name: idActivity
+ *      in: path
+ *      description: ID de l'activité
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *    - name: idUser
+ *      in: path
+ *      description: ID du participant
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *   responses:
+ *    201:
+ *     description: Activité avec ajout du particpant à l'état EN_COURS
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de l'activité
+ *         titre:
+ *          type: string
+ *          description: Titre de l'activité
+ *         description:
+ *          type: string
+ *          description: Description de l'activité
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de l'activité pour chacun des participants
+ *         visible:
+ *          type: array
+ *          description: Statut de visibilité de l'activité
+ *         active:
+ *          type: string
+ *          description: Statut Actif de l'activité
+ *         guidée:
+ *          type: string
+ *          description: Statut Guidée de l'activité
+ *         description_detaillee_consulter:
+ *          type: string
+ *          description: Description détaillée de l'activité
+ *         type:
+ *          type: string
+ *          description: Type de fichier acceptés dans l'activité
+ *    500:
+ *     description: Erreur du serveur.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur indiquant une erreur interne du serveur.
+ * /activity/{idActivity}/end/{idUser}:
+ *  post:
+ *   summary: Le participant finit une activité, etat = terminee
+ *   tags: [Activity]
+ *   parameters:
+ *    - name: idActivity
+ *      in: path
+ *      description: ID de l'activité
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *    - name: idUser
+ *      in: path
+ *      description: ID du participant
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *   responses:
+ *    201:
+ *     description: Activité avec ajout du particpant à l'état TERMINEE
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de l'activité
+ *         titre:
+ *          type: string
+ *          description: Titre de l'activité
+ *         description:
+ *          type: string
+ *          description: Description de l'activité
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de l'activité pour chacun des participants
+ *         visible:
+ *          type: array
+ *          description: Statut de visibilité de l'activité
+ *         active:
+ *          type: string
+ *          description: Statut Actif de l'activité
+ *         guidée:
+ *          type: string
+ *          description: Statut Guidée de l'activité
+ *         description_detaillee_consulter:
+ *          type: string
+ *          description: Description détaillée de l'activité
+ *         type:
+ *          type: string
+ *          description: Type de fichier acceptés dans l'activité
+ *    500:
+ *     description: Erreur du serveur.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur indiquant une erreur interne du serveur.
  */
-
 ActivityController.route('/')
 	.get(async (req, res, next) => {
         try {
@@ -1619,23 +1839,25 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-not-guidee')
 
 //  GESTION DES ETATS 
 // QUEL ETAT POUR UN USER
-ActivityController.route('/:activityId([a-z0-9]{24})/queletat/:userId([a-z0-9]{24})/') 
+ActivityController.route('/:activityId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/') 
 	.get(async (req, res) => {
 		const activityId = new Types.ObjectId(req.params.activityId);
 		const userId = new Types.ObjectId(req.params.userId);
 		try {
 			const etatByUser = await service.etatByUser(activityId, userId);
-			
-			res.status(200).send(etatByUser);
+			if (Object.values(EEtat).includes(etatByUser)) {
+				res.status(200).send(etatByUser);
+			} else {
+				res.status(200).send(etatByUser);
+			}
 		} catch (error) {
 			console.error(error);
 			res.status(500).send('Internal Server Error');
 		}
 	});
 
-
-// ROUTE PUT ON_DEMARREE POUR UN USER
-ActivityController.route('/:activityId([a-z0-9]{24})/putNonDemarreeEtat/:userId([a-z0-9]{24})/') 
+// ROUTE INSCRIRE  POUR UN USER ======= INSCRIPTION ==============
+ActivityController.route('/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24})/') 
 	.post(async (req, res) => {
 		try {
 			const activityId = new Types.ObjectId(req.params.activityId);
@@ -1644,7 +1866,7 @@ ActivityController.route('/:activityId([a-z0-9]{24})/putNonDemarreeEtat/:userId(
 			const isInEtat = await service.etatByUser(activityId, userId);
 			if (isInEtat === 'NON_DEMARREE' || isInEtat === 'EN_COURS' || isInEtat === 'TERMINEE') {
 				console.log('User déjà in array', isInEtat );
-				res.status(500).send('Activité déjà non_demarree pour cet User');
+				res.status(500).send(`Ce participant est déjà inscrit à cette activité. État d'avancement: ${isInEtat}`);
 
 			} else {
 				const actvityEtatNonDem = await service.putNonDemarreeEtat(activityId, userId);
@@ -1656,9 +1878,10 @@ ActivityController.route('/:activityId([a-z0-9]{24})/putNonDemarreeEtat/:userId(
 			res.status(500).send('Internal Server Error');
 		}
 	});
-// ROUTE ACTIVITE EN COURS POUR UN USER 
+
+// ROUTE ACTIVITE EN COURS POUR UN USER ====== START =====
 // Passage de l UserId de  état["NON_DEMARREE": {userId}] à  état["EN_COURS": {userId}] 
-ActivityController.route('/:activityId([a-z0-9]{24})/demarrerPourUser/:userId([a-z0-9]{24})/')
+ActivityController.route('/:activityId([a-z0-9]{24})/start/:userId([a-z0-9]{24})/')
 	.post(async (req, res) => {
 		try {
 			const activityId = new Types.ObjectId(req.params.activityId);
@@ -1668,26 +1891,26 @@ ActivityController.route('/:activityId([a-z0-9]{24})/demarrerPourUser/:userId([a
 			console.log('Isinetat',isInEtat);
 			if (isInEtat === 'EN_COURS') {
 				console.log('User déjà in array', isInEtat );
-				res.status(500).send('Activité déjà en cours pour cet User');
+				res.status(500).send('Activité déjà en cours pour ce participant');
 
 			} else  if (isInEtat === 'TERMINEE'){
 				console.log('User déjà in array', isInEtat );
-				res.status(500).send('Activité déjà terminée pour cet User');
+				res.status(500).send('Activité déjà terminée pour ce participant');
 
 			} else  if (isInEtat === 'NON_DEMARREE') {
 				const actvityEnCoursPourUser = await service.startActivity(activityId, userId);
 				if (actvityEnCoursPourUser)
 				{res.status(200).send(actvityEnCoursPourUser);}
 			}
-			else res.status(500).send('Le user na pas été inscrit à l activit car il nest pas présent dan sles etats de celle ci');
+			else res.status(500).send('Le participant n\'a pas été inscrit à cette activité.');
 		} catch (error) {
 			console.error(error);
 			res.status(500).send('Internal Server Error');
 		}
 	});
-// ROUTE ACTIVITE TERMINEE POUR UN USER 
+// ROUTE ACTIVITE TERMINEE POUR UN USER  ====== END  =====
 // Passage de l UserId de  état["EN_COURS": {userId}] à  état["TERMINEE": {userId}] 
-ActivityController.route('/:activityId([a-z0-9]{24})/terminerPourUser/:userId([a-z0-9]{24})/')
+ActivityController.route('/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/')
 	.post(async (req, res) => {
 		try {
 			const activityId = new Types.ObjectId(req.params.activityId);

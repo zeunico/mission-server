@@ -142,7 +142,7 @@ export class MissionService {
 				if (mediaId)
 					{
 						const media = await mediaService.find(mediaId);
-						console.log('meedia',media);
+						console.log('media du visuel',media);
 						if (media) {return media;}
 						else {throw new Error('Mission introuvable');}
 					

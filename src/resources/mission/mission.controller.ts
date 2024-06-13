@@ -699,12 +699,12 @@ const roomService = new RoomService();
  *             schema:
  *               type: string
  *               example: Erreur interne du serveur
- * /mission/{id}/activites:
+ * /mission/{idMission}/activites:
  *   get:
  *     summary: Récupère les ID des activités dans une mission.
  *     tags: [Mission]
  *     parameters:
- *       - name: id
+ *       - name: idMission
  *         in: path
  *         description: ID de la mission
  *         required: true
@@ -741,13 +741,91 @@ const roomService = new RoomService();
  *             schema:
  *               type: string
  *               example: Internal Server Error
+ * /mission/{id}/start:
+ *   post:
+ *     summary: Démarrer une mission Etat NON_DEMARREE => EN_COURS
+ *     tags: [Mission]
+ *     description: Ce point de terminaison change l'état d'avancement d'une mission de "non démarrée" à "en cours".
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de la mission
+ *     responses:
+ *       200:
+ *         description: La mission a démarrée avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Mission {titre} est démarrée
+ *       400:
+ *         description: La mission est déjà démarrée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: La mission est déjà démarrée
+ *       404:
+ *         description: La mission est introuvable
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: La mission est introuvable
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
+  * /mission/{id}/end:
+ *   post:
+ *     summary: Commencer une mission Etat EN_COURS => TERMINEE
+ *     tags: [Mission]
+ *     description: Ce point de terminaison change l'état d'avancement d'une mission de "en cours" à "terminée".
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de la mission
+ *     responses:
+ *       200:
+ *         description: La mission a terminée avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Mission {titre} est terminée 
+ *       400:
+ *         description: La mission est déjà terminée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: La mission est déjà terminée
+ *       404:
+ *         description: La mission est introuvable
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: La mission est introuvable
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
  */
-
-/**    
- * Chemin: URI SERVER + /mission/
- * Ce lien fournit la liste des missions enregistrées en base de données, toutes salles confondues.
- */
-
 
 // ROUTE RACINE LISTE TOUTES LES MISSIONS
 MissionController.route('/')
@@ -1145,7 +1223,7 @@ MissionController.route('/:id([a-z0-9]{24})/activites')
     });
 
 // DEMARRER UNE MISSION ETAT 0 => 1 
-MissionController.route('/:id([a-z0-9]{24})/demarrer')
+MissionController.route('/:id([a-z0-9]{24})/start')
 	.post(async (req, res) => {
 		const missionId = req.params.id;
 		const mission = await service.find(new Types.ObjectId(missionId));
@@ -1171,7 +1249,7 @@ MissionController.route('/:id([a-z0-9]{24})/demarrer')
 	});
 
 // TERMINER UNE MISSION ETAT 1 => 2 
-MissionController.route('/:id([a-z0-9]{24})/terminer')
+MissionController.route('/:id([a-z0-9]{24})/end')
 	.post(async (req, res) => {
 		const missionId = req.params.id;
 		const mission = await service.find(new Types.ObjectId(missionId));
