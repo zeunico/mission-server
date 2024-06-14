@@ -3,6 +3,7 @@ import { IMission } from '~~/types/mission.interface';
 import { IMedia } from '~~/types/media.interface';
 import { Types } from 'mongoose';
 import { config } from '~/config';
+import { join } from 'path';
 import { NotFoundException } from '~/utils/exceptions';
 import { RoomService } from '../room/room.service';
 import { MediaService } from '../media/media.service';
@@ -10,18 +11,17 @@ import { IRoom } from '~~/types/room.interface';
 import  Room  from '~/db/room.model';
 import RoomController from '../room/room.controller';
 import EEtat from '~~/types/etat.enum';
-
+import { NullLiteral } from '@swc/core';
 const mediaService = new MediaService();
+
 
 export class MissionService {
 
     // Creation d une nouvelle mission
 
-	static async createMission(roomId: Types.ObjectId, datas: IMission,  visuel: Types.ObjectId | undefined): Promise<IMission> {
+	async createMission(datas: IMission): Promise<IMission> {
 		const newMission: IMission = {
 			...datas,
-
-			visuel: visuel? visuel: undefined,
 		};
 		return await Mission.create(newMission);
 	}
@@ -126,10 +126,8 @@ export class MissionService {
 	}
 
 
-
-
   	//  LE VISUEL DE LA MISSION 	
-	  async visuel(missionId: Types.ObjectId): Promise<IMedia> {
+	  async visuel(missionId: Types.ObjectId): Promise<IMedia | null> {
 		try {
 			const mission = await Mission.findById(missionId);
 			
@@ -138,16 +136,16 @@ export class MissionService {
 			} else if (mission) {
 				console.log('mission', mission);
 				const mediaId = mission.visuel;
-				console.log('mediaId', mediaId);
+				
 				if (mediaId)
 					{
-						const media = await mediaService.find(mediaId);
-						console.log('media du visuel',media);
-						if (media) {return media;}
-						else {throw new Error('Mission introuvable');}
-					
+					console.log('mediaId', mediaId);
+					const media = await mediaService.find(mediaId);
+					if (media) {
+						return media;
+						}
 					} 
-				else {throw new Error('Mission introuvable');}
+				else {return null;}
 			}
 		}
 			catch (error) {
@@ -155,6 +153,4 @@ export class MissionService {
 			throw error;
 			}	
 		}
-
-
 }

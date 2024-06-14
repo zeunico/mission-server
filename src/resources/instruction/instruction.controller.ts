@@ -198,7 +198,11 @@ const usersService = new UsersService();
 InstructionController.route('/')
 	.post(async (req, res, next) => {
 		try {
-			console.log('rq.body',req.body);
+			console.log('rq.bod.roomy',req.body.room);
+			const roomRegex = /^[A-Z0-9]{6}$/;
+            if (!roomRegex.test(req.body.room)) {
+                return res.status(400).send('Le champ room doit être constitué de 6 caractères, les lettres doivent être en majuscules.');
+            }
 
 			const user = await usersService.find(req.body.userTarget);
 			console.log('user instruction controller', user);

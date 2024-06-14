@@ -12,7 +12,7 @@ export class InstanceService {
 		const instanceData: IInstance = {
 		  _id: new Types.ObjectId(),
 		  name: instanceName,
-		  rooms: [new Types.ObjectId]
+		  rooms: []
 		};
 		const createdInstance = await InstanceService.create(instanceData);
 		console.log('Created Instance :', createdInstance);

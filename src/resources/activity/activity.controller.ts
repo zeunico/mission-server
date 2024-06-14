@@ -13,6 +13,7 @@ import Mission from '~/db/mission.model';
 import Activity from '~/db/activity.model';
 import { UsersService } from '../users/users.service';
 import EEtat from '~~/types/etat.enum';
+import { RoomService } from '../room/room.service';
 
 
 
@@ -21,7 +22,7 @@ import EEtat from '~~/types/etat.enum';
 const service = new ActivityService();
 const missionService = new MissionService();
 const userService = new UsersService();
-
+const roomService = new RoomService();
 
 
 // Création d'un objet multer Storage
@@ -1192,6 +1193,70 @@ const activityService = new ActivityService();
  *         message:
  *          type: string
  *          description: Message d'erreur indiquant une erreur interne du serveur.
+ * /activity/{idActivity}/inscrireRoom/{idRoom}:
+ *  post:
+ *   summary: Inscription de tous les participants d'une salle à une activité (non déjà présent dans l'activité)
+ *   tags: [Activity]
+ *   parameters:
+ *    - name: idActivity
+ *      in: path
+ *      description: ID de l'activité'
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *    - name: idRoom
+ *      in: path
+ *      description: ID de la salle 
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *   responses:
+ *    201:
+ *     description: Activité avec ajout des particpants (non déjà présent dans l'activité) à l'état NON_DEMARREE
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de l'activité
+ *         titre:
+ *          type: string
+ *          description: Titre de l'a nouvelle 'activité
+ *         description:
+ *          type: string
+ *          description: Description de l'activité
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de l'activité pour chacun des participants
+ *         visible:
+ *          type: array
+ *          description: Statut de visibilité de l'activité
+ *         active:
+ *          type: string
+ *          description: Statut Actif de l'activité
+ *         guidée:
+ *          type: string
+ *          description: Statut Guidée de l'activité
+ *         description_detaillee_consulter:
+ *          type: string
+ *          description: Description détaillée de l'activité
+ *         type:
+ *          type: string
+ *          description: Type de fichier acceptés dans l'activité
+ *    500:
+ *     description: Erreur du serveur.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur indiquant une erreur interne du serveur.
  * /activity/{idActivity}/start/{idUser}:
  *  post:
  *   summary: Le participant commence une activité, etat = en_cours
@@ -1408,16 +1473,16 @@ ActivityController.route('/:id([a-z0-9]{24})/')
 	if (!activity) {
 		return res.status(404).json({ error: `Activité avec ID ${id} non trouvée` });
 		}
-	try {
-			
-	
-			// TO Do TO DO On retire l'activité si existe dans une  mission  
-			
-			
-			
+	try {	
+        // Toutes les missions qui contiennent l'activity
+        const missions = await Mission.find({ activites: id });
+        // Update each mission
+        for (const mission of missions) {
+            mission.activites.pull(id); // On retire l activité de l'array activites
+            mission.nb_activites = mission.activites.length; // Update the number of activities
+            await mission.save(); // Save the updated mission
+        }						
 			await service.delete(id);
-
-
 			return res.status(200).json({ message:  `Activité  ${id} supprimée avec succès` });
 		} catch (error) {
 			console.error('Error in DELETE /activity/id:', error);
@@ -1506,39 +1571,6 @@ ActivityController.route('/addToMission/:idActivity([a-z0-9]{24})/:idMission([a-
         return res.status(500).json({ message: 'Erreur du serveur' });
     }
 });
-
-
-// Route TEST POUR CREATION ACTIVITE TEST
-ActivityController.route('/test')
-.get(async (req, res) => {
-	try {
-			// ACTIVITE TEST 
-			const activityTest = {
-				titre: "Test Activity",
-				description: "This is a test activity",
-				etat: {
-					"0": ["userId1", "userId2", "userId3"],
-					"1": ["userId4", "userId5", "userId6"],
-					"2": ["userId7", "userId8", "userId9"]
-				},
-				description_detaillee_produire: "Vraie détaillée  PRODUIRE",
-				types: ["audio","video","slide"],
-				visible: true,
-				active: false,
-				guidee: true
-			};
-				const newActivityTest = await ActivityProduireService.createProduire(activityTest);
-			if (newActivityTest) {
-				return res.status(200).json({ message:  `Activité Test Créée avec Succès ${newActivityTest} ` });
-
-			}
-
-        } catch (error) {
-            console.error('Error in GET /activity/test:', error);
-			return res.status(500).json({ message: 'Erreur du serveur' });
-        }
-    });
-
 
 // DUPLIQUER UNE ACTIVITE
 ActivityController.route('/duplicate/:idActivity([a-z0-9]{24})')
@@ -1681,7 +1713,6 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-not-visible')
             res.status(500).send('Internal Server Error');
         }
     });
-
 // ROUTE STATUT ACTIVE
 ActivityController.route('/:id([a-z0-9]{24})/isActive')
     .get(async (req, res) => {
@@ -1869,7 +1900,7 @@ ActivityController.route('/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{2
 				res.status(500).send(`Ce participant est déjà inscrit à cette activité. État d'avancement: ${isInEtat}`);
 
 			} else {
-				const actvityEtatNonDem = await service.putNonDemarreeEtat(activityId, userId);
+				const actvityEtatNonDem = await service.inscriptionActivity(activityId, userId);
 				if (actvityEtatNonDem)
 				{res.status(200).send(actvityEtatNonDem);}
 			}
@@ -1879,6 +1910,46 @@ ActivityController.route('/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{2
 		}
 	});
 
+// ROUTE INSCRIRE  POUR TOUS LES PARTICIPANTS D UNE SALLE ======= INSCRIPTION SALLE ENTIERE ==============
+ActivityController.route('/:activityId([a-z0-9]{24})/inscrireRoom/:roomId([a-z0-9]{24})/') 
+	.post(async (req, res) => {
+        try {
+            const activityId = new Types.ObjectId(req.params.activityId);
+            const roomId = new Types.ObjectId(req.params.roomId);
+
+            // Fetch the room object to get the list of participants
+            const room = await roomService.findById(roomId);
+            if (!room) {
+                return res.status(404).send('Room non trouvée.');
+            }
+
+            const participants = room.participants || [];
+            const results = [];
+
+            for (const userId of participants) {
+                const userObjectId = new Types.ObjectId(userId);
+                
+                // Ensure the user is not already in the states
+                const isInEtat = await activityService.etatByUser(activityId, userObjectId);
+				if (Object.values(EEtat).includes(isInEtat)) {
+
+                    results.push({ userId, message: `Ce participant est déjà inscrit à cette activité. État d'avancement: ${isInEtat}` });
+                } else {
+                    const activityEtatNonDem = await activityService.inscriptionActivity(activityId, userObjectId);
+                    if (activityEtatNonDem) {
+                        results.push({ userId, message: 'Inscription réussie', etat: activityEtatNonDem });
+                    } else {
+                        results.push({ userId, message: 'Erreur lors de l\'inscription' });
+                    }
+                }
+            }
+
+            res.status(200).json(results);
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Internal Server Error');
+        }
+    });
 // ROUTE ACTIVITE EN COURS POUR UN USER ====== START =====
 // Passage de l UserId de  état["NON_DEMARREE": {userId}] à  état["EN_COURS": {userId}] 
 ActivityController.route('/:activityId([a-z0-9]{24})/start/:userId([a-z0-9]{24})/')

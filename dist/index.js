@@ -832,7 +832,7 @@ var RoomService = class {
     });
     return researchedRoom;
   }
-  static async findById(_id) {
+  async findById(_id) {
     const researchedRoom = await room_model_default.findOne({
       _id
     });
@@ -873,9 +873,7 @@ var InstanceService = class {
       const instanceData = {
         _id: new import_mongoose9.Types.ObjectId(),
         name: instanceName,
-        rooms: [
-          new import_mongoose9.Types.ObjectId()
-        ]
+        rooms: []
       };
       const createdInstance = await InstanceService.create(instanceData);
       console.log("Created Instance :", createdInstance);
@@ -961,10 +959,12 @@ var TokenHandler = /* @__PURE__ */ __name(() => {
 
 // src/resources/users/users.controller.ts
 var import_axios2 = __toESM(require("axios"));
+var import_path9 = require("path");
 var UsersController = (0, import_express3.Router)();
 var service = new UsersService();
 var mediaService2 = new MediaService();
-async function createDefaultRoom(roomCode) {
+var roomService = new RoomService();
+async function createNewRoom(roomCode) {
   try {
     const users = service.findAll();
     console.log("users", users);
@@ -981,7 +981,7 @@ async function createDefaultRoom(roomCode) {
     console.error("Error creating room:", error);
   }
 }
-__name(createDefaultRoom, "createDefaultRoom");
+__name(createNewRoom, "createNewRoom");
 UsersController.route("/").get(async (req, res) => {
   const userList = await service.findAll();
   return res.status(200).json(userList);
@@ -1007,7 +1007,7 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
     if (roomCode) {
       room = await RoomService.findByCode(roomCode);
       if (room === null) {
-        await createDefaultRoom(roomCode);
+        await createNewRoom(roomCode);
         room = await RoomService.findByCode(roomCode);
       }
     }
@@ -1056,12 +1056,15 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
               console.log("instance", instance);
               const roomId = room._id;
               if (instance === null) {
-                const newInstance = await InstanceService.createInstanceByName(instanceName);
+                await InstanceService.createInstanceByName(instanceName);
                 const instance2 = await InstanceService.findByName(instanceName);
-                InstanceService.addRoomToInstance(instanceName, new import_mongoose10.Types.ObjectId(roomId));
+                if (instance2) {
+                  const newInstanceName = instance2.name;
+                  InstanceService.addRoomToInstance(newInstanceName, new import_mongoose10.Types.ObjectId(roomId));
+                }
               } else {
-                const isRoomCodePresent = instance.rooms.includes(roomCode2);
-                if (isRoomCodePresent) {
+                const isRoomId = instance.rooms.includes(roomId);
+                if (isRoomId) {
                   console.log("La salle existe d\xE9j\xE0 dans cette instance");
                 } else {
                   InstanceService.addRoomToInstance(instanceName, roomId);
@@ -1139,8 +1142,8 @@ UsersController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
     if (user.picture && user.picture !== null) {
       await mediaService2.delete(user.picture);
     }
-    if (import_fs4.default.existsSync((0, import_path8.join)(config2.ATTACHEMENT_SRC, id.toString()))) {
-      import_fs4.default.rm((0, import_path8.join)(config2.ATTACHEMENT_SRC, id.toString()), {
+    if (import_fs4.default.existsSync((0, import_path9.join)(config2.ATTACHEMENT_SRC, id.toString()))) {
+      import_fs4.default.rm((0, import_path9.join)(config2.ATTACHEMENT_SRC, id.toString()), {
         recursive: true
       }, (err) => {
         if (err) {
@@ -1170,7 +1173,7 @@ UsersController.route("/:id([a-z0-9]{24})/ismoderator").get(async (req, res, nex
     const user = await service.find(id);
     console.log("user id", user);
     const room = new import_mongoose10.Types.ObjectId(req.params.roomId);
-    await RoomService.findById(room);
+    await roomService.findById(room);
     console.log("room", room);
     const isModeratorStatus = user == null ? void 0 : user.moderator;
     return res.status(200).json(isModeratorStatus);
@@ -1185,7 +1188,7 @@ var users_controller_default = UsersController;
 var import_multer3 = __toESM(require("multer"));
 var import_express4 = require("express");
 var import_mongoose12 = require("mongoose");
-var import_path9 = require("path");
+var import_path10 = require("path");
 var import_fs5 = __toESM(require("fs"));
 var import_axios3 = __toESM(require("axios"));
 
@@ -1357,7 +1360,7 @@ var ActivityService = class {
       return "Cet utilisateur n a pas \xE9t\xE9 inscrit \xE0 l activit\xE9";
   }
   // AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
-  async putNonDemarreeEtat(activityId, userId) {
+  async inscriptionActivity(activityId, userId) {
     const activity = await activity_model_default.Activity.findById(activityId);
     if (activity) {
       console.log("activite", activity);
@@ -1502,28 +1505,28 @@ var mediaService3 = new MediaService();
 var userService3 = new UsersService();
 var thumbService2 = new ThumbService();
 var activityService = new ActivityService();
-var roomService = new RoomService();
+var roomService2 = new RoomService();
 var fileStorage3 = import_multer3.default.diskStorage({
   // définit le dossier de destination à partir de l'ID de l'utilisateur
   destination: function(req, file, cb) {
-    const extension = (0, import_path9.extname)(file.originalname);
+    const extension = (0, import_path10.extname)(file.originalname);
     try {
       const folder = getFileTypeByExtension(extension);
       req.body.type = folder;
-      const dest = (0, import_path9.join)(config2.ATTACHEMENT_SRC, req.body.userId, folder + "s");
+      const dest = (0, import_path10.join)(config2.ATTACHEMENT_SRC, req.body.userId, folder + "s");
       console.log("dest dans userData controller", dest);
       if (!import_fs5.default.existsSync(dest)) {
         import_fs5.default.mkdirSync(dest, {
           recursive: true
         });
       }
-      cb(null, (0, import_path9.join)(dest));
+      cb(null, (0, import_path10.join)(dest));
     } catch (err) {
       cb(err, "");
     }
   },
   filename: function(req, file, cb) {
-    const extension = (0, import_path9.extname)(file.originalname);
+    const extension = (0, import_path10.extname)(file.originalname);
     try {
       const fileName = getFileNameFormatted(file.originalname, extension);
       req.body.name = fileName;
@@ -1856,7 +1859,11 @@ var instructionService = new InstructionService();
 var usersService = new UsersService();
 InstructionController.route("/").post(async (req, res, next) => {
   try {
-    console.log("rq.body", req.body);
+    console.log("rq.bod.roomy", req.body.room);
+    const roomRegex = /^[A-Z0-9]{6}$/;
+    if (!roomRegex.test(req.body.room)) {
+      return res.status(400).send("Le champ room doit \xEAtre constitu\xE9 de 6 caract\xE8res, les lettres doivent \xEAtre en majuscules.");
+    }
     const user = await usersService.find(req.body.userTarget);
     console.log("user instruction controller", user);
     if (!user) {
@@ -2042,8 +2049,8 @@ var MissionSchema = new import_mongoose15.default.Schema({
   "visuel": {
     type: import_mongoose15.Schema.Types.ObjectId,
     ref: "Media",
-    required: true,
-    default: Object("6669e0ae822a94c1c7824a88")
+    required: false,
+    default: null
   }
 }, {
   timestamps: true
@@ -2055,10 +2062,8 @@ var mission_model_default = Mission;
 var mediaService5 = new MediaService();
 var MissionService = class {
   // Creation d une nouvelle mission
-  static async createMission(roomId, datas, visuel) {
-    const newMission = __spreadProps(__spreadValues({}, datas), {
-      visuel: visuel ? visuel : void 0
-    });
+  async createMission(datas) {
+    const newMission = __spreadValues({}, datas);
     return await mission_model_default.create(newMission);
   }
   // Trouve une mission par son ID
@@ -2157,17 +2162,14 @@ var MissionService = class {
       } else if (mission) {
         console.log("mission", mission);
         const mediaId = mission.visuel;
-        console.log("mediaId", mediaId);
         if (mediaId) {
+          console.log("mediaId", mediaId);
           const media = await mediaService5.find(mediaId);
-          console.log("media du visuel", media);
           if (media) {
             return media;
-          } else {
-            throw new Error("Mission introuvable");
           }
         } else {
-          throw new Error("Mission introuvable");
+          return null;
         }
       }
     } catch (error) {
@@ -2179,36 +2181,16 @@ var MissionService = class {
 __name(MissionService, "MissionService");
 
 // src/resources/mission/mission.controller.ts
-var import_path10 = require("path");
+var import_path11 = require("path");
+var import_fs6 = __toESM(require("fs"));
+var import_multer4 = __toESM(require("multer"));
 var MissionController = (0, import_express7.Router)();
 var service2 = new MissionService();
-var roomService2 = new RoomService();
+var roomService3 = new RoomService();
+var missionService = new MissionService();
+var mediaService6 = new MediaService();
+var activityService2 = new ActivityService();
 MissionController.route("/").get(async (req, res) => {
-  if ((await service2.findAll()).length === 0) {
-    const missionTest = {
-      _id: new import_mongoose16.Types.ObjectId(),
-      titre: "Mission Test avec misionsArray",
-      nb_activites: 4,
-      etat: "0",
-      visible: false,
-      active: false,
-      guidee: false,
-      visuel: "/blabla/uimg.jpg"
-    };
-    const roomList = await RoomService.findAll();
-    if (roomList.length === 0) {
-      return res.status(400).json({
-        message: "Phase d\xE9veloppement : Veuillez connecter un utilisateur dans la salle; cette mission sera cr\xE9\xE9e dans cette salle"
-      });
-    } else {
-      const roomId = roomList[0]._id;
-      const createdMission = await MissionService.createMission(new import_mongoose16.Types.ObjectId(roomId), missionTest);
-      const room = await RoomService.findById(roomId);
-      room == null ? void 0 : room.mission.push(missionTest._id);
-      await RoomService.update(room, roomId);
-      console.log("Created Mission:", createdMission);
-    }
-  }
   try {
     const missionList = await service2.findAll();
     console.log("missionList;", missionList);
@@ -2232,8 +2214,8 @@ MissionController.route("/").get(async (req, res) => {
         message: "Votre requ\xEAte est vide."
       });
     } else {
-      const mission = await MissionService.createMission(req.body.roomId, req.body);
-      const room = await RoomService.findById(req.body.roomId);
+      const mission = await service2.createMission(req.body);
+      const room = await roomService3.findById(req.body.roomId);
       if (room) {
         const roomId = new import_mongoose16.Types.ObjectId(req.body.roomId);
         room.mission.push(mission._id);
@@ -2502,7 +2484,7 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-not-guidee/").post(async (
     res.status(500).send("Internal Server Error");
   }
 });
-MissionController.route("/:id([a-z0-9]{24})/activites").get(async (req, res) => {
+MissionController.route("/:id([a-z0-9]{24})/activitesID").get(async (req, res) => {
   const id = req.params.id;
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
@@ -2518,6 +2500,97 @@ MissionController.route("/:id([a-z0-9]{24})/activites").get(async (req, res) => 
   } catch (error) {
     console.error(error);
     res.status(500).json("Internal Server Error");
+  }
+});
+MissionController.route("/:id([a-z0-9]{24})/activites").get(async (req, res) => {
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  try {
+    const mission = await missionService.find(new import_mongoose16.Types.ObjectId(id));
+    if (!mission) {
+      return res.status(404).json({
+        error: "Mission non trouv\xE9e."
+      });
+    }
+    const activityIds = mission.activites || [];
+    const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose16.Types.ObjectId(activityId))));
+    res.status(200).json(activities);
+  } catch (error) {
+    console.error("Error fetching mission activities:", error);
+    res.status(500).json({
+      error: "Internal Server Error"
+    });
+  }
+});
+MissionController.route("/:id([a-z0-9]{24})/activitesVisibles").get(async (req, res) => {
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  try {
+    const mission = await missionService.find(new import_mongoose16.Types.ObjectId(id));
+    if (!mission) {
+      return res.status(404).json({
+        error: "Mission non trouv\xE9e."
+      });
+    }
+    const activityIds = mission.activites || [];
+    const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose16.Types.ObjectId(activityId))));
+    const visibleActivities = activities.filter((activity) => activity.visible === true);
+    res.status(200).json(visibleActivities);
+  } catch (error) {
+    console.error("Error fetching mission visible activities:", error);
+    res.status(500).json({
+      error: "Internal Server Error"
+    });
+  }
+});
+MissionController.route("/:id([a-z0-9]{24})/activitesActives").get(async (req, res) => {
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  try {
+    const mission = await missionService.find(new import_mongoose16.Types.ObjectId(id));
+    if (!mission) {
+      return res.status(404).json({
+        error: "Mission non trouv\xE9e."
+      });
+    }
+    const activityIds = mission.activites || [];
+    const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose16.Types.ObjectId(activityId))));
+    const activeActivities = activities.filter((activity) => activity.active === true);
+    res.status(200).json(activeActivities);
+  } catch (error) {
+    console.error("Error fetching mission visible activities:", error);
+    res.status(500).json({
+      error: "Internal Server Error"
+    });
+  }
+});
+MissionController.route("/:id([a-z0-9]{24})/activitesGuidees").get(async (req, res) => {
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).send("Le champ ID est manquant.");
+  }
+  try {
+    const mission = await missionService.find(new import_mongoose16.Types.ObjectId(id));
+    if (!mission) {
+      return res.status(404).json({
+        error: "Mission non trouv\xE9e."
+      });
+    }
+    const activityIds = mission.activites || [];
+    const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose16.Types.ObjectId(activityId))));
+    const guideeActivities = activities.filter((activity) => (activity == null ? void 0 : activity.guidee) === true);
+    res.status(200).json(guideeActivities);
+  } catch (error) {
+    console.error("Error fetching mission visible activities:", error);
+    res.status(500).json({
+      error: "Internal Server Error"
+    });
   }
 });
 MissionController.route("/:id([a-z0-9]{24})/start").post(async (req, res) => {
@@ -2595,14 +2668,85 @@ MissionController.route("/:id([a-z0-9]{24})/visuel").get(async (req, res) => {
         message: "La mission est introuvable"
       });
     } else {
+      console.log(" mission inctrl/visuel", mission);
       const visuel = await service2.visuel(mission._id);
-      res.sendFile((0, import_path10.join)(config2.ATTACHEMENT_SRC, visuel.userId.toString(), visuel.type + "s", visuel.name));
+      console.log("visue", visuel);
+      if (visuel === null) {
+        console.log("ca opass ici");
+        res.sendFile((0, import_path11.join)(config2.ATTACHEMENT_SRC, "mission-visuel-default.jpg"));
+      }
+      if (visuel) {
+        res.sendFile((0, import_path11.join)(config2.ATTACHEMENT_SRC, "VISUEL-MISSIONS", "images", visuel.name));
+      }
     }
   } catch (error) {
-    console.error("Erreur autelechargment du visuel d la mission:", error);
+    console.error("Erreur au telechargment du visuel d la mission:", error);
     return res.status(500).json({
       message: "Erreur Interne du server"
     });
+  }
+});
+var fileStorage4 = import_multer4.default.diskStorage({
+  // définit le dossier de destination à partir de l'ID de l'utilisateur
+  destination: function(req, file, cb) {
+    const extension = (0, import_path11.extname)(file.originalname);
+    try {
+      const folder = getFileTypeByExtension(extension);
+      req.body.type = folder;
+      const dest = (0, import_path11.join)(config2.ATTACHEMENT_SRC, "VISUEL-MISSIONS", folder + "s");
+      if (!import_fs6.default.existsSync(dest)) {
+        import_fs6.default.mkdirSync(dest, {
+          recursive: true
+        });
+      }
+      cb(null, (0, import_path11.join)(dest));
+    } catch (err) {
+      cb(err, "");
+    }
+  },
+  filename: function(req, file, cb) {
+    const extension = (0, import_path11.extname)(file.originalname);
+    try {
+      const fileName = getFileNameFormatted(file.originalname, extension);
+      req.body.name = fileName;
+      cb(null, fileName);
+    } catch (err) {
+      cb(err, "");
+    }
+  }
+});
+var fileUpload3 = (0, import_multer4.default)({
+  storage: fileStorage4
+});
+MissionController.route("/:idMission([a-z0-9]{24})/change-visuel").post(fileUpload3.single("file"), async (req, res, next) => {
+  try {
+    const missionId = new import_mongoose16.Types.ObjectId(req.params.idMission);
+    const mission = await missionService.find(missionId);
+    if (!mission) {
+      return res.status(404).send("Mission not found");
+    }
+    console.log("mission", mission);
+    const room = mission.roomId;
+    if (!room) {
+      return res.status(400).send("Room ID not found in mission");
+    }
+    console.log("rooom", room);
+    const researchedRoom = await roomService3.findById(room);
+    if (!researchedRoom) {
+      return res.status(404).send("Room not found");
+    }
+    const userId = researchedRoom.moderatorId;
+    console.log("userId", userId);
+    if (!req.file) {
+      return res.status(400).send("No file uploaded");
+    }
+    const createdVisuel = await mediaService6.create(userId, req.body);
+    mission.visuel = createdVisuel._id;
+    console.log("mission.visuel", mission.visuel);
+    await mission.save();
+    return res.status(201).json(createdVisuel);
+  } catch (err) {
+    next(err);
   }
 });
 var mission_controller_default = MissionController;
@@ -2723,41 +2867,42 @@ var UnknownRoutesHandler = /* @__PURE__ */ __name(() => {
 var import_body_parser = __toESM(require("body-parser"));
 var import_http = __toESM(require("http"));
 var import_https = __toESM(require("https"));
-var import_fs7 = require("fs");
+var import_fs8 = require("fs");
 var import_swagger_jsdoc = __toESM(require("swagger-jsdoc"));
 var import_swagger_ui_express = __toESM(require("swagger-ui-express"));
 
 // src/resources/activity/activity.controller.ts
 var import_express9 = require("express");
 var import_mongoose18 = require("mongoose");
-var import_path11 = require("path");
-var import_fs6 = __toESM(require("fs"));
-var import_multer4 = __toESM(require("multer"));
+var import_path12 = require("path");
+var import_fs7 = __toESM(require("fs"));
+var import_multer5 = __toESM(require("multer"));
 var service4 = new ActivityService();
-var missionService = new MissionService();
+var missionService2 = new MissionService();
 var userService5 = new UsersService();
-var fileStorage4 = import_multer4.default.diskStorage({
+var roomService4 = new RoomService();
+var fileStorage5 = import_multer5.default.diskStorage({
   // définit le dossier de destination à partir de l'ID de l'utilisateur
   destination: function(req, file, cb) {
-    const extension = (0, import_path11.extname)(file.originalname);
+    const extension = (0, import_path12.extname)(file.originalname);
     try {
       const folder = getFileTypeByExtension(extension);
       console.log("extension", extension);
       console.log("folder", folder);
       req.body.type = folder;
-      const dest = (0, import_path11.join)(config2.ATTACHEMENT_SRC, req.body.userId, folder + "s");
-      if (!import_fs6.default.existsSync(dest)) {
-        import_fs6.default.mkdirSync(dest, {
+      const dest = (0, import_path12.join)(config2.ATTACHEMENT_SRC, req.body.userId, folder + "s");
+      if (!import_fs7.default.existsSync(dest)) {
+        import_fs7.default.mkdirSync(dest, {
           recursive: true
         });
       }
-      cb(null, (0, import_path11.join)(dest));
+      cb(null, (0, import_path12.join)(dest));
     } catch (err) {
       cb(err, "");
     }
   },
   filename: function(req, file, cb) {
-    const extension = (0, import_path11.extname)(file.originalname);
+    const extension = (0, import_path12.extname)(file.originalname);
     try {
       const fileName = getFileNameFormatted(file.originalname, extension);
       req.body.name = fileName;
@@ -2767,11 +2912,11 @@ var fileStorage4 = import_multer4.default.diskStorage({
     }
   }
 });
-var fileUpload3 = (0, import_multer4.default)({
-  storage: fileStorage4
+var fileUpload4 = (0, import_multer5.default)({
+  storage: fileStorage5
 });
 var ActivityController = (0, import_express9.Router)();
-var activityService2 = new ActivityService();
+var activityService3 = new ActivityService();
 ActivityController.route("/").get(async (req, res, next) => {
   try {
     const activityList = await service4.findAll();
@@ -2842,6 +2987,14 @@ ActivityController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
     });
   }
   try {
+    const missions = await mission_model_default.find({
+      activites: id
+    });
+    for (const mission of missions) {
+      mission.activites.pull(id);
+      mission.nb_activites = mission.activites.length;
+      await mission.save();
+    }
     await service4.delete(id);
     return res.status(200).json({
       message: `Activit\xE9  ${id} supprim\xE9e avec succ\xE8s`
@@ -2927,51 +3080,6 @@ ActivityController.route("/addToMission/:idActivity([a-z0-9]{24})/:idMission([a-
     });
   } catch (error) {
     console.error("Error in Delete /activity/mission/idAct/idMiss:", error);
-    return res.status(500).json({
-      message: "Erreur du serveur"
-    });
-  }
-});
-ActivityController.route("/test").get(async (req, res) => {
-  try {
-    const activityTest = {
-      titre: "Test Activity",
-      description: "This is a test activity",
-      etat: {
-        "0": [
-          "userId1",
-          "userId2",
-          "userId3"
-        ],
-        "1": [
-          "userId4",
-          "userId5",
-          "userId6"
-        ],
-        "2": [
-          "userId7",
-          "userId8",
-          "userId9"
-        ]
-      },
-      description_detaillee_produire: "Vraie d\xE9taill\xE9e  PRODUIRE",
-      types: [
-        "audio",
-        "video",
-        "slide"
-      ],
-      visible: true,
-      active: false,
-      guidee: true
-    };
-    const newActivityTest = await ActivityProduireService.createProduire(activityTest);
-    if (newActivityTest) {
-      return res.status(200).json({
-        message: `Activit\xE9 Test Cr\xE9\xE9e avec Succ\xE8s ${newActivityTest} `
-      });
-    }
-  } catch (error) {
-    console.error("Error in GET /activity/test:", error);
     return res.status(500).json({
       message: "Erreur du serveur"
     });
@@ -3257,11 +3365,51 @@ ActivityController.route("/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{2
       console.log("User d\xE9j\xE0 in array", isInEtat);
       res.status(500).send(`Ce participant est d\xE9j\xE0 inscrit \xE0 cette activit\xE9. \xC9tat d'avancement: ${isInEtat}`);
     } else {
-      const actvityEtatNonDem = await service4.putNonDemarreeEtat(activityId, userId);
+      const actvityEtatNonDem = await service4.inscriptionActivity(activityId, userId);
       if (actvityEtatNonDem) {
         res.status(200).send(actvityEtatNonDem);
       }
     }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+ActivityController.route("/:activityId([a-z0-9]{24})/inscrireRoom/:roomId([a-z0-9]{24})/").post(async (req, res) => {
+  try {
+    const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
+    const roomId = new import_mongoose18.Types.ObjectId(req.params.roomId);
+    const room = await roomService4.findById(roomId);
+    if (!room) {
+      return res.status(404).send("Room non trouv\xE9e.");
+    }
+    const participants = room.participants || [];
+    const results = [];
+    for (const userId of participants) {
+      const userObjectId = new import_mongoose18.Types.ObjectId(userId);
+      const isInEtat = await activityService3.etatByUser(activityId, userObjectId);
+      if (Object.values(etat_enum_default).includes(isInEtat)) {
+        results.push({
+          userId,
+          message: `Ce participant est d\xE9j\xE0 inscrit \xE0 cette activit\xE9. \xC9tat d'avancement: ${isInEtat}`
+        });
+      } else {
+        const activityEtatNonDem = await activityService3.inscriptionActivity(activityId, userObjectId);
+        if (activityEtatNonDem) {
+          results.push({
+            userId,
+            message: "Inscription r\xE9ussie",
+            etat: activityEtatNonDem
+          });
+        } else {
+          results.push({
+            userId,
+            message: "Erreur lors de l'inscription"
+          });
+        }
+      }
+    }
+    res.status(200).json(results);
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");
@@ -3391,8 +3539,8 @@ var start = /* @__PURE__ */ __name(async () => {
     });
     if (config2.SSL_KEY && config2.SSL_CERT) {
       const options = {
-        key: (0, import_fs7.readFileSync)(config2.SSL_KEY),
-        cert: (0, import_fs7.readFileSync)(config2.SSL_CERT)
+        key: (0, import_fs8.readFileSync)(config2.SSL_KEY),
+        cert: (0, import_fs8.readFileSync)(config2.SSL_CERT)
       };
       const httpsServer = import_https.default.createServer(options, app);
       httpsServer.listen(443);

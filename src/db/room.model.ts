@@ -10,7 +10,7 @@ const RoomSchema = new mongoose.Schema<IRoom>({
 	'moderatorId': {
 		type: Schema.Types.ObjectId,
 		ref: 'User',
-		required: true	
+		required: true,
 	},
 
 	'participants': [{

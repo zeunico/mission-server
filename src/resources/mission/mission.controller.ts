@@ -1,11 +1,15 @@
 import { Router } from 'express';
 import { Types } from 'mongoose';
 import { MissionService } from '../mission/mission.service';
+import { ActivityService } from '../activity/activity.service';
+import { MediaService } from '../media/media.service';
 import { RoomService } from '../room/room.service';
 import { IMission } from '~~/types/mission.interface';
 import { extname, join } from 'path';
 import fs from 'fs';
 import { config } from '~/config';
+import multer from 'multer';
+import { getFileTypeByExtension, getFileNameFormatted } from '~/utils/file.utils';
 
 
 // Création d'un Router Express
@@ -15,6 +19,9 @@ const MissionController: Router = Router();
 
 const service = new MissionService();
 const roomService = new RoomService();
+const missionService = new MissionService();
+const mediaService = new MediaService();
+const activityService = new ActivityService();
 
 /**
  * @swagger
@@ -699,7 +706,7 @@ const roomService = new RoomService();
  *             schema:
  *               type: string
  *               example: Erreur interne du serveur
- * /mission/{idMission}/activites:
+ * /mission/{idMission}/activitesID:
  *   get:
  *     summary: Récupère les ID des activités dans une mission.
  *     tags: [Mission]
@@ -719,7 +726,175 @@ const roomService = new RoomService();
  *               type: array
  *               items:
  *                 type: string
- *                 description: ID de l'activité
+ *                 description: Liste des ID des activités dans la mission
+ *       400:
+ *         description: Le champ ID est manquant.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       404:
+ *         description: Mission non trouvée.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Mission non trouvée.
+ *       500:
+ *         description: Erreur interne du serveur.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Internal Server Error
+ * /mission/{idMission}/activites:
+ *   get:
+ *     summary: Récupère toutes les activités dans une mission.
+ *     tags: [Mission]
+ *     parameters:
+ *       - name: idMission
+ *         in: path
+ *         description: ID de la mission
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Liste des ID des activités dans la mission
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 description: Liste des ID des activités dans la mission
+ *       400:
+ *         description: Le champ ID est manquant.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       404:
+ *         description: Mission non trouvée.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Mission non trouvée.
+ *       500:
+ *         description: Erreur interne du serveur.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Internal Server Error
+ * /mission/{idMission}/activitesVisibles:
+ *   get:
+ *     summary: Récupère les activités visibles dans une mission.
+ *     tags: [Mission]
+ *     parameters:
+ *       - name: idMission
+ *         in: path
+ *         description: ID de la mission
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Liste des activités visibles dans la mission
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 description: Liste des activités visibles
+ *       400:
+ *         description: Le champ ID est manquant.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       404:
+ *         description: Mission non trouvée.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Mission non trouvée.
+ *       500:
+ *         description: Erreur interne du serveur.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Internal Server Error
+ * /mission/{idMission}/activitesActives:
+ *   get:
+ *     summary: Récupère les activités actives dans une mission.
+ *     tags: [Mission]
+ *     parameters:
+ *       - name: idMission
+ *         in: path
+ *         description: ID de la mission
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Liste des activités actives dans la mission
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 description: Liste des activités actives
+ *       400:
+ *         description: Le champ ID est manquant.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       404:
+ *         description: Mission non trouvée.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Mission non trouvée.
+ *       500:
+ *         description: Erreur interne du serveur.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Internal Server Error
+ * /mission/{idMission}/activitesGuidees:
+ *   get:
+ *     summary: Récupère les activités guidées dans une mission.
+ *     tags: [Mission]
+ *     parameters:
+ *       - name: idMission
+ *         in: path
+ *         description: ID de la mission
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Liste des activités guidées dans la mission
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 description: Liste des activités guidées
  *       400:
  *         description: Le champ ID est manquant.
  *         content:
@@ -825,43 +1000,85 @@ const roomService = new RoomService();
  *             schema:
  *               type: string
  *               example: Erreur interne du serveur
+ * /mission/{idMission}/visuel:
+ *  get:
+ *   summary: Récupération du visuele d la mission à partir de l'ID mission passé en paramètre.
+ *   tags: [Mission]
+ *   parameters:
+ *    - name: id
+ *      in: path
+ *      description: ID de la mission
+ *      required: true
+ *   responses:
+ *    200:
+ *     description: Fichier du visuel récupéré avec succès.
+ *     content:
+ *      application/octet-stream:
+ *       schema:
+ *        type: string
+ *        format: binary
+ *    404:
+ *     description: Visuel non trouvé
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+ * /mission/{idMission}/change-visuel:
+ *  post:
+ *   summary: Changement du visuel de la mission
+ *   tags: [Mission]
+ *   requestBody:
+ *    required: true
+ *    content:
+ *     multipart/form-data:
+ *      schema:
+ *       type: object
+ *       properties:
+ *        file:
+ *         type: string
+ *         format: binary
+ *         description: Fichier à uploader
+ *   responses:
+ *    201:
+ *     description: Visuel modifié
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID du visuel
+ *         name:
+ *          type: string
+ *          description: Nom du visuel
+ *         type:
+ *          type: string
+ *          description: Type du média
+ *          enum: [image, video]
+ *         userId:
+ *          type: string
+ *          description: ID de l'utilisateur propriétaire du média ie moderator dans le cas d'un visuel 
+ *    500:
+ *     description: Erreur serveur
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
  */
 
 // ROUTE RACINE LISTE TOUTES LES MISSIONS
 MissionController.route('/')
 	.get(async (req, res) => {
-		if ((await service.findAll()).length === 0) {
-			
-			// MiSSION TEST 
-			const missionTest: IMission = {
-				_id: new Types.ObjectId(), 
-				titre: "Mission Test avec misionsArray",
-				nb_activites: 4,
-				etat: "0",
-				visible: false,
-				active: false,
-				guidee: false,
-				visuel: "/blabla/uimg.jpg",
-			};
-			//Création d'une  mission  test et Ajout de la mission à la room
-					// TO DO Création par roomcode du premier user
-					// const roomList = await service.findAll();
-					const roomList = await RoomService.findAll();
-					if (roomList.length === 0)
-						{
-						return res.status(400).json({ message: 'Phase développement : Veuillez connecter un utilisateur dans la salle; cette mission sera créée dans cette salle' });
-						}
-						else {
-							const roomId = roomList[0]._id; 
-			
-							const createdMission = await MissionService.createMission(new Types.ObjectId(roomId), missionTest);
-							const room = await RoomService.findById(roomId);
-							room?.mission.push(missionTest._id);	
-							await RoomService.update(room, roomId);
 		
-							console.log('Created Mission:', createdMission);
-						}
-				}
 		try {
 			const missionList = await service.findAll();
 			console.log('missionList;', missionList);
@@ -882,8 +1099,8 @@ MissionController.route('/')
 				return res.status(400).json({ message: 'Votre requête est vide.' });
 			}
 			else {
-				const mission = await MissionService.createMission(req.body.roomId, req.body);
-				const room = await RoomService.findById(req.body.roomId);
+				const mission = await service.createMission(req.body);
+				const room = await roomService.findById(req.body.roomId);
 				if (room) {
 					const roomId = new Types.ObjectId(req.body.roomId);
 				    room.mission.push(mission._id);	
@@ -1198,8 +1415,8 @@ MissionController.route('/:id([a-z0-9]{24})/change-to-not-guidee/')
 		}
 	});
 
-// TOUTES LES ACTIVITES DANS LA MISSION
-MissionController.route('/:id([a-z0-9]{24})/activites')
+// TOUTES LES ID DES ACTIVITES DANS LA MISSION
+MissionController.route('/:id([a-z0-9]{24})/activitesID')
     .get(async (req, res) => {
         const id = req.params.id;
 
@@ -1222,6 +1439,117 @@ MissionController.route('/:id([a-z0-9]{24})/activites')
         }
     });
 
+// TOUTES LES ACTIVITES OBJETS DANS LA MISSION
+MissionController.route('/:id([a-z0-9]{24})/activites')
+    .get(async (req, res) => {
+        const id = req.params.id;
+
+        if (!id) {
+            return res.status(400).send('Le champ ID est manquant.');
+        }
+        try {
+            const mission = await missionService.find(new Types.ObjectId(id));
+            if (!mission) {
+                return res.status(404).json({ error: 'Mission non trouvée.' });
+            }
+
+            const activityIds = mission.activites || [];
+            const activities = await Promise.all(
+                activityIds.map(activityId => activityService.find(new Types.ObjectId(activityId)))
+            );
+
+            res.status(200).json(activities);
+        } catch (error) {
+            console.error('Error fetching mission activities:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+
+// Toutes les activités VISIBLES dans une mission
+MissionController.route('/:id([a-z0-9]{24})/activitesVisibles')
+    .get(async (req, res) => {
+        const id = req.params.id;
+
+        if (!id) {
+            return res.status(400).send('Le champ ID est manquant.');
+        }
+
+        try {
+            const mission = await missionService.find(new Types.ObjectId(id));
+            if (!mission) {
+                return res.status(404).json({ error: 'Mission non trouvée.' });
+            }
+
+            const activityIds = mission.activites || [];
+            const activities = await Promise.all(
+                activityIds.map(activityId => activityService.find(new Types.ObjectId(activityId)))
+            );
+
+            // Filter activities to only include those with visible === true
+            const visibleActivities = activities.filter(activity => activity.visible === true);
+            res.status(200).json(visibleActivities);
+        } catch (error) {
+            console.error('Error fetching mission visible activities:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
+
+	// Toutes les activités Actives dans une mission
+MissionController.route('/:id([a-z0-9]{24})/activitesActives')
+.get(async (req, res) => {
+	const id = req.params.id;
+
+	if (!id) {
+		return res.status(400).send('Le champ ID est manquant.');
+	}
+
+	try {
+		const mission = await missionService.find(new Types.ObjectId(id));
+		if (!mission) {
+			return res.status(404).json({ error: 'Mission non trouvée.' });
+		}
+
+		const activityIds = mission.activites || [];
+		const activities = await Promise.all(
+			activityIds.map(activityId => activityService.find(new Types.ObjectId(activityId)))
+		);
+
+		// Filter activities to only include those with visible === true
+		const activeActivities = activities.filter(activity => activity.active === true);
+		res.status(200).json(activeActivities);
+	} catch (error) {
+		console.error('Error fetching mission visible activities:', error);
+		res.status(500).json({ error: 'Internal Server Error' });
+	}
+});
+	// Toutes les activités GUIDEES dans une mission
+	MissionController.route('/:id([a-z0-9]{24})/activitesGuidees')
+	.get(async (req, res) => {
+		const id = req.params.id;
+	
+		if (!id) {
+			return res.status(400).send('Le champ ID est manquant.');
+		}
+	
+		try {
+			const mission = await missionService.find(new Types.ObjectId(id));
+			if (!mission) {
+				return res.status(404).json({ error: 'Mission non trouvée.' });
+			}
+	
+			const activityIds = mission.activites || [];
+			const activities = await Promise.all(
+				activityIds.map(activityId => activityService.find(new Types.ObjectId(activityId)))
+			);
+	
+			// Filter activities to only include those with visible === true
+			const guideeActivities = activities.filter(activity => activity?.guidee === true);
+			res.status(200).json(guideeActivities);
+		} catch (error) {
+			console.error('Error fetching mission visible activities:', error);
+			res.status(500).json({ error: 'Internal Server Error' });
+		}
+	});
 // DEMARRER UNE MISSION ETAT 0 => 1 
 MissionController.route('/:id([a-z0-9]{24})/start')
 	.post(async (req, res) => {
@@ -1274,7 +1602,6 @@ MissionController.route('/:id([a-z0-9]{24})/end')
 		}
 	});
 
-
 // Get VISUEL MISSION 
 MissionController.route('/:id([a-z0-9]{24})/visuel')
 	.get(async (req, res) => {
@@ -1286,12 +1613,107 @@ MissionController.route('/:id([a-z0-9]{24})/visuel')
 			if (!mission) {
 				return res.status(404).json({ message: 'La mission est introuvable'});
 			} else  {
+				console.log(' mission inctrl/visuel', mission );
 				const visuel = await service.visuel(mission._id);
-				res.sendFile(join(config.ATTACHEMENT_SRC, visuel.userId.toString(), visuel.type + 's', visuel.name));				}
+				console.log('visue', visuel);
+				if (visuel === null) {
+					console.log('ca opass ici');
+					res.sendFile(join(config.ATTACHEMENT_SRC, 'mission-visuel-default.jpg')); 
+				}
+				if (visuel) {
+					res.sendFile(join(config.ATTACHEMENT_SRC, 'VISUEL-MISSIONS', 'images' , visuel.name));	
+				}
+
+			}
 		}
 		 catch (error) {
-			console.error('Erreur autelechargment du visuel d la mission:', error);
+			console.error('Erreur au telechargment du visuel d la mission:', error);
 			return res.status(500).json({ message: 'Erreur Interne du server' });
+		}
+	});
+
+
+// Création d'un objet multer Storage
+const fileStorage = multer.diskStorage({
+	// définit le dossier de destination à partir de l'ID de l'utilisateur
+	destination: function(req, file, cb) {
+		
+		const extension = extname(file.originalname);
+
+		try {
+			const folder = getFileTypeByExtension(extension);
+			req.body.type = folder;
+			const dest = join(config.ATTACHEMENT_SRC,'VISUEL-MISSIONS', folder + 's');
+			if (!fs.existsSync(dest)) {
+				fs.mkdirSync(dest, { recursive: true });
+			}
+			cb(null, join(dest));
+		} catch (err) {
+			cb((err as Error), '');
+		}
+	
+	},
+
+	filename: function (req, file, cb) {
+		const extension = extname(file.originalname);
+		try {
+			const fileName = getFileNameFormatted(file.originalname, extension);
+			req.body.name = fileName;
+			cb(null, fileName);
+	
+		} catch (err) {
+			cb((err as Error), '');
+		}
+	}
+});
+
+// Création d'un objet multer
+const fileUpload = multer({
+	storage: fileStorage
+});
+
+	// CHANGE VISUEL MISSION 
+MissionController.route('/:idMission([a-z0-9]{24})/change-visuel')
+	.post(fileUpload.single('file'), async (req, res, next) => {
+		try {
+			const missionId = new Types.ObjectId(req.params.idMission);
+			const mission = await missionService.find(missionId);
+	
+			if (!mission) {
+				return res.status(404).send('Mission not found');
+			}
+			console.log('mission', mission);
+			const room = mission.roomId;
+	
+			if (!room) {
+				return res.status(400).send('Room ID not found in mission');
+			}
+			console.log('rooom', room);
+
+			const researchedRoom = await roomService.findById(room);
+	
+			if (!researchedRoom) {
+				return res.status(404).send('Room not found');
+			}
+	
+			const userId = researchedRoom.moderatorId;
+			console.log('userId', userId);
+	
+			if (!req.file) {
+				return res.status(400).send('No file uploaded');
+			}
+	
+			// Create media with the uploaded file
+			const createdVisuel = await mediaService.create(userId, req.body);
+
+			mission.visuel = createdVisuel._id;
+			console.log('mission.visuel',mission.visuel);
+
+			await mission.save();	
+			return res.status(201).json(createdVisuel);
+	
+		} catch (err) {
+			next(err);
 		}
 	});
 

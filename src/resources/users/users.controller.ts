@@ -4,7 +4,7 @@ import { UsersService } from '~/resources/users/users.service';
 import { RoomService } from '~/resources/room/room.service';
 import { InstanceService } from '~/resources/instance/instance.service';
 import { NotFoundException } from '~/utils/exceptions';
-import { extname, join, sep } from 'path';
+import { extname, sep } from 'path';
 import { config } from '~/config';
 import fs, { existsSync } from 'fs';
 import { mkdir, writeFile } from 'fs/promises';
@@ -15,6 +15,7 @@ import EMedia from '~~/types/media.enum';
 import { TokenHandler } from '~/middlewares/token.handler';
 import axios from 'axios';
 import { IRoom } from '~~/types/room.interface';
+import { join } from 'path';
 import { IMission } from '~~/types/mission.interface';
 
 import MRoom from '~/db/room.model';
@@ -31,6 +32,7 @@ const UsersController: Router = Router();
 // Instanciation du service
 const service = new UsersService();
 const mediaService = new MediaService();
+const roomService = new RoomService();
 
 /**
  * @swagger
@@ -329,17 +331,17 @@ const mediaService = new MediaService();
  *           description: Message d'erreur
  */
 
-async function createDefaultRoom(roomCode) {
+async function createNewRoom(roomCode) {
 	try {
 	const users = service.findAll();
 	console.log('users', users);
 	const roomData: IRoom = {
-	  _id: new Types.ObjectId(),
-	  moderatorId: new Types.ObjectId(),
-	  roomCode: roomCode,
-	  participants: [],
-	  mission: []
-	};
+		_id: new Types.ObjectId(),
+		moderatorId: new Types.ObjectId(),
+		roomCode: roomCode,
+		participants: [],
+		mission: []
+		};
 	const createdRoom = await RoomService.create(roomData);
 	console.log('Created Room:', createdRoom);
 	} catch (error) {
@@ -382,7 +384,7 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 			if (roomCode) {
 				room = await RoomService.findByCode(roomCode);
 				if (room === null) {
-					await createDefaultRoom(roomCode);
+					await createNewRoom(roomCode);
 					room = await RoomService.findByCode(roomCode);					
 				}
 			}
@@ -437,15 +439,18 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 									const roomId = room._id;
 									if (instance === null) {
 										// CREATION NOUVELLE INSTANCE PAR NOM user.instance
-										const newInstance = await InstanceService.createInstanceByName(instanceName);
+										await InstanceService.createInstanceByName(instanceName);
 										const instance = await InstanceService.findByName(instanceName);
+										if (instance) {
+										const newInstanceName = instance.name;
 										// AJOUT SALLE DANS INSTANCE
-										InstanceService.addRoomToInstance(instanceName, new Types.ObjectId(roomId));
+										InstanceService.addRoomToInstance(newInstanceName, new Types.ObjectId(roomId));
+										}
 
 									} else {
 											// L'instance existe! On vérifie si la room est déjà dans l'array de l'instance, si non on l'ajoute
-											const isRoomCodePresent = instance.rooms.includes(roomCode);
-											if (isRoomCodePresent) {
+											const isRoomId = instance.rooms.includes(roomId);
+											if (isRoomId) {
 											  console.log('La salle existe déjà dans cette instance');
 											} else {
 													InstanceService.addRoomToInstance(instanceName, roomId);
@@ -584,7 +589,7 @@ UsersController.route('/:id([a-z0-9]{24})/ismoderator')
 			console.log('user id', user);
 
 			const room = new Types.ObjectId(req.params.roomId); 
-			await RoomService.findById(room);		
+			await roomService.findById(room);		
 			console.log('room', room);
 
 			const isModeratorStatus = user?.moderator;

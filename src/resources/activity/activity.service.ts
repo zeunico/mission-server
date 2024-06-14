@@ -84,7 +84,7 @@ export class ActivityService {
 					else return 'Cet utilisateur n a pas été inscrit à l activité';
 	}
 		// AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
-    async putNonDemarreeEtat(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {
+    async inscriptionActivity(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {
 		const activity = await Activity.Activity.findById(activityId);
 		if (activity) {
 			console.log('activite',activity);

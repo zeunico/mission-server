@@ -30,7 +30,7 @@ export class RoomService {
 		return researchedRoom;
 	}
 
-	static async findById(_id: Types.ObjectId): Promise<IRoom | null> {
+	async findById(_id: Types.ObjectId): Promise<IRoom | null> {
 		const researchedRoom = await Room.findOne({ _id});
 		return researchedRoom;
 	}

@@ -60,8 +60,8 @@ const MissionSchema = new mongoose.Schema<IMission>({
 	'visuel': {
 		type: Schema.Types.ObjectId,
 		ref: 'Media',
-		required: true,
-		default: Object("6669e0ae822a94c1c7824a88")
+		required: false,
+		default: null
 	}
 }, { timestamps: true });
 
