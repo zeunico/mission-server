@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import { MissionService } from '../mission/mission.service';
 import { ActivityService } from '../activity/activity.service';
 import { MediaService } from '../media/media.service';
+import { UsersService } from '../users/users.service';
 import { RoomService } from '../room/room.service';
 import { IMission } from '~~/types/mission.interface';
 import { extname, join } from 'path';
@@ -10,6 +11,8 @@ import fs from 'fs';
 import { config } from '~/config';
 import multer from 'multer';
 import { getFileTypeByExtension, getFileNameFormatted } from '~/utils/file.utils';
+import EEtat from '~~/types/etat.enum';
+import { start } from 'repl';
 
 
 // Création d'un Router Express
@@ -22,6 +25,7 @@ const roomService = new RoomService();
 const missionService = new MissionService();
 const mediaService = new MediaService();
 const activityService = new ActivityService();
+const userService = new UsersService();
 
 /**
  * @swagger
@@ -307,7 +311,7 @@ const activityService = new ActivityService();
  *          description: Visibilité de la mission
  *         active :
  *          type: boolean
- *          description: Activité de la mission
+ *          description: Stutut actif de la mission
  *         guidee :
  *          type: boolean
  *          description: Mission Guidee
@@ -358,7 +362,7 @@ const activityService = new ActivityService();
  *          description: Visibilité de la mission
  *         active :
  *          type: boolean
- *          description: Activité de la mission
+ *          description: Statut actif de la mission
  *         guidee :
  *          type: boolean
  *          description: Mission Guidee
@@ -512,7 +516,7 @@ const activityService = new ActivityService();
  *   post:
  *     summary: Changer la statut Actif de la mission à visible
  *     tags: [Mission]
- *     description: Ce point de terminaison change l'état de l'activité d'une mission en active.
+ *     description: Ce point de terminaison change le statut Actif d'une mission en active.
  *     parameters:
  *       - in: path
  *         name: id
@@ -761,14 +765,14 @@ const activityService = new ActivityService();
  *           type: string
  *     responses:
  *       200:
- *         description: Liste des ID des activités dans la mission
+ *         description: Liste des activités dans la mission
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
  *                 type: string
- *                 description: Liste des ID des activités dans la mission
+ *                 description: Liste des activités dans la mission
  *       400:
  *         description: Le champ ID est manquant.
  *         content:
@@ -916,90 +920,6 @@ const activityService = new ActivityService();
  *             schema:
  *               type: string
  *               example: Internal Server Error
- * /mission/{id}/start:
- *   post:
- *     summary: Démarrer une mission Etat NON_DEMARREE => EN_COURS
- *     tags: [Mission]
- *     description: Ce point de terminaison change l'état d'avancement d'une mission de "non démarrée" à "en cours".
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           pattern: '^[a-z0-9]{24}$'
- *         description: L'ID de la mission
- *     responses:
- *       200:
- *         description: La mission a démarrée avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: string
- *               example: Mission {titre} est démarrée
- *       400:
- *         description: La mission est déjà démarrée
- *         content:
- *           application/json:
- *             schema:
- *               type: string
- *               example: La mission est déjà démarrée
- *       404:
- *         description: La mission est introuvable
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *               example: La mission est introuvable
- *       500:
- *         description: Erreur interne du serveur
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *               example: Erreur interne du serveur
-  * /mission/{id}/end:
- *   post:
- *     summary: Commencer une mission Etat EN_COURS => TERMINEE
- *     tags: [Mission]
- *     description: Ce point de terminaison change l'état d'avancement d'une mission de "en cours" à "terminée".
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           pattern: '^[a-z0-9]{24}$'
- *         description: L'ID de la mission
- *     responses:
- *       200:
- *         description: La mission a terminée avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: string
- *               example: Mission {titre} est terminée 
- *       400:
- *         description: La mission est déjà terminée
- *         content:
- *           application/json:
- *             schema:
- *               type: string
- *               example: La mission est déjà terminée
- *       404:
- *         description: La mission est introuvable
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *               example: La mission est introuvable
- *       500:
- *         description: Erreur interne du serveur
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *               example: Erreur interne du serveur
  * /mission/{idMission}/visuel:
  *  get:
  *   summary: Récupération du visuele d la mission à partir de l'ID mission passé en paramètre.
@@ -1073,8 +993,290 @@ const activityService = new ActivityService();
  *         message:
  *          type: string
  *          description: Message d'erreur
+ * /mission/{idMission}/etat/{idUser}:
+ *  get:
+ *   summary: L'état d'avancement d'un particpant dans une mission
+ *   tags: [Mission]
+ *   parameters:
+ *    - name: idMission
+ *      in: path
+ *      description: ID de la mission
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *    - name: idUser
+ *      in: path
+ *      description: ID du participant
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *   responses:
+ *    200:
+ *      description: L'état d'avancement d'un participant dans une mission
+ *      content:
+ *       application/json:
+ *         schema:
+ *           type: string
+ *           example: EN_COURS
+ * /mission/{idMission}/inscrire/{idUser}:
+ *  post:
+ *   summary: Inscription d'un participant à une mission, etat = non_demarree
+ *   tags: [Mission]
+ *   parameters:
+ *    - name: idMission
+ *      in: path
+ *      description: ID de la mission
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *    - name: idUser
+ *      in: path
+ *      description: ID du participant
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *   responses:
+ *    201:
+ *     description: Mission avec ajout du particpant à l'état NON_DEMARREE
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de la mission
+ *         titre:
+ *          type: string
+ *          description: Titre de la mission
+ *         description:
+ *          type: string
+ *          description: Description de la mission
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de l'activité pour chacun des participants dans la mission
+ *         visible:
+ *          type: array
+ *          description: Statut de visibilité de la mission
+ *         active:
+ *          type: string
+ *          description: Statut Actif de la mission
+ *         guidée:
+ *          type: string
+ *          description: Statut Guidée de la mission
+ *         description_detaillee_consulter:
+ *          type: string
+ *          description: Description détaillée de la mission
+ *         type:
+ *          type: string
+ *          description: Type de fichier acceptés dans la mission
+ *    500:
+ *     description: Erreur du serveur.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur indiquant une erreur interne du serveur.
+ * /mission/{idMission}/inscrireRoom/{idRoom}:
+ *  post:
+ *   summary: Inscription de tous les participants d'une salle à une mission (non déjà présent dans l'activité)
+ *   tags: [Mission]
+ *   parameters:
+ *    - name: idMission
+ *      in: path
+ *      description: ID de la mission
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *    - name: idRoom
+ *      in: path
+ *      description: ID de la salle 
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *   responses:
+ *    201:
+ *     description: Mission avec ajout des particpants (non déjà présent dans l'activité) à l'état NON_DEMARREE
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de la mission
+ *         titre:
+ *          type: string
+ *          description: Titre de la mission
+ *         description:
+ *          type: string
+ *          description: Description de la mission
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de la missionpour chacun des participants
+ *         visible:
+ *          type: array
+ *          description: Statut de visibilité de la mission
+ *         active:
+ *          type: string
+ *          description: Statut Actif de la mission
+ *         guidée:
+ *          type: string
+ *          description: Statut Guidée de la mission
+ *         description_detaillee_consulter:
+ *          type: string
+ *          description: Description détaillée de la mission
+ *         type:
+ *          type: string
+ *          description: Type de fichier acceptés dans la mission
+ *    500:
+ *     description: Erreur du serveur.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur indiquant une erreur interne du serveur.
+ * /mission/{idMission}/start/{idUser}:
+ *  post:
+ *   summary: Le participant commence une mission, etat = en_cours
+ *   tags: [Mission]
+ *   parameters:
+ *    - name: idMission
+ *      in: path
+ *      description: ID de la mission
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *    - name: idUser
+ *      in: path
+ *      description: ID du participant
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *   responses:
+ *    201:
+ *     description: Mission avec ajout du particpant à l'état EN_COURS
+*     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de la mission
+ *         titre:
+ *          type: string
+ *          description: Titre de la mission
+ *         description:
+ *          type: string
+ *          description: Description de la mission
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de la missionpour chacun des participants
+ *         visible:
+ *          type: array
+ *          description: Statut de visibilité de la mission
+ *         active:
+ *          type: string
+ *          description: Statut Actif de la mission
+ *         guidée:
+ *          type: string
+ *          description: Statut Guidée de la mission
+ *         description_detaillee_consulter:
+ *          type: string
+ *          description: Description détaillée de la mission
+ *         type:
+ *          type: string
+ *          description: Type de fichier acceptés dans la mission
+ *    500:
+ *     description: Erreur du serveur.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur indiquant une erreur interne du serveur.
+ * /mission/{idMission}/end/{idUser}:
+ *  post:
+ *   summary: Le participant finit une mission, etat = terminee
+ *   tags: [Mission]
+ *   parameters:
+ *    - name: idMission
+ *      in: path
+ *      description: ID de la mission
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *    - name: idUser
+ *      in: path
+ *      description: ID du participant
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *   responses:
+ *    201:
+ *     description: Mission avec ajout du participant à l'état TERMINEE dans la mission
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de la mission
+ *         titre:
+ *          type: string
+ *          description: Titre de la mission
+ *         description:
+ *          type: string
+ *          description: Description de la mission
+ *         etat:
+ *          type: array
+ *          description: Etats d'avancement de la missionpour chacun des participants
+ *         visible:
+ *          type: array
+ *          description: Statut de visibilité de la mission
+ *         active:
+ *          type: string
+ *          description: Statut Actif de la mission
+ *         guidée:
+ *          type: string
+ *          description: Statut Guidée de la mission
+ *         description_detaillee_consulter:
+ *          type: string
+ *          description: Description détaillée de la mission
+ *         type:
+ *          type: string
+ *          description: Type de fichier acceptés dans la mission
+ *    500:
+ *     description: Erreur du serveur.
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur indiquant une erreur interne du serveur.
  */
-
 // ROUTE RACINE LISTE TOUTES LES MISSIONS
 MissionController.route('/')
 	.get(async (req, res) => {
@@ -1555,57 +1757,7 @@ MissionController.route('/:id([a-z0-9]{24})/activitesActives')
 			res.status(500).json({ error: 'Internal Server Error' });
 		}
 	});
-// DEMARRER UNE MISSION ETAT 0 => 1 
-MissionController.route('/:id([a-z0-9]{24})/start')
-	.post(async (req, res) => {
-		const missionId = req.params.id;
-		const mission = await service.find(new Types.ObjectId(missionId));
 
-		try {		
-			
-			if (!mission) {
-				return res.status(404).json({ message: 'La mission est introuvable' });
-			} else if (mission.etat === "EN_COURS") {
-				return res.status(400).json({ message: 'La mission est déjà démarrée', mission });
-			} else if (mission.etat === "TERMINEE") {
-				return res.status(400).json({ message: 'La mission est terminée, vous le pouvez pas la redémarrer', mission });
-			} else {  
-				mission.etat = "EN_COURS";
-				await mission.save();
-				return res.status(200).json({ message: 'La mission a démarrée avec succès', mission });
-			}
-		}
-		 catch (error) {
-			console.error('Erreur au démarrage de la mission:', error);
-			return res.status(500).json({ message: 'Erreur Interne du server' });
-		}
-	});
-
-// TERMINER UNE MISSION ETAT 1 => 2 
-MissionController.route('/:id([a-z0-9]{24})/end')
-	.post(async (req, res) => {
-		const missionId = req.params.id;
-		const mission = await service.find(new Types.ObjectId(missionId));
-
-		try {		
-			
-			if (!mission) {
-				return res.status(404).json({ message: 'La mission est introuvable'});
-			} else if (mission.etat === "TERMINEE") {
-				return res.status(400).json({ message: 'La mission est déjà terminée', mission });
-			} else if (mission.etat === "NoN_DEMARREE") {
-				return res.status(400).json({ message: 'Par où t passé !! Cette mission n a jamais été démarrée !', mission });
-			} else {  
-				mission.etat = "TERMINEE";
-				await mission.save();
-				return res.status(200).json({ message: 'La mission a été terminée avec succès', mission });
-			}
-		}
-		 catch (error) {
-			console.error('Erreur au démarrage de la mission:', error);
-			return res.status(500).json({ message: 'Erreur Interne du server' });
-		}
-	});
 
 // Get VISUEL MISSION 
 MissionController.route('/:id([a-z0-9]{24})/visuel')
@@ -1719,6 +1871,193 @@ MissionController.route('/:idMission([a-z0-9]{24})/change-visuel')
 	
 		} catch (err) {
 			next(err);
+		}
+	});
+
+
+	//  GESTION DES ETATS 
+// QUEL ETAT POUR UN USER
+MissionController.route('/:missionId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/') 
+	.get(async (req, res) => {
+		const missionId = new Types.ObjectId(req.params.missionId);
+		const userId = new Types.ObjectId(req.params.userId);
+		const user = await userService.find(userId);
+		const mission = await service.find(missionId);
+		console.log('userid',user);
+		if (user === null)
+			{res.status(404).send('Le participant est introuvable');}
+		else {
+			if (mission === null)
+				{res.status(404).send('La mission est introuvable');}
+			else {
+		try {
+			const etatByUser = await service.etatByUser(missionId, userId);
+			if (Object.values(EEtat).includes(etatByUser)) {
+				res.status(200).send(etatByUser);
+			} else {
+				res.status(200).send(etatByUser);
+			}
+		} catch (error) {
+			console.error(error);
+			res.status(500).send('Internal Server Error');
+		}
+	}}
+	});
+
+
+	// ROUTE INSCRIRE  POUR UN USER DANS UNE MISSION ======= INSCRIPTION ==============
+MissionController.route('/:missionId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24})/') 
+.post(async (req, res) => {
+	try {
+		const missionId = new Types.ObjectId(req.params.missionId);
+		const userId = new Types.ObjectId(req.params.userId);
+		const user = await userService.find(userId);
+		const mission = await service.find(missionId);
+		console.log('userid',user);
+		if (user === null)
+			{res.status(404).send('Le participant est introuvable');}
+		else {
+			if (mission === null)
+				{res.status(404).send('La mission est introuvable');}
+			else {
+		// S assurer que le userId n est pas déjà dans les etats
+		const isInEtat = await service.etatByUser(missionId, userId);
+		if (isInEtat === 'NON_DEMARREE' || isInEtat === 'EN_COURS' || isInEtat === 'TERMINEE') {
+			console.log('User déjà in array', isInEtat );
+			res.status(500).send(`Ce participant est déjà inscrit à cette mission. État d'avancement: ${isInEtat}`);
+
+		} else {
+			const actvityEtatNonDem = await service.inscriptionMission(missionId, userId);
+			if (actvityEtatNonDem)
+			{res.status(200).send(actvityEtatNonDem);}
+		}
+		}
+	}
+	} catch (error) {
+		console.error(error);
+		res.status(500).send('Internal Server Error');
+	}
+});
+// ROUTE INSCRIRE  POUR TOUS LES PARTICIPANTS D UNE SALLE A UNE MISSION ======= INSCRIPTION SALLE ENTIERE ==============
+MissionController.route('/:missionId([a-z0-9]{24})/inscrireRoom/:roomId([a-z0-9]{24})/') 
+	.post(async (req, res) => {
+        try {
+            const missionId = new Types.ObjectId(req.params.missionId);
+            const roomId = new Types.ObjectId(req.params.roomId);
+
+            // Fetch the room object to get the list of participants
+            const room = await roomService.findById(roomId);
+            if (!room) {
+                return res.status(404).send('Room non trouvée.');
+            }
+
+            const participants = room.participants || [];
+            const results = [];
+
+            for (const userId of participants) {
+                const userObjectId = new Types.ObjectId(userId);
+                
+                // Ensure the user is not already in the states
+                const isInEtat = await missionService.etatByUser(missionId, userObjectId);
+				if (Object.values(EEtat).includes(isInEtat)) {
+
+                    results.push({ userId, message: `Ce participant est déjà inscrit à cette mission. État d'avancement: ${isInEtat}` });
+                } else {
+                    const inscription = await missionService.inscriptionMission(missionId, userObjectId);
+                    if (inscription) {
+                        results.push({ userId, message: 'Inscription réussie' });
+                    } else {
+                        results.push({ userId, message: 'Erreur lors de l\'inscription' });
+                    }
+                }
+            }
+
+            res.status(200).json(results);
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Internal Server Error');
+        }
+    });
+
+	// ROUTE MISSION EN COURS POUR UN USER ====== START =====
+// Passage de l UserId de  état["NON_DEMARREE": {userId}] à  état["EN_COURS": {userId}] 
+MissionController.route('/:missionId([a-z0-9]{24})/start/:userId([a-z0-9]{24})/')
+.post(async (req, res) => {
+	try {
+		const missionId = new Types.ObjectId(req.params.missionId);
+		const userId = new Types.ObjectId(req.params.userId);
+		const user = await userService.find(userId);
+		const mission = await service.find(missionId);
+		console.log('userid',user);
+		if (user === null)
+				{res.status(404).send('Le participant est introuvable');}
+			else {
+				if (mission === null)
+					{res.status(404).send('La mission est introuvable');}
+				else {
+				// S assurer que le userId n est pas déjà dans les etats
+				const isInEtat = await service.etatByUser(missionId, userId);
+				console.log('Isinetat',isInEtat);
+				if (isInEtat === 'EN_COURS') {
+					console.log('User déjà in array', isInEtat );
+					res.status(500).send('Mission déjà en cours pour ce participant');
+
+				} else  if (isInEtat === 'TERMINEE'){
+					console.log('User déjà in array', isInEtat );
+					res.status(500).send('Mission déjà terminée pour ce participant');
+
+				} else  if (isInEtat === 'NON_DEMARREE') {
+					const missionEnCoursPourUser = await service.startMission(missionId, userId);
+					if (missionEnCoursPourUser)
+					{res.status(200).send(missionEnCoursPourUser);}
+				}
+				else res.status(500).send('Le participant n\'a pas été inscrit à cette mission.');
+			}
+		}
+	} catch (error) {
+		console.error(error);
+		res.status(500).send('Internal Server Error');
+	}
+});
+
+// ROUTE ACTIVITE TERMINEE POUR UN USER  ====== END  =====
+// Passage de l UserId de  état["EN_COURS": {userId}] à  état["TERMINEE": {userId}] 
+MissionController.route('/:missionId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/')
+	.post(async (req, res) => {
+		try {
+			const missionId = new Types.ObjectId(req.params.missionId);
+			const userId = new Types.ObjectId(req.params.userId);
+			const user = await userService.find(userId);
+			const mission = await service.find(missionId);
+			console.log('userid',user);
+			if (user === null)
+				{res.status(404).send('Le participant est introuvable');}
+			else {
+				if (mission === null)
+					{res.status(404).send('La mission est introuvable');}
+				else {
+				// S assurer que le userId n est pas déjà dans les etats
+				const isInEtat = await service.etatByUser(missionId, userId);
+				console.log('Isinetat',isInEtat);
+				if (isInEtat === 'NON_DEMARREE') {
+					console.log('Le participant n a pas commencé la mission.');
+					res.status(500).send('Mission jamais commencée pour cet User');
+
+				} else  if (isInEtat === 'TERMINEE'){
+					console.log('User déjà in array', isInEtat );
+					res.status(500).send('Mission déjà terminée pour cet User');
+
+				} else  if (isInEtat === 'EN_COURS') {
+					const missionTermineePourUser = await service.endMission(missionId, userId);
+					if (missionTermineePourUser)
+					{res.status(200).send(missionTermineePourUser);}
+				}
+				else res.status(500).send('Le user na pas été inscrit à la mission car il nest pas présent dan sles etats de celle ci');
+				}
+			}
+			} catch (error) {
+			console.error(error);
+			res.status(500).send('Internal Server Error');
 		}
 	});
 

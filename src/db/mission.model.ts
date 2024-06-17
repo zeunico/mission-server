@@ -29,13 +29,18 @@ const MissionSchema = new mongoose.Schema<IMission>({
 		required: true,
 		default: 0
 	},
+	
+	'etat': {
+		type: Map,
+		of: [Schema.Types.ObjectId],	
+		required: true,
+		default:  {
+			"EN_COURS": [],
+			"NON_DEMARREE": [],
+			"TERMINEE": []
+			},
+	  },
 
-    'etat': {
-        type: String,
-        enum: Object.values(EEtat), 
-        required: true,
-		default: "NON_DEMARREE"
-    },
 	
 	'visible': {
 		type: Boolean,

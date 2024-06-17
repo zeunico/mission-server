@@ -1161,7 +1161,7 @@ const activityService = new ActivityService();
  *          description: ID de l'activité
  *         titre:
  *          type: string
- *          description: Titre de l'a nouvelle 'activité
+ *          description: Titre de l'activité
  *         description:
  *          type: string
  *          description: Description de l'activité
@@ -1225,7 +1225,7 @@ const activityService = new ActivityService();
  *          description: ID de l'activité
  *         titre:
  *          type: string
- *          description: Titre de l'a nouvelle 'activité
+ *          description: Titre de l'activité
  *         description:
  *          type: string
  *          description: Description de l'activité
@@ -1872,38 +1872,67 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-not-guidee')
 // QUEL ETAT POUR UN USER
 ActivityController.route('/:activityId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/') 
 	.get(async (req, res) => {
-		const activityId = new Types.ObjectId(req.params.activityId);
-		const userId = new Types.ObjectId(req.params.userId);
+
 		try {
-			const etatByUser = await service.etatByUser(activityId, userId);
-			if (Object.values(EEtat).includes(etatByUser)) {
-				res.status(200).send(etatByUser);
-			} else {
-				res.status(200).send(etatByUser);
+			const activityId = new Types.ObjectId(req.params.activityId);
+			const userId = new Types.ObjectId(req.params.userId);	
+			const user = await userService.find(userId);
+			const activity =  await service.find(activityId);
+			console.log('userid',user);
+			if (user === null)
+				{res.status(404).send('Le participant est introuvable');}
+			else {
+				{
+					if (activity === null)
+						{res.status(404).send('L activité est introuvable');}
+					else {
+
+						const etatByUser = await service.etatByUser(activityId, userId);
+						if (Object.values(EEtat).includes(etatByUser)) {
+							res.status(200).send(etatByUser);
+						} else {
+							res.status(200).send(etatByUser);
+						}
+					}
+				}
 			}
+	
 		} catch (error) {
 			console.error(error);
 			res.status(500).send('Internal Server Error');
 		}
 	});
 
-// ROUTE INSCRIRE  POUR UN USER ======= INSCRIPTION ==============
+// ROUTE INSCRIRE  POUR UN USER  DANS UNE Activite   ======= INSCRIPTION ==============
 ActivityController.route('/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24})/') 
 	.post(async (req, res) => {
 		try {
 			const activityId = new Types.ObjectId(req.params.activityId);
 			const userId = new Types.ObjectId(req.params.userId);
-			// S assurer que le userId n est pas déjà dans les etats
-			const isInEtat = await service.etatByUser(activityId, userId);
-			if (isInEtat === 'NON_DEMARREE' || isInEtat === 'EN_COURS' || isInEtat === 'TERMINEE') {
-				console.log('User déjà in array', isInEtat );
-				res.status(500).send(`Ce participant est déjà inscrit à cette activité. État d'avancement: ${isInEtat}`);
+			const user = await userService.find(userId);
+			const activity =  await service.find(activityId);
+			console.log('userid',user);
+			if (user === null)
+				{res.status(404).send('Le participant n existe pas en bdd');}
+			else {
+				{
+					if (activity === null)
+						{res.status(404).send('L activité est introuvable');}
+					else {
+				// S assurer que le userId n est pas déjà dans les etats
+				const isInEtat = await service.etatByUser(activityId, userId);
+				if (isInEtat === 'NON_DEMARREE' || isInEtat === 'EN_COURS' || isInEtat === 'TERMINEE') {
+					console.log('User déjà in array', isInEtat );
+					res.status(500).send(`Ce participant est déjà inscrit à cette activité. État d'avancement: ${isInEtat}`);
 
-			} else {
-				const actvityEtatNonDem = await service.inscriptionActivity(activityId, userId);
-				if (actvityEtatNonDem)
-				{res.status(200).send(actvityEtatNonDem);}
+				} else {
+					const actvityEtatNonDem = await service.inscriptionActivity(activityId, userId);
+					if (actvityEtatNonDem)
+					{res.status(200).send(actvityEtatNonDem);}
+				}
 			}
+		}
+	}
 		} catch (error) {
 			console.error(error);
 			res.status(500).send('Internal Server Error');
@@ -1916,6 +1945,7 @@ ActivityController.route('/:activityId([a-z0-9]{24})/inscrireRoom/:roomId([a-z0-
         try {
             const activityId = new Types.ObjectId(req.params.activityId);
             const roomId = new Types.ObjectId(req.params.roomId);
+
 
             // Fetch the room object to get the list of participants
             const room = await roomService.findById(roomId);
@@ -1935,9 +1965,9 @@ ActivityController.route('/:activityId([a-z0-9]{24})/inscrireRoom/:roomId([a-z0-
 
                     results.push({ userId, message: `Ce participant est déjà inscrit à cette activité. État d'avancement: ${isInEtat}` });
                 } else {
-                    const activityEtatNonDem = await activityService.inscriptionActivity(activityId, userObjectId);
-                    if (activityEtatNonDem) {
-                        results.push({ userId, message: 'Inscription réussie', etat: activityEtatNonDem });
+                    const inscription = await activityService.inscriptionActivity(activityId, userObjectId);
+                    if (inscription) {
+                        results.push({ userId, message: 'Inscription réussie'});
                     } else {
                         results.push({ userId, message: 'Erreur lors de l\'inscription' });
                     }
@@ -1957,23 +1987,36 @@ ActivityController.route('/:activityId([a-z0-9]{24})/start/:userId([a-z0-9]{24})
 		try {
 			const activityId = new Types.ObjectId(req.params.activityId);
 			const userId = new Types.ObjectId(req.params.userId);
-			// S assurer que le userId n est pas déjà dans les etats
-			const isInEtat = await service.etatByUser(activityId, userId);
-			console.log('Isinetat',isInEtat);
-			if (isInEtat === 'EN_COURS') {
-				console.log('User déjà in array', isInEtat );
-				res.status(500).send('Activité déjà en cours pour ce participant');
+			const user = await userService.find(userId);
+			const activity =  await service.find(activityId);
+			console.log('userid',user);
+			if (user === null)
+				{res.status(404).send('Le participant est introuvable');}
+			else {
+				{
+					if (activity === null)
+						{res.status(404).send('L activité est introuvable');}
+					else {
+						// S assurer que le userId n est pas déjà dans les etats
+						const isInEtat = await service.etatByUser(activityId, userId);
+						console.log('Isinetat',isInEtat);
+						if (isInEtat === 'EN_COURS') {
+							console.log('User déjà in array', isInEtat );
+							res.status(500).send('Activité déjà en cours pour ce participant');
 
-			} else  if (isInEtat === 'TERMINEE'){
-				console.log('User déjà in array', isInEtat );
-				res.status(500).send('Activité déjà terminée pour ce participant');
+						} else  if (isInEtat === 'TERMINEE'){
+							console.log('User déjà in array', isInEtat );
+							res.status(500).send('Activité déjà terminée pour ce participant');
 
-			} else  if (isInEtat === 'NON_DEMARREE') {
-				const actvityEnCoursPourUser = await service.startActivity(activityId, userId);
-				if (actvityEnCoursPourUser)
-				{res.status(200).send(actvityEnCoursPourUser);}
-			}
-			else res.status(500).send('Le participant n\'a pas été inscrit à cette activité.');
+						} else  if (isInEtat === 'NON_DEMARREE') {
+							const actvityEnCoursPourUser = await service.startActivity(activityId, userId);
+							if (actvityEnCoursPourUser)
+							{res.status(200).send(actvityEnCoursPourUser);}
+						}
+						else res.status(500).send('Le participant n\'a pas été inscrit à cette activité.');
+						}
+					}
+				}
 		} catch (error) {
 			console.error(error);
 			res.status(500).send('Internal Server Error');
@@ -1986,12 +2029,17 @@ ActivityController.route('/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/'
 		try {
 			const activityId = new Types.ObjectId(req.params.activityId);
 			const userId = new Types.ObjectId(req.params.userId);
+			const user = await userService.find(userId);
+			console.log('userid',user);
+			if (user === null)
+				{res.status(404).send('Le participant est introuvable');}
+			else {
 			// S assurer que le userId n est pas déjà dans les etats
 			const isInEtat = await service.etatByUser(activityId, userId);
 			console.log('Isinetat',isInEtat);
 			if (isInEtat === 'NON_DEMARREE') {
 				console.log('User n a pas commencé l activité', isInEtat );
-				res.status(500).send('Activité déjà en cours pour cet User');
+				res.status(500).send('Le participant est inscrit. Activité jamais commencé pour ce participant');
 
 			} else  if (isInEtat === 'TERMINEE'){
 				console.log('User déjà in array', isInEtat );
@@ -2002,7 +2050,8 @@ ActivityController.route('/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/'
 				if (actvityTermineePourUser)
 				{res.status(200).send(actvityTermineePourUser);}
 			}
-			else res.status(500).send('Le user na pas été inscrit à l activit car il nest pas présent dan sles etats de celle ci');
+			else res.status(500).send('Le user na pas été inscrit à l activité, il nest pas présent dan les etats de celle ci');
+		}
 		} catch (error) {
 			console.error(error);
 			res.status(500).send('Internal Server Error');

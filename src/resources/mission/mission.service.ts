@@ -48,6 +48,11 @@ export class MissionService {
 		return missionList;		
 	}
 
+	// Trouve par l ID de la mission
+	async findById(_id: Types.ObjectId): Promise<IMission | null> {
+		const researchedMission = await Mission.findOne({ _id});
+		return researchedMission;
+	}
 
 	// Supprimme une mission par son ID
 	async delete(missionId: Types.ObjectId): Promise<IMission | null> {
@@ -164,4 +169,67 @@ export class MissionService {
 			throw error;
 			}	
 		}
+
+
+		// ETAT d un USER dans une mission
+		async etatByUser(missionId: Types.ObjectId, userId: Types.ObjectId): Promise<String> {
+			let foundKey = null;
+			console.log('misionnnnIdd',missionId);
+			const mission = await Mission.findById(missionId);	
+			console.log('misionnnn',mission);
+
+				// Iterate over each key-value pair in activity.etat
+				for (const [key, value] of mission.etat.entries()) {
+				// Check if userId exists in the array associated with the current key
+					if (value.includes(userId)) {
+						foundKey = key; 
+						console.log('key', key);	
+					}
+				}
+				if (foundKey !== null) {
+					console.log(`User   ${userId} dans l etat "${foundKey}" `);
+					return foundKey;
+				}
+				else return 'Cet utilisateur n a pas été inscrit à la mission';
+		}	
+
+
+		// AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
+		async inscriptionMission(missionId: Types.ObjectId, userId: Types.ObjectId): Promise<IMission | null> {
+			const mission = await Mission.findById(missionId);
+			if (mission) {
+				// Ajout du userId a l' array NON_DEMARREE
+				mission.etat.set("NON_DEMARREE", mission.etat.get("NON_DEMARREE").concat(userId));
+				mission.save();
+				return mission;}
+			else return null;
+		}
+
+
+				// PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE LA MISSION
+	async startMission(missionId: Types.ObjectId, userId: Types.ObjectId): Promise<IMission | null> {
+		const mission = await Mission.findById(missionId);
+		if (mission) {
+			// Ajout du userId a l' array EN_COURS
+			mission.etat.set("EN_COURS", mission.etat.get("EN_COURS").concat(userId));   
+			mission.etat.set("NON_DEMARREE", mission.etat.get("NON_DEMARREE").filter((id: Types.ObjectId) => !id.equals(userId)));
+			mission.save();
+			return mission;}
+		else return null;
+	}
+
+	// PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
+	async endMission(missionId: Types.ObjectId, userId: Types.ObjectId): Promise<IMission | null> {
+		const mission = await Mission.findById(missionId);
+		if (mission) {
+			console.log('activiteyy',mission);
+			// Ajout du userId a l' array EN_COURS
+			mission.etat.set("TERMINEE", mission.etat.get("TERMINEE").concat(userId));   
+			mission.etat.set("EN_COURS", mission.etat.get("EN_COURS").filter((id: Types.ObjectId) => !id.equals(userId)));
+			mission.save();
+			return mission;}
+		else return null;
+	}
+	
+
 }

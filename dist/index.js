@@ -2028,10 +2028,16 @@ var MissionSchema = new import_mongoose15.default.Schema({
     default: 0
   },
   "etat": {
-    type: String,
-    enum: Object.values(etat_enum_default),
+    type: Map,
+    of: [
+      import_mongoose15.Schema.Types.ObjectId
+    ],
     required: true,
-    default: "NON_DEMARREE"
+    default: {
+      "EN_COURS": [],
+      "NON_DEMARREE": [],
+      "TERMINEE": []
+    }
   },
   "visible": {
     type: Boolean,
@@ -2084,6 +2090,13 @@ var MissionService = class {
   async findAll() {
     const missionList = await mission_model_default.find();
     return missionList;
+  }
+  // Trouve par l ID de la mission
+  async findById(_id) {
+    const researchedMission = await mission_model_default.findOne({
+      _id
+    });
+    return researchedMission;
   }
   // Supprimme une mission par son ID
   async delete(missionId) {
@@ -2186,6 +2199,57 @@ var MissionService = class {
       throw error;
     }
   }
+  // ETAT d un USER dans une mission
+  async etatByUser(missionId, userId) {
+    let foundKey = null;
+    console.log("misionnnnIdd", missionId);
+    const mission = await mission_model_default.findById(missionId);
+    console.log("misionnnn", mission);
+    for (const [key, value] of mission.etat.entries()) {
+      if (value.includes(userId)) {
+        foundKey = key;
+        console.log("key", key);
+      }
+    }
+    if (foundKey !== null) {
+      console.log(`User   ${userId} dans l etat "${foundKey}" `);
+      return foundKey;
+    } else
+      return "Cet utilisateur n a pas \xE9t\xE9 inscrit \xE0 la mission";
+  }
+  // AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
+  async inscriptionMission(missionId, userId) {
+    const mission = await mission_model_default.findById(missionId);
+    if (mission) {
+      mission.etat.set("NON_DEMARREE", mission.etat.get("NON_DEMARREE").concat(userId));
+      mission.save();
+      return mission;
+    } else
+      return null;
+  }
+  // PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE LA MISSION
+  async startMission(missionId, userId) {
+    const mission = await mission_model_default.findById(missionId);
+    if (mission) {
+      mission.etat.set("EN_COURS", mission.etat.get("EN_COURS").concat(userId));
+      mission.etat.set("NON_DEMARREE", mission.etat.get("NON_DEMARREE").filter((id) => !id.equals(userId)));
+      mission.save();
+      return mission;
+    } else
+      return null;
+  }
+  // PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
+  async endMission(missionId, userId) {
+    const mission = await mission_model_default.findById(missionId);
+    if (mission) {
+      console.log("activiteyy", mission);
+      mission.etat.set("TERMINEE", mission.etat.get("TERMINEE").concat(userId));
+      mission.etat.set("EN_COURS", mission.etat.get("EN_COURS").filter((id) => !id.equals(userId)));
+      mission.save();
+      return mission;
+    } else
+      return null;
+  }
 };
 __name(MissionService, "MissionService");
 
@@ -2199,6 +2263,7 @@ var roomService3 = new RoomService();
 var missionService = new MissionService();
 var mediaService6 = new MediaService();
 var activityService2 = new ActivityService();
+var userService5 = new UsersService();
 MissionController.route("/").get(async (req, res) => {
   try {
     const missionList = await service2.findAll();
@@ -2601,72 +2666,6 @@ MissionController.route("/:id([a-z0-9]{24})/activitesGuidees").get(async (req, r
     });
   }
 });
-MissionController.route("/:id([a-z0-9]{24})/start").post(async (req, res) => {
-  const missionId = req.params.id;
-  const mission = await service2.find(new import_mongoose16.Types.ObjectId(missionId));
-  try {
-    if (!mission) {
-      return res.status(404).json({
-        message: "La mission est introuvable"
-      });
-    } else if (mission.etat === "EN_COURS") {
-      return res.status(400).json({
-        message: "La mission est d\xE9j\xE0 d\xE9marr\xE9e",
-        mission
-      });
-    } else if (mission.etat === "TERMINEE") {
-      return res.status(400).json({
-        message: "La mission est termin\xE9e, vous le pouvez pas la red\xE9marrer",
-        mission
-      });
-    } else {
-      mission.etat = "EN_COURS";
-      await mission.save();
-      return res.status(200).json({
-        message: "La mission a d\xE9marr\xE9e avec succ\xE8s",
-        mission
-      });
-    }
-  } catch (error) {
-    console.error("Erreur au d\xE9marrage de la mission:", error);
-    return res.status(500).json({
-      message: "Erreur Interne du server"
-    });
-  }
-});
-MissionController.route("/:id([a-z0-9]{24})/end").post(async (req, res) => {
-  const missionId = req.params.id;
-  const mission = await service2.find(new import_mongoose16.Types.ObjectId(missionId));
-  try {
-    if (!mission) {
-      return res.status(404).json({
-        message: "La mission est introuvable"
-      });
-    } else if (mission.etat === "TERMINEE") {
-      return res.status(400).json({
-        message: "La mission est d\xE9j\xE0 termin\xE9e",
-        mission
-      });
-    } else if (mission.etat === "NoN_DEMARREE") {
-      return res.status(400).json({
-        message: "Par o\xF9 t pass\xE9 !! Cette mission n a jamais \xE9t\xE9 d\xE9marr\xE9e !",
-        mission
-      });
-    } else {
-      mission.etat = "TERMINEE";
-      await mission.save();
-      return res.status(200).json({
-        message: "La mission a \xE9t\xE9 termin\xE9e avec succ\xE8s",
-        mission
-      });
-    }
-  } catch (error) {
-    console.error("Erreur au d\xE9marrage de la mission:", error);
-    return res.status(500).json({
-      message: "Erreur Interne du server"
-    });
-  }
-});
 MissionController.route("/:id([a-z0-9]{24})/visuel").get(async (req, res) => {
   const missionId = req.params.id;
   const mission = await service2.find(new import_mongoose16.Types.ObjectId(missionId));
@@ -2755,6 +2754,171 @@ MissionController.route("/:idMission([a-z0-9]{24})/change-visuel").post(fileUplo
     return res.status(201).json(createdVisuel);
   } catch (err) {
     next(err);
+  }
+});
+MissionController.route("/:missionId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/").get(async (req, res) => {
+  const missionId = new import_mongoose16.Types.ObjectId(req.params.missionId);
+  const userId = new import_mongoose16.Types.ObjectId(req.params.userId);
+  const user = await userService5.find(userId);
+  const mission = await service2.find(missionId);
+  console.log("userid", user);
+  if (user === null) {
+    res.status(404).send("Le participant est introuvable");
+  } else {
+    if (mission === null) {
+      res.status(404).send("La mission est introuvable");
+    } else {
+      try {
+        const etatByUser = await service2.etatByUser(missionId, userId);
+        if (Object.values(etat_enum_default).includes(etatByUser)) {
+          res.status(200).send(etatByUser);
+        } else {
+          res.status(200).send(etatByUser);
+        }
+      } catch (error) {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+      }
+    }
+  }
+});
+MissionController.route("/:missionId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24})/").post(async (req, res) => {
+  try {
+    const missionId = new import_mongoose16.Types.ObjectId(req.params.missionId);
+    const userId = new import_mongoose16.Types.ObjectId(req.params.userId);
+    const user = await userService5.find(userId);
+    const mission = await service2.find(missionId);
+    console.log("userid", user);
+    if (user === null) {
+      res.status(404).send("Le participant est introuvable");
+    } else {
+      if (mission === null) {
+        res.status(404).send("La mission est introuvable");
+      } else {
+        const isInEtat = await service2.etatByUser(missionId, userId);
+        if (isInEtat === "NON_DEMARREE" || isInEtat === "EN_COURS" || isInEtat === "TERMINEE") {
+          console.log("User d\xE9j\xE0 in array", isInEtat);
+          res.status(500).send(`Ce participant est d\xE9j\xE0 inscrit \xE0 cette mission. \xC9tat d'avancement: ${isInEtat}`);
+        } else {
+          const actvityEtatNonDem = await service2.inscriptionMission(missionId, userId);
+          if (actvityEtatNonDem) {
+            res.status(200).send(actvityEtatNonDem);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+MissionController.route("/:missionId([a-z0-9]{24})/inscrireRoom/:roomId([a-z0-9]{24})/").post(async (req, res) => {
+  try {
+    const missionId = new import_mongoose16.Types.ObjectId(req.params.missionId);
+    const roomId = new import_mongoose16.Types.ObjectId(req.params.roomId);
+    const room = await roomService3.findById(roomId);
+    if (!room) {
+      return res.status(404).send("Room non trouv\xE9e.");
+    }
+    const participants = room.participants || [];
+    const results = [];
+    for (const userId of participants) {
+      const userObjectId = new import_mongoose16.Types.ObjectId(userId);
+      const isInEtat = await missionService.etatByUser(missionId, userObjectId);
+      if (Object.values(etat_enum_default).includes(isInEtat)) {
+        results.push({
+          userId,
+          message: `Ce participant est d\xE9j\xE0 inscrit \xE0 cette mission. \xC9tat d'avancement: ${isInEtat}`
+        });
+      } else {
+        const inscription = await missionService.inscriptionMission(missionId, userObjectId);
+        if (inscription) {
+          results.push({
+            userId,
+            message: "Inscription r\xE9ussie"
+          });
+        } else {
+          results.push({
+            userId,
+            message: "Erreur lors de l'inscription"
+          });
+        }
+      }
+    }
+    res.status(200).json(results);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+MissionController.route("/:missionId([a-z0-9]{24})/start/:userId([a-z0-9]{24})/").post(async (req, res) => {
+  try {
+    const missionId = new import_mongoose16.Types.ObjectId(req.params.missionId);
+    const userId = new import_mongoose16.Types.ObjectId(req.params.userId);
+    const user = await userService5.find(userId);
+    const mission = await service2.find(missionId);
+    console.log("userid", user);
+    if (user === null) {
+      res.status(404).send("Le participant est introuvable");
+    } else {
+      if (mission === null) {
+        res.status(404).send("La mission est introuvable");
+      } else {
+        const isInEtat = await service2.etatByUser(missionId, userId);
+        console.log("Isinetat", isInEtat);
+        if (isInEtat === "EN_COURS") {
+          console.log("User d\xE9j\xE0 in array", isInEtat);
+          res.status(500).send("Mission d\xE9j\xE0 en cours pour ce participant");
+        } else if (isInEtat === "TERMINEE") {
+          console.log("User d\xE9j\xE0 in array", isInEtat);
+          res.status(500).send("Mission d\xE9j\xE0 termin\xE9e pour ce participant");
+        } else if (isInEtat === "NON_DEMARREE") {
+          const missionEnCoursPourUser = await service2.startMission(missionId, userId);
+          if (missionEnCoursPourUser) {
+            res.status(200).send(missionEnCoursPourUser);
+          }
+        } else
+          res.status(500).send("Le participant n'a pas \xE9t\xE9 inscrit \xE0 cette mission.");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+MissionController.route("/:missionId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/").post(async (req, res) => {
+  try {
+    const missionId = new import_mongoose16.Types.ObjectId(req.params.missionId);
+    const userId = new import_mongoose16.Types.ObjectId(req.params.userId);
+    const user = await userService5.find(userId);
+    const mission = await service2.find(missionId);
+    console.log("userid", user);
+    if (user === null) {
+      res.status(404).send("Le participant est introuvable");
+    } else {
+      if (mission === null) {
+        res.status(404).send("La mission est introuvable");
+      } else {
+        const isInEtat = await service2.etatByUser(missionId, userId);
+        console.log("Isinetat", isInEtat);
+        if (isInEtat === "NON_DEMARREE") {
+          console.log("Le participant n a pas commenc\xE9 la mission.");
+          res.status(500).send("Mission jamais commenc\xE9e pour cet User");
+        } else if (isInEtat === "TERMINEE") {
+          console.log("User d\xE9j\xE0 in array", isInEtat);
+          res.status(500).send("Mission d\xE9j\xE0 termin\xE9e pour cet User");
+        } else if (isInEtat === "EN_COURS") {
+          const missionTermineePourUser = await service2.endMission(missionId, userId);
+          if (missionTermineePourUser) {
+            res.status(200).send(missionTermineePourUser);
+          }
+        } else
+          res.status(500).send("Le user na pas \xE9t\xE9 inscrit \xE0 la mission car il nest pas pr\xE9sent dan sles etats de celle ci");
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
   }
 });
 var mission_controller_default = MissionController;
@@ -2887,7 +3051,7 @@ var import_fs7 = __toESM(require("fs"));
 var import_multer5 = __toESM(require("multer"));
 var service4 = new ActivityService();
 var missionService2 = new MissionService();
-var userService5 = new UsersService();
+var userService6 = new UsersService();
 var roomService4 = new RoomService();
 var fileStorage5 = import_multer5.default.diskStorage({
   // définit le dossier de destination à partir de l'ID de l'utilisateur
@@ -3350,14 +3514,27 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-guidee").post(async (
   }
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/").get(async (req, res) => {
-  const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
-  const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
   try {
-    const etatByUser = await service4.etatByUser(activityId, userId);
-    if (Object.values(etat_enum_default).includes(etatByUser)) {
-      res.status(200).send(etatByUser);
+    const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
+    const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
+    const user = await userService6.find(userId);
+    const activity = await service4.find(activityId);
+    console.log("userid", user);
+    if (user === null) {
+      res.status(404).send("Le participant est introuvable");
     } else {
-      res.status(200).send(etatByUser);
+      {
+        if (activity === null) {
+          res.status(404).send("L activit\xE9 est introuvable");
+        } else {
+          const etatByUser = await service4.etatByUser(activityId, userId);
+          if (Object.values(etat_enum_default).includes(etatByUser)) {
+            res.status(200).send(etatByUser);
+          } else {
+            res.status(200).send(etatByUser);
+          }
+        }
+      }
     }
   } catch (error) {
     console.error(error);
@@ -3368,14 +3545,27 @@ ActivityController.route("/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{2
   try {
     const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
     const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
-    const isInEtat = await service4.etatByUser(activityId, userId);
-    if (isInEtat === "NON_DEMARREE" || isInEtat === "EN_COURS" || isInEtat === "TERMINEE") {
-      console.log("User d\xE9j\xE0 in array", isInEtat);
-      res.status(500).send(`Ce participant est d\xE9j\xE0 inscrit \xE0 cette activit\xE9. \xC9tat d'avancement: ${isInEtat}`);
+    const user = await userService6.find(userId);
+    const activity = await service4.find(activityId);
+    console.log("userid", user);
+    if (user === null) {
+      res.status(404).send("Le participant n existe pas en bdd");
     } else {
-      const actvityEtatNonDem = await service4.inscriptionActivity(activityId, userId);
-      if (actvityEtatNonDem) {
-        res.status(200).send(actvityEtatNonDem);
+      {
+        if (activity === null) {
+          res.status(404).send("L activit\xE9 est introuvable");
+        } else {
+          const isInEtat = await service4.etatByUser(activityId, userId);
+          if (isInEtat === "NON_DEMARREE" || isInEtat === "EN_COURS" || isInEtat === "TERMINEE") {
+            console.log("User d\xE9j\xE0 in array", isInEtat);
+            res.status(500).send(`Ce participant est d\xE9j\xE0 inscrit \xE0 cette activit\xE9. \xC9tat d'avancement: ${isInEtat}`);
+          } else {
+            const actvityEtatNonDem = await service4.inscriptionActivity(activityId, userId);
+            if (actvityEtatNonDem) {
+              res.status(200).send(actvityEtatNonDem);
+            }
+          }
+        }
       }
     }
   } catch (error) {
@@ -3402,12 +3592,11 @@ ActivityController.route("/:activityId([a-z0-9]{24})/inscrireRoom/:roomId([a-z0-
           message: `Ce participant est d\xE9j\xE0 inscrit \xE0 cette activit\xE9. \xC9tat d'avancement: ${isInEtat}`
         });
       } else {
-        const activityEtatNonDem = await activityService3.inscriptionActivity(activityId, userObjectId);
-        if (activityEtatNonDem) {
+        const inscription = await activityService3.inscriptionActivity(activityId, userObjectId);
+        if (inscription) {
           results.push({
             userId,
-            message: "Inscription r\xE9ussie",
-            etat: activityEtatNonDem
+            message: "Inscription r\xE9ussie"
           });
         } else {
           results.push({
@@ -3427,21 +3616,34 @@ ActivityController.route("/:activityId([a-z0-9]{24})/start/:userId([a-z0-9]{24})
   try {
     const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
     const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
-    const isInEtat = await service4.etatByUser(activityId, userId);
-    console.log("Isinetat", isInEtat);
-    if (isInEtat === "EN_COURS") {
-      console.log("User d\xE9j\xE0 in array", isInEtat);
-      res.status(500).send("Activit\xE9 d\xE9j\xE0 en cours pour ce participant");
-    } else if (isInEtat === "TERMINEE") {
-      console.log("User d\xE9j\xE0 in array", isInEtat);
-      res.status(500).send("Activit\xE9 d\xE9j\xE0 termin\xE9e pour ce participant");
-    } else if (isInEtat === "NON_DEMARREE") {
-      const actvityEnCoursPourUser = await service4.startActivity(activityId, userId);
-      if (actvityEnCoursPourUser) {
-        res.status(200).send(actvityEnCoursPourUser);
+    const user = await userService6.find(userId);
+    const activity = await service4.find(activityId);
+    console.log("userid", user);
+    if (user === null) {
+      res.status(404).send("Le participant est introuvable");
+    } else {
+      {
+        if (activity === null) {
+          res.status(404).send("L activit\xE9 est introuvable");
+        } else {
+          const isInEtat = await service4.etatByUser(activityId, userId);
+          console.log("Isinetat", isInEtat);
+          if (isInEtat === "EN_COURS") {
+            console.log("User d\xE9j\xE0 in array", isInEtat);
+            res.status(500).send("Activit\xE9 d\xE9j\xE0 en cours pour ce participant");
+          } else if (isInEtat === "TERMINEE") {
+            console.log("User d\xE9j\xE0 in array", isInEtat);
+            res.status(500).send("Activit\xE9 d\xE9j\xE0 termin\xE9e pour ce participant");
+          } else if (isInEtat === "NON_DEMARREE") {
+            const actvityEnCoursPourUser = await service4.startActivity(activityId, userId);
+            if (actvityEnCoursPourUser) {
+              res.status(200).send(actvityEnCoursPourUser);
+            }
+          } else
+            res.status(500).send("Le participant n'a pas \xE9t\xE9 inscrit \xE0 cette activit\xE9.");
+        }
       }
-    } else
-      res.status(500).send("Le participant n'a pas \xE9t\xE9 inscrit \xE0 cette activit\xE9.");
+    }
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");
@@ -3451,21 +3653,27 @@ ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/"
   try {
     const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
     const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
-    const isInEtat = await service4.etatByUser(activityId, userId);
-    console.log("Isinetat", isInEtat);
-    if (isInEtat === "NON_DEMARREE") {
-      console.log("User n a pas commenc\xE9 l activit\xE9", isInEtat);
-      res.status(500).send("Activit\xE9 d\xE9j\xE0 en cours pour cet User");
-    } else if (isInEtat === "TERMINEE") {
-      console.log("User d\xE9j\xE0 in array", isInEtat);
-      res.status(500).send("Activit\xE9 d\xE9j\xE0 termin\xE9e pour cet User");
-    } else if (isInEtat === "EN_COURS") {
-      const actvityTermineePourUser = await service4.endActivity(activityId, userId);
-      if (actvityTermineePourUser) {
-        res.status(200).send(actvityTermineePourUser);
-      }
-    } else
-      res.status(500).send("Le user na pas \xE9t\xE9 inscrit \xE0 l activit car il nest pas pr\xE9sent dan sles etats de celle ci");
+    const user = await userService6.find(userId);
+    console.log("userid", user);
+    if (user === null) {
+      res.status(404).send("Le participant est introuvable");
+    } else {
+      const isInEtat = await service4.etatByUser(activityId, userId);
+      console.log("Isinetat", isInEtat);
+      if (isInEtat === "NON_DEMARREE") {
+        console.log("User n a pas commenc\xE9 l activit\xE9", isInEtat);
+        res.status(500).send("Le participant est inscrit. Activit\xE9 jamais commenc\xE9 pour ce participant");
+      } else if (isInEtat === "TERMINEE") {
+        console.log("User d\xE9j\xE0 in array", isInEtat);
+        res.status(500).send("Activit\xE9 d\xE9j\xE0 termin\xE9e pour cet User");
+      } else if (isInEtat === "EN_COURS") {
+        const actvityTermineePourUser = await service4.endActivity(activityId, userId);
+        if (actvityTermineePourUser) {
+          res.status(200).send(actvityTermineePourUser);
+        }
+      } else
+        res.status(500).send("Le user na pas \xE9t\xE9 inscrit \xE0 l activit\xE9, il nest pas pr\xE9sent dan les etats de celle ci");
+    }
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");

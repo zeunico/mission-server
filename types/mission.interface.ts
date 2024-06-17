@@ -1,4 +1,6 @@
 import { Types } from 'mongoose';
+import EEtat from './etat.enum';
+
 
 export interface IMission {
 	_id: Types.ObjectId,
@@ -6,7 +8,7 @@ export interface IMission {
     titre: string,
 	activites: Types.ObjectId[];
 	nb_activites: number,
-    etat: string,
+	etat: Partial<Record<EEtat, Types.ObjectId[]>>,
     visible: boolean,
 	active: boolean,
 	guidee: boolean,
