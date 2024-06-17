@@ -26,11 +26,13 @@ export class RoomService {
 	}
 	
 	static async findByCode(roomCode: string): Promise<IRoom | null> {
+		console.log('roomCode in service', roomCode);
 		const researchedRoom = await Room.findOne({ roomCode});
+		console.log('researchedromm',researchedRoom);
 		return researchedRoom;
 	}
 
-	async findById(_id: Types.ObjectId): Promise<IRoom | null> {
+	 async findById(_id: Types.ObjectId): Promise<IRoom | null> {
 		const researchedRoom = await Room.findOne({ _id});
 		return researchedRoom;
 	}

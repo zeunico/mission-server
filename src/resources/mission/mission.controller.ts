@@ -1122,14 +1122,19 @@ MissionController.route('/')
 MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
 	.post(async (req, res, next) => {
 		try {
-			const room = await RoomService.findByCode(req.params.roomCode);
+			console.log('rooomC', req.params.roomCode);
+			const roomCode = req.params.roomCode;
+			const room = await RoomService.findByCode(roomCode);
+			console.log('room', room);
+			
 			if (room) {
 				const roomId = room._id;
-				const mission = await MissionService.createMission(roomId, req.body);
-				console.log('room',room);console.log('roomId',roomId);console.log('mission',mission);
+
+				const mission = await missionService.createMissionByCode(req.body, roomId);
+
 				room?.mission.push(mission._id);	
-				await room.save();
-				console.log('mission', mission);
+				await RoomService.update(room, roomId);				
+
 				
 				return res.status(201).json(mission);}		
 		}

@@ -827,9 +827,11 @@ var RoomService = class {
     return modifiedRoom;
   }
   static async findByCode(roomCode) {
+    console.log("roomCode in service", roomCode);
     const researchedRoom = await room_model_default.findOne({
       roomCode
     });
+    console.log("researchedromm", researchedRoom);
     return researchedRoom;
   }
   async findById(_id) {
@@ -2066,6 +2068,13 @@ var MissionService = class {
     const newMission = __spreadValues({}, datas);
     return await mission_model_default.create(newMission);
   }
+  // Creation d une nouvelle mission par le roomCode
+  async createMissionByCode(datas, roomId) {
+    const newMission = __spreadProps(__spreadValues({}, datas), {
+      roomId
+    });
+    return await mission_model_default.create(newMission);
+  }
   // Trouve une mission par son ID
   async find(_id) {
     const researchedMission = await mission_model_default.findById(_id);
@@ -2234,16 +2243,15 @@ MissionController.route("/").get(async (req, res) => {
 });
 MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next) => {
   try {
-    const room = await RoomService.findByCode(req.params.roomCode);
+    console.log("rooomC", req.params.roomCode);
+    const roomCode = req.params.roomCode;
+    const room = await RoomService.findByCode(roomCode);
+    console.log("room", room);
     if (room) {
       const roomId = room._id;
-      const mission = await MissionService.createMission(roomId, req.body);
-      console.log("room", room);
-      console.log("roomId", roomId);
-      console.log("mission", mission);
+      const mission = await missionService.createMissionByCode(req.body, roomId);
       room == null ? void 0 : room.mission.push(mission._id);
-      await room.save();
-      console.log("mission", mission);
+      await RoomService.update(room, roomId);
       return res.status(201).json(mission);
     }
   } catch (err) {

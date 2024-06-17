@@ -25,6 +25,17 @@ export class MissionService {
 		};
 		return await Mission.create(newMission);
 	}
+	   // Creation d une nouvelle mission par le roomCode
+
+	async createMissionByCode(datas: IMission, roomId: Types.ObjectId): Promise<IMission> {
+		const newMission: IMission = {
+			...datas,
+			roomId:roomId
+			
+		};
+		return await Mission.create(newMission);
+	}
+
 
 	// Trouve une mission par son ID
 	async find(_id: Types.ObjectId): Promise<IMission | null> {
