@@ -20,11 +20,6 @@ const UserSchema = new mongoose.Schema<IUser>({
 		required: true
 	},
 	
-	'moderator': {
-		type: Boolean,
-		required: false
-	},
-	
 	'picture': {
 		type: Schema.Types.ObjectId,
 		ref: 'Media'
@@ -35,14 +30,19 @@ const UserSchema = new mongoose.Schema<IUser>({
 		ref: 'Instruction'
 	}],
 
-	'instance': {
-		type: String,
-		required: true
+	'connexion': {
+		type: Schema.Types.ObjectId,
+		ref:'Room'
 	},
 	
-	'roomId': {
+	'roomId':  [{
 		type: Schema.Types.ObjectId,
 		ref: 'Room',
+		required: true
+	}],
+
+	'instance': {
+		type: String,
 		required: true
 	}
 

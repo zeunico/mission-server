@@ -995,7 +995,7 @@ const userService = new UsersService();
  *          description: Message d'erreur
  * /mission/{idMission}/etat/{idUser}:
  *  get:
- *   summary: L'état d'avancement d'un particpant dans une mission
+ *   summary: L'état d'avancement d'un participant dans une mission
  *   tags: [Mission]
  *   parameters:
  *    - name: idMission
@@ -1326,7 +1326,7 @@ MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
 		try {
 			console.log('rooomC', req.params.roomCode);
 			const roomCode = req.params.roomCode;
-			const room = await RoomService.findByCode(roomCode);
+			const room = await roomService.findByCode(roomCode);
 			console.log('room', room);
 			
 			if (room) {
@@ -1347,7 +1347,7 @@ MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
 	})
 	.get(async (req, res, next) => {
 		try {
-			const room = await RoomService.findByCode(req.params.roomCode);
+			const room = await roomService.findByCode(req.params.roomCode);
 			if (room) {
 				const missionList = room.mission;
 				console.log('missionList', missionList);
@@ -1394,7 +1394,7 @@ MissionController.route('/:id([a-z0-9]{24})/')
 			}
 		try {
 				await service.delete(id);
-				const room = await RoomService.findById(mission.roomId);
+				const room = await roomService.findById(mission.roomId);
 				console.log('room', room);
 				if (room) {
 					room.mission = room.mission.filter(id => !id.equals(mission._id));
@@ -1703,34 +1703,35 @@ MissionController.route('/:id([a-z0-9]{24})/activitesVisibles')
 
 	// Toutes les activités Actives dans une mission
 MissionController.route('/:id([a-z0-9]{24})/activitesActives')
-.get(async (req, res) => {
-	const id = req.params.id;
+	.get(async (req, res) => {
+		const id = req.params.id;
 
-	if (!id) {
-		return res.status(400).send('Le champ ID est manquant.');
-	}
-
-	try {
-		const mission = await missionService.find(new Types.ObjectId(id));
-		if (!mission) {
-			return res.status(404).json({ error: 'Mission non trouvée.' });
+		if (!id) {
+			return res.status(400).send('Le champ ID est manquant.');
 		}
 
-		const activityIds = mission.activites || [];
-		const activities = await Promise.all(
-			activityIds.map(activityId => activityService.find(new Types.ObjectId(activityId)))
-		);
+		try {
+			const mission = await missionService.find(new Types.ObjectId(id));
+			if (!mission) {
+				return res.status(404).json({ error: 'Mission non trouvée.' });
+			}
 
-		// Filter activities to only include those with visible === true
-		const activeActivities = activities.filter(activity => activity.active === true);
-		res.status(200).json(activeActivities);
-	} catch (error) {
-		console.error('Error fetching mission visible activities:', error);
-		res.status(500).json({ error: 'Internal Server Error' });
-	}
-});
-	// Toutes les activités GUIDEES dans une mission
-	MissionController.route('/:id([a-z0-9]{24})/activitesGuidees')
+			const activityIds = mission.activites || [];
+			const activities = await Promise.all(
+				activityIds.map(activityId => activityService.find(new Types.ObjectId(activityId)))
+			);
+
+			// Filter activities to only include those with visible === true
+			const activeActivities = activities.filter(activity => activity.active === true);
+			res.status(200).json(activeActivities);
+		} catch (error) {
+			console.error('Error fetching mission visible activities:', error);
+			res.status(500).json({ error: 'Internal Server Error' });
+		}
+	});
+	
+// Toutes les activités GUIDEES dans une mission
+MissionController.route('/:id([a-z0-9]{24})/activitesGuidees')
 	.get(async (req, res) => {
 		const id = req.params.id;
 	

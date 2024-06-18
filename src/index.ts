@@ -20,6 +20,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import ActivityController from './resources/activity/activity.controller';
 
+
 // const cronJobs = require('./cronJobs'); 
 
 // Création d'une nouvelle instance express

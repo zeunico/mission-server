@@ -387,7 +387,7 @@ UserDataController.route('/')
 			console.log('activity', activity);
 
 
-			const room = await RoomService.findByCode(req.body.room);
+			const room = await roomService.findByCode(req.body.room);
 			console.log('room', room);
 			if (!room) {
 				throw new NotFoundException('Salle introuvable');

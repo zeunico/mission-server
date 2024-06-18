@@ -220,10 +220,6 @@ var UserSchema = new import_mongoose.default.Schema({
     unique: false,
     required: true
   },
-  "moderator": {
-    type: Boolean,
-    required: false
-  },
   "picture": {
     type: import_mongoose.Schema.Types.ObjectId,
     ref: "Media"
@@ -234,13 +230,19 @@ var UserSchema = new import_mongoose.default.Schema({
       ref: "Instruction"
     }
   ],
+  "connexion": {
+    type: import_mongoose.Schema.Types.ObjectId,
+    ref: "Room"
+  },
+  "roomId": [
+    {
+      type: import_mongoose.Schema.Types.ObjectId,
+      ref: "Room",
+      required: true
+    }
+  ],
   "instance": {
     type: String,
-    required: true
-  },
-  "roomId": {
-    type: import_mongoose.Schema.Types.ObjectId,
-    ref: "Room",
     required: true
   }
 }, {
@@ -826,7 +828,7 @@ var RoomService = class {
     console.log(await room_model_default.findOne(_id));
     return modifiedRoom;
   }
-  static async findByCode(roomCode) {
+  async findByCode(roomCode) {
     console.log("roomCode in service", roomCode);
     const researchedRoom = await room_model_default.findOne({
       roomCode
@@ -1007,10 +1009,10 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
     const roomCode = (_a9 = req.query.roomCode) == null ? void 0 : _a9.toString();
     let room;
     if (roomCode) {
-      room = await RoomService.findByCode(roomCode);
+      room = await roomService.findByCode(roomCode);
       if (room === null) {
         await createNewRoom(roomCode);
-        room = await RoomService.findByCode(roomCode);
+        room = await roomService.findByCode(roomCode);
       }
     }
     if (req.query.roomCode) {
@@ -1032,13 +1034,17 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
               email,
               firstname: resAxios.data.user.firstname,
               lastname: resAxios.data.user.lastname,
-              moderator: resAxios.data.user.isModerator,
+              connexion: new import_mongoose10.Types.ObjectId(room._id),
               picture: null,
               instructions: [],
               instance: req.query.instance !== void 0 ? req.query.instance.toString() : config2.MOBITEACH_URL,
-              roomId: room._id
+              roomId: [
+                room._id
+              ]
             });
-            if (user.moderator) {
+            const isModerator = resAxios.data.user.isModerator;
+            console.log("ismodo from axios", isModerator);
+            if (isModerator) {
               console.log("Cet user est le moderator de la salle ! Il est ajout\xE9 dans la salle ");
               room.moderatorId = user._id;
               const updatedRoom = await RoomService.update({
@@ -1094,6 +1100,21 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
             user = await service.update({
               picture: media._id
             }, user._id);
+          }
+        } else {
+          if (room && room._id) {
+            const newRoomId = new import_mongoose10.Types.ObjectId(room._id);
+            if (!user.roomId.includes(room._id)) {
+              user.roomId.push(room._id);
+              const userUpdated = await service.update({
+                roomId: user.roomId
+              }, new import_mongoose10.Types.ObjectId(user._id));
+              console.log("Updated participa room array:", userUpdated);
+            } else {
+              console.log("La salle est d\xE9j\xE0 pr\xE9sente dans les infos de ce participant.");
+            }
+          } else {
+            console.log("roomCode ou RoomId invalide.");
           }
         }
       }).catch((err) => {
@@ -1169,16 +1190,93 @@ UsersController.route("/:id([a-z0-9]{24})/image").get(async (req, res, next) => 
     next(err);
   }
 });
-UsersController.route("/:id([a-z0-9]{24})/ismoderator").get(async (req, res, next) => {
+UsersController.route("/:idUser([a-z0-9]{24})/ismoderator/:idRoom([a-z0-9]{24})").get(async (req, res, next) => {
+  try {
+    const userId = new import_mongoose10.Types.ObjectId(req.params.idUser);
+    const user = await service.find(userId);
+    console.log("user id", user);
+    const roomId = new import_mongoose10.Types.ObjectId(req.params.idRoom);
+    const room = await roomService.findById(roomId);
+    console.log("room", room);
+    const modo = new import_mongoose10.Types.ObjectId(room.moderatorId);
+    console.log("modoooo", modo);
+    if (modo.equals(userId)) {
+      return res.status(200).json("true");
+    } else {
+      return res.status(200).json("false");
+    }
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+UsersController.route("/:id([a-z0-9]{24})/connect").put(async (req, res, next) => {
   try {
     const id = new import_mongoose10.Types.ObjectId(req.params.id);
     const user = await service.find(id);
     console.log("user id", user);
-    const room = new import_mongoose10.Types.ObjectId(req.params.roomId);
-    await roomService.findById(room);
-    console.log("room", room);
-    const isModeratorStatus = user == null ? void 0 : user.moderator;
-    return res.status(200).json(isModeratorStatus);
+    if (!user) {
+      throw new NotFoundException("Utilisateur introuvable");
+    }
+    const statusConnexion = user.connexion;
+    console.log("statut visible", statusConnexion);
+    if (statusConnexion) {
+      res.status(200).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9j\xE0 connect\xE9");
+    } else {
+      if (user) {
+        user.connexion = true;
+        await user.save();
+        res.status(201).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9sormais connect\xE9");
+      }
+    }
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+UsersController.route("/:id([a-z0-9]{24})/disconnect").put(async (req, res, next) => {
+  try {
+    const id = new import_mongoose10.Types.ObjectId(req.params.id);
+    const user = await service.find(id);
+    console.log("user id", user);
+    if (!user) {
+      throw new NotFoundException("Utilisateur introuvable");
+    }
+    const statusConnexion = user.connexion;
+    console.log("statut visible", statusConnexion);
+    if (!statusConnexion) {
+      res.status(200).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9j\xE0 d\xE9connect\xE9");
+    } else {
+      if (user) {
+        user.connexion = false;
+        await user.save();
+        res.status(201).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9sormais d\xE9connect\xE9");
+      }
+    }
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+UsersController.route("/listconnect").put(async (req, res, next) => {
+  try {
+    const id = new import_mongoose10.Types.ObjectId(req.params.id);
+    const user = await service.find(id);
+    console.log("user id", user);
+    if (!user) {
+      throw new NotFoundException("Utilisateur introuvable");
+    }
+    const statusConnexion = user.connexion;
+    console.log("statut visible", statusConnexion);
+    if (!statusConnexion) {
+      res.status(200).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9j\xE0 d\xE9connect\xE9");
+    } else {
+      if (user) {
+        user.connexion = false;
+        await user.save();
+        res.status(201).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9sormais d\xE9connect\xE9");
+      }
+    }
   } catch (err) {
     console.log(err);
     next(err);
@@ -1564,7 +1662,7 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
       throw new NotFoundException("Activit\xE9 introuvable");
     }
     console.log("activity", activity);
-    const room = await RoomService.findByCode(req.body.room);
+    const room = await roomService2.findByCode(req.body.room);
     console.log("room", room);
     if (!room) {
       throw new NotFoundException("Salle introuvable");
@@ -2310,7 +2408,7 @@ MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next
   try {
     console.log("rooomC", req.params.roomCode);
     const roomCode = req.params.roomCode;
-    const room = await RoomService.findByCode(roomCode);
+    const room = await roomService3.findByCode(roomCode);
     console.log("room", room);
     if (room) {
       const roomId = room._id;
@@ -2325,7 +2423,7 @@ MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next
   }
 }).get(async (req, res, next) => {
   try {
-    const room = await RoomService.findByCode(req.params.roomCode);
+    const room = await roomService3.findByCode(req.params.roomCode);
     if (room) {
       const missionList = room.mission;
       console.log("missionList", missionList);
@@ -2363,7 +2461,7 @@ MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
   }
   try {
     await service2.delete(id);
-    const room = await RoomService.findById(mission.roomId);
+    const room = await roomService3.findById(mission.roomId);
     console.log("room", room);
     if (room) {
       room.mission = room.mission.filter((id2) => !id2.equals(mission._id));
@@ -2947,7 +3045,7 @@ RoomController.route("/").get(async (req, res) => {
 RoomController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
   try {
     const id = new import_mongoose17.Types.ObjectId(req.params.id);
-    const room = await RoomService.findById(id);
+    const room = await service3.findById(id);
     return res.status(200).json(room);
   } catch (err) {
     next(err);
@@ -2956,7 +3054,7 @@ RoomController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
 RoomController.route("/:id([a-z0-9]{24})/moderator").get(async (req, res, next) => {
   try {
     const id = new import_mongoose17.Types.ObjectId(req.params.id);
-    const room = await RoomService.findById(id);
+    const room = await service3.findById(id);
     const moderator = room == null ? void 0 : room.moderatorId;
     return res.status(200).json(moderator);
   } catch (err) {
@@ -2966,7 +3064,7 @@ RoomController.route("/:id([a-z0-9]{24})/moderator").get(async (req, res, next) 
 RoomController.route("/:roomCode([A-Z0-9]{6})/moderator").get(async (req, res, next) => {
   try {
     const roomCode = req.params.roomCode;
-    const room = await RoomService.findByCode(roomCode);
+    const room = await service3.findByCode(roomCode);
     const moderator = room == null ? void 0 : room.moderatorId;
     return res.status(200).json(moderator);
   } catch (err) {
@@ -2976,7 +3074,7 @@ RoomController.route("/:roomCode([A-Z0-9]{6})/moderator").get(async (req, res, n
 RoomController.route("/:id([a-z0-9]{24})/participants").get(async (req, res, next) => {
   try {
     const id = new import_mongoose17.Types.ObjectId(req.params.id);
-    const room = await RoomService.findById(id);
+    const room = await service3.findById(id);
     const participantsList = room == null ? void 0 : room.participants;
     return res.status(200).json(participantsList);
   } catch (err) {
@@ -2986,7 +3084,7 @@ RoomController.route("/:id([a-z0-9]{24})/participants").get(async (req, res, nex
 RoomController.route("/:roomCode([A-Z0-9]{6})/participants").get(async (req, res, next) => {
   try {
     const roomCode = req.params.roomCode;
-    const room = await RoomService.findByCode(roomCode);
+    const room = await service3.findByCode(roomCode);
     const participantsList = room == null ? void 0 : room.participants;
     return res.status(200).json(participantsList);
   } catch (err) {
@@ -2996,7 +3094,7 @@ RoomController.route("/:roomCode([A-Z0-9]{6})/participants").get(async (req, res
 RoomController.route("/:id([a-z0-9]{24})/missions").get(async (req, res, next) => {
   try {
     const id = new import_mongoose17.Types.ObjectId(req.params.id);
-    const room = await RoomService.findById(id);
+    const room = await service3.findById(id);
     const missionsList = room == null ? void 0 : room.mission;
     return res.status(200).json(missionsList);
   } catch (err) {
@@ -3006,7 +3104,7 @@ RoomController.route("/:id([a-z0-9]{24})/missions").get(async (req, res, next) =
 RoomController.route("/:roomCode([A-Z0-9]{6})/missions").get(async (req, res, next) => {
   try {
     const roomCode = req.params.roomCode;
-    const room = await RoomService.findByCode(roomCode);
+    const room = await service3.findByCode(roomCode);
     const missionsList = room == null ? void 0 : room.mission;
     return res.status(200).json(missionsList);
   } catch (err) {

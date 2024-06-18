@@ -297,14 +297,19 @@ const roomService = new RoomService();
  *          description: Message d'erreur
  * 
  * 
- * /users/{id}/ismoderator:
+ * /users/{idUser}/ismoderator/{idRoom}:
  *  get:
  *   summary: Récupère le statut de l'utilisateur. Est-il moderator (animateur) de la salle ou non ? 
  *   tags: [Users]
  *   parameters:
- *    - name: id
+ *    - name: idUser
  *      in: path
- *      description: Code identifiant de l'utilisateur généré par la base de données
+ *      description: ID de l'utilisateur 
+ *      type: string
+ *      required: true 
+ *    - name: idRoom
+ *      in: path
+ *      description: ID de la room
  *      type: string
  *      required: true
  *   responses:
@@ -329,6 +334,90 @@ const roomService = new RoomService();
  *          error:
  *           type: string
  *           description: Message d'erreur
+ * /users/{id}/connect:
+ *   put:
+ *     summary: Changer la statut de connexion de l'utilisateur à vrai
+ *     tags: [Users]
+ *     description: Ce point de terminaison changer le statut de connexion de l'utilisateur à vrai.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de l'utilisateur
+ *     responses:
+ *       200:
+ *         description:  Le statut de connexion de l'utilisateur est changé à vrai
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Participant {user} est déjà connecté
+ *       201:
+ *         description:  Le statut de connexion de l'utilisateur est déjà à vrai
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Participant {user} est désormais connecté
+ *       400:
+ *         description: Le champ ID du participant est manquant
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
+  * /users/{id}/disconnect:
+ *   put:
+ *     summary: Changer la statut de connexion de l'utilisateur à faux
+ *     tags: [Users]
+ *     description: Ce point de terminaison changer le statut de connexion de l'utilisateur à faux.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         description: L'ID de l'utilisateur
+ *     responses:
+ *       200:
+ *         description:  Le statut de connexion de l'utilisateur est changé à faux
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Participant {user} est déjà déconnecté
+ *       201:
+ *         description:  Le statut de connexion de l'utilisateur est déjà à faux
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Participant {user} est déconnecté
+ *       400:
+ *         description: Le champ ID du participant est manquant
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Le champ ID est manquant.
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur
  */
 
 async function createNewRoom(roomCode) {
@@ -378,14 +467,14 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 
 			}
 
-        // CREATION ROOM DEFAULT
+        // CREATION NOUVELLE ROOM SI CET USER PROVIENT D UNE ROOM PAR ENCORE EN BDD 
 			const roomCode = req.query.roomCode?.toString();
 			let room: IRoom | null;
 			if (roomCode) {
-				room = await RoomService.findByCode(roomCode);
+				room = await roomService.findByCode(roomCode);
 				if (room === null) {
 					await createNewRoom(roomCode);
-					room = await RoomService.findByCode(roomCode);					
+					room = await roomService.findByCode(roomCode);					
 				}
 			}
 
@@ -407,23 +496,29 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 										email,
 										firstname: resAxios.data.user.firstname,
 										lastname: resAxios.data.user.lastname, 
-										moderator: resAxios.data.user.isModerator,
+										connexion: new Types.ObjectId(room._id),
 										picture: null,
 										instructions: [],
 										instance: req.query.instance !== undefined ? req.query.instance.toString() : config.MOBITEACH_URL,
-										roomId: room._id,
+										roomId: [room._id],
 								});			
-								// Le modérateur est ajouté à la salle
-								// On ajoute le user à la liste des participants dans la salle SEULEMENT SI il n'est pas moderator
-								if (user.moderator) {
-									console.log('Cet user est le moderator de la salle ! Il est ajouté dans la salle ');
-									room.moderatorId = user._id;
+
+								/// MODERATEUR
+								const isModerator = resAxios.data.user.isModerator;
+								console.log('ismodo from axios', isModerator);
+								if (isModerator) {
+									// Le modérateur est ajouté comme modérateur de la salle
 								
-									const updatedRoom = await RoomService.update({ moderatorId: user._id }, room._id);
-									console.log('Updated room:', updatedRoom);
-								} else {
-									room.participants.push(user._id);
-								}
+										console.log('Cet user est le moderator de la salle ! Il est ajouté dans la salle ');
+										room.moderatorId = user._id;
+									
+										const updatedRoom = await RoomService.update({ moderatorId: user._id }, room._id);
+										console.log('Updated room:', updatedRoom);
+									} else {
+										// On ajoute le user à la liste des participants dans la salle SEULEMENT SI il n'est pas moderator
+										room.participants.push(user._id);
+									}
+								
 
 								RoomService.update(room, room._id);
 								const roomCode = room.roomCode;
@@ -486,7 +581,24 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 								user = await service.update({ picture: media._id }, user._id);
 							}					
 						}
+						else {
+							// Ajout room à l'array room du participant si elle n est pas déjà
+							if (room && room._id) {
+								const newRoomId = new Types.ObjectId(room._id);
+								
+								// Check if the room ID is already in the user's roomId array
+								if (!user.roomId.includes(room._id)) {
+									user.roomId.push(room._id);
+									const userUpdated = await service.update({ roomId: user.roomId }, new Types.ObjectId(user._id));
 
+									console.log('Updated participa room array:', userUpdated);
+								} else {
+									console.log('La salle est déjà présente dans les infos de ce participant.');
+								}
+							} else {
+								console.log('roomCode ou RoomId invalide.');
+							}
+						}
 					})
 					.catch((err) => {
 						console.log('ERROR', err);
@@ -579,22 +691,120 @@ UsersController.route('/:id([a-z0-9]{24})/image')
 	});
 
 
+//// IS MODERATOR /////////////// 
+UsersController.route('/:idUser([a-z0-9]{24})/ismoderator/:idRoom([a-z0-9]{24})')
+	.get(async (req, res, next) => {
+		try {
+			const userId = new Types.ObjectId(req.params.idUser);
+		
+			const user = await service.find(userId);
+			console.log('user id', user);
 
-UsersController.route('/:id([a-z0-9]{24})/ismoderator')
+			const roomId = new Types.ObjectId(req.params.idRoom); 
+			const room = await roomService.findById(roomId);		
+			console.log('room', room);
+
+			const modo = new Types.ObjectId(room.moderatorId);
+			console.log('modoooo',modo);
+			if (modo.equals(userId)) {
+				return res.status(200).json('true');
+
+			}
+			else {return res.status(200).json('false');
+
+			}
+		} catch (err) {
+			console.log(err);
+			next(err);
+		}
+	});
+
+//// SE CONNECTE /////////////// 
+UsersController.route('/:idUser([a-z0-9]{24})/connect/:idRoom([a-z0-9]{24})')
+	.put(async (req, res, next) => {
+		try {
+			const id = new Types.ObjectId(req.params.id);
+		
+			const user = await service.find(id);
+			console.log('user id', user);
+			if (!user) {
+				throw new NotFoundException('Utilisateur introuvable');
+			}
+
+			const statusConnexion = user.connexion;
+			console.log('statut visible', statusConnexion);
+			
+			if (statusConnexion) {
+				res.status(200).json('Participant :  ' + user.firstname +'  ' + user.lastname +' est déjà connecté');
+			} else {
+				if (user) {
+					user.connexion = new Types.ObjectId(room._id);
+					await user.save();
+					res.status(201).json('Participant :  '  + user.firstname +'  ' + user.lastname +' est désormais connecté');
+				}
+			} 	
+
+		} catch (err) {
+			console.log(err);
+			next(err);
+		}
+	});
+
+	//// SE DECONNECTE /////////////// 
+	UsersController.route('/:idUser([a-z0-9]{24})/disconnect/:idRoom([a-z0-9]{24})')
+	.put(async (req, res, next) => {
+		try {
+			const id = new Types.ObjectId(req.params.id);
+		
+			const user = await service.find(id);
+			console.log('user id', user);
+			if (!user) {
+				throw new NotFoundException('Utilisateur introuvable');
+			}
+
+			const statusConnexion = user.connexion;
+			console.log('statut visible', statusConnexion);
+			if (!statusConnexion) {
+				res.status(200).json('Participant :  ' + user.firstname +'  ' + user.lastname +' est déjà déconnecté');
+			} else {
+				if (user) {
+					user.connexion = false;
+					await user.save();
+					res.status(201).json('Participant :  ' + user.firstname +'  ' + user.lastname +' est désormais déconnecté');
+				}
+			} 	
+
+		} catch (err) {
+			console.log(err);
+			next(err);
+		}
+	});
+
+	
+//// LISTE DES UTILISATEURS CONNECTES
+UsersController.route('/listconnect')
 	.get(async (req, res, next) => {
 		try {
 			const id = new Types.ObjectId(req.params.id);
 		
 			const user = await service.find(id);
 			console.log('user id', user);
+			if (!user) {
+				throw new NotFoundException('Utilisateur introuvable');
+			}
 
-			const room = new Types.ObjectId(req.params.roomId); 
-			await roomService.findById(room);		
-			console.log('room', room);
+			const statusConnexion = user.connexion;
+			console.log('statut visible', statusConnexion);
+			if (!statusConnexion) {
+				res.status(200).json('Participant :  ' + user.firstname +'  ' + user.lastname +' est déjà déconnecté');
+			} else {
+				if (user) {
+					user.connexion = false;
+					await user.save();
+					res.status(201).json('Participant :  ' + user.firstname +'  ' + user.lastname +' est désormais déconnecté');
+				}
+			} 	
 
-			const isModeratorStatus = user?.moderator;
-
-			return res.status(200).json(isModeratorStatus);
 		} catch (err) {
 			console.log(err);
 			next(err);

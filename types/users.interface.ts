@@ -5,11 +5,11 @@ export interface IUser {
     firstname: string,
 	lastname: string,
     email: string,
-	moderator: boolean,
     picture: Types.ObjectId | null,
+	roomId: Types.ObjectId[] | null,
 	instructions: Types.ObjectId[],
+	connexion: Types.ObjectId,
 	instance: string,
-	roomId: Types.ObjectId | null,
 	createdAt: Date,
     updatedAt: Date,
 }

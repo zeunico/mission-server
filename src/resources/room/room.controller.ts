@@ -321,7 +321,7 @@ RoomController.route('/:id([a-z0-9]{24})/')
 	try {
 		const id = new Types.ObjectId(req.params.id);
 		
-		const room = await RoomService.findById(id);
+		const room = await service.findById(id);
 	
 		return res.status(200).json(room);
 	} catch (err) {
@@ -335,7 +335,7 @@ RoomController.route('/:id([a-z0-9]{24})/moderator')
 		try {
 			const id = new Types.ObjectId(req.params.id);
 			
-			const room =  await RoomService.findById(id);
+			const room =  await service.findById(id);
 			const moderator = room?.moderatorId;
 		
 			return res.status(200).json(moderator);
@@ -349,7 +349,7 @@ RoomController.route('/:roomCode([A-Z0-9]{6})/moderator')
 	.get(async (req, res, next) => {
 		try {
 			const roomCode = req.params.roomCode;
-			const room =  await RoomService.findByCode(roomCode);
+			const room =  await service.findByCode(roomCode);
 			const moderator = room?.moderatorId;
 			return res.status(200).json(moderator);
 		} catch (err) {
@@ -363,7 +363,7 @@ RoomController.route('/:id([a-z0-9]{24})/participants')
 		try {
 			const id = new Types.ObjectId(req.params.id);
 			
-			const room =  await RoomService.findById(id);
+			const room =  await service.findById(id);
 			const participantsList = room?.participants;
 			return res.status(200).json(participantsList);
 		} catch (err) {
@@ -376,7 +376,7 @@ RoomController.route('/:roomCode([A-Z0-9]{6})/participants')
 	.get(async (req, res, next) => {
 		try {
 			const roomCode = req.params.roomCode;
-			const room =  await RoomService.findByCode(roomCode);
+			const room =  await service.findByCode(roomCode);
 			const participantsList = room?.participants;
 			return res.status(200).json(participantsList);
 		} catch (err) {
@@ -390,7 +390,7 @@ RoomController.route('/:id([a-z0-9]{24})/missions')
 		try {
 			const id = new Types.ObjectId(req.params.id);
 			
-			const room =  await RoomService.findById(id);
+			const room =  await service.findById(id);
 			const missionsList = room?.mission;
 			return res.status(200).json(missionsList);
 		} catch (err) {
@@ -403,7 +403,7 @@ RoomController.route('/:roomCode([A-Z0-9]{6})/missions')
 	.get(async (req, res, next) => {
 		try {
 			const roomCode = req.params.roomCode;
-			const room =  await RoomService.findByCode(roomCode);
+			const room =  await service.findByCode(roomCode);
 			const missionsList = room?.mission;
 			return res.status(200).json(missionsList);
 		} catch (err) {
