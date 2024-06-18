@@ -232,7 +232,8 @@ var UserSchema = new import_mongoose.default.Schema({
   ],
   "connexion": {
     type: import_mongoose.Schema.Types.ObjectId,
-    ref: "Room"
+    ref: "Room",
+    default: null
   },
   "roomId": [
     {
@@ -264,6 +265,37 @@ var UsersService = class {
     const researchedUser = await user_model_default.findById(_id);
     console.log("researchedser in service user find", researchedUser);
     return researchedUser;
+  }
+  // Nouvelle méthode pour trouver les prénoms et noms des utilisateurs connectés à une salle, en excluant le modérateur
+  async findUserNamesConnectedToRoomExcludingModerator(roomId, moderatorId) {
+    try {
+      const connectedUsers = await user_model_default.find({
+        connexion: roomId,
+        _id: {
+          $ne: moderatorId
+        }
+      }).select("firstname lastname");
+      return connectedUsers.map((user) => ({
+        firstname: user.firstname,
+        lastname: user.lastname
+      }));
+    } catch (err) {
+      throw new Error("Error retrieving connected users excluding moderator: " + err.message);
+    }
+  }
+  // Liste des utilisteurs connecté moderotor exclu 
+  async findUsersConnectedToRoom(roomId, moderatorId) {
+    try {
+      const connectedUsers = await user_model_default.find({
+        connexion: roomId,
+        _id: {
+          $ne: moderatorId
+        }
+      });
+      return connectedUsers;
+    } catch (err) {
+      throw new Error("Error retrieving connected users excluding moderator: " + err.message);
+    }
   }
   // trouve un utilisateur via l'email
   async findByEmail(email, instance, room) {
@@ -828,6 +860,7 @@ var RoomService = class {
     console.log(await room_model_default.findOne(_id));
     return modifiedRoom;
   }
+  /// ATTENTION findByCode  NE FCTINNE QUE POUR UNE INSTANCE UNIQUE
   async findByCode(roomCode) {
     console.log("roomCode in service", roomCode);
     const researchedRoom = await room_model_default.findOne({
@@ -1193,14 +1226,20 @@ UsersController.route("/:id([a-z0-9]{24})/image").get(async (req, res, next) => 
 UsersController.route("/:idUser([a-z0-9]{24})/ismoderator/:idRoom([a-z0-9]{24})").get(async (req, res, next) => {
   try {
     const userId = new import_mongoose10.Types.ObjectId(req.params.idUser);
-    const user = await service.find(userId);
-    console.log("user id", user);
     const roomId = new import_mongoose10.Types.ObjectId(req.params.idRoom);
+    const user = await service.find(userId);
     const room = await roomService.findById(roomId);
     console.log("room", room);
-    const modo = new import_mongoose10.Types.ObjectId(room.moderatorId);
-    console.log("modoooo", modo);
-    if (modo.equals(userId)) {
+    console.log("user id", user);
+    if (!user) {
+      throw new NotFoundException("Utilisateur introuvable");
+    }
+    if (!room) {
+      throw new NotFoundException("Salle introuvable");
+    }
+    const roomModerator = room.moderatorId;
+    const roomCode = room.roomCode;
+    if (roomModerator.equals(userId)) {
       return res.status(200).json("true");
     } else {
       return res.status(200).json("false");
@@ -1210,23 +1249,26 @@ UsersController.route("/:idUser([a-z0-9]{24})/ismoderator/:idRoom([a-z0-9]{24})"
     next(err);
   }
 });
-UsersController.route("/:id([a-z0-9]{24})/connect").put(async (req, res, next) => {
+UsersController.route("/:idUser([a-z0-9]{24})/connect/:idRoom([a-z0-9]{24})").put(async (req, res, next) => {
   try {
-    const id = new import_mongoose10.Types.ObjectId(req.params.id);
-    const user = await service.find(id);
-    console.log("user id", user);
+    const userId = new import_mongoose10.Types.ObjectId(req.params.idUser);
+    const roomId = new import_mongoose10.Types.ObjectId(req.params.idRoom);
+    const user = await service.find(userId);
+    const room = await roomService.findById(roomId);
+    const roomCode = room == null ? void 0 : room.roomCode;
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
     }
-    const statusConnexion = user.connexion;
-    console.log("statut visible", statusConnexion);
-    if (statusConnexion) {
-      res.status(200).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9j\xE0 connect\xE9");
+    if (!room) {
+      throw new NotFoundException("Salle introuvable");
+    }
+    if (room._id.equals(user.connexion)) {
+      res.status(200).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9j\xE0 connect\xE9 \xE0 " + roomCode + ".");
     } else {
       if (user) {
-        user.connexion = true;
+        user.connexion = new import_mongoose10.Types.ObjectId(room._id);
         await user.save();
-        res.status(201).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9sormais connect\xE9");
+        res.status(201).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9sormais connect\xE9 \xE0 " + roomCode + ".");
       }
     }
   } catch (err) {
@@ -1234,23 +1276,26 @@ UsersController.route("/:id([a-z0-9]{24})/connect").put(async (req, res, next) =
     next(err);
   }
 });
-UsersController.route("/:id([a-z0-9]{24})/disconnect").put(async (req, res, next) => {
+UsersController.route("/:idUser([a-z0-9]{24})/disconnect/:idRoom([a-z0-9]{24})").put(async (req, res, next) => {
   try {
-    const id = new import_mongoose10.Types.ObjectId(req.params.id);
-    const user = await service.find(id);
-    console.log("user id", user);
+    const userId = new import_mongoose10.Types.ObjectId(req.params.idUser);
+    const roomId = new import_mongoose10.Types.ObjectId(req.params.idRoom);
+    const user = await service.find(userId);
+    const room = await roomService.findById(roomId);
+    const roomCode = room == null ? void 0 : room.roomCode;
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
     }
-    const statusConnexion = user.connexion;
-    console.log("statut visible", statusConnexion);
-    if (!statusConnexion) {
-      res.status(200).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9j\xE0 d\xE9connect\xE9");
+    if (!room) {
+      throw new NotFoundException("Salle introuvable");
+    }
+    if (!room._id.equals(user.connexion)) {
+      res.status(200).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9j\xE0 d\xE9connect\xE9 de " + roomCode + ".");
     } else {
       if (user) {
-        user.connexion = false;
+        user.connexion = null;
         await user.save();
-        res.status(201).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9sormais d\xE9connect\xE9");
+        res.status(200).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9sormais d\xE9connect\xE9 \xE0 " + roomCode + ".");
       }
     }
   } catch (err) {
@@ -1258,27 +1303,17 @@ UsersController.route("/:id([a-z0-9]{24})/disconnect").put(async (req, res, next
     next(err);
   }
 });
-UsersController.route("/listconnect").put(async (req, res, next) => {
+UsersController.route("/listconnect/:idRoom([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const id = new import_mongoose10.Types.ObjectId(req.params.id);
-    const user = await service.find(id);
-    console.log("user id", user);
-    if (!user) {
-      throw new NotFoundException("Utilisateur introuvable");
-    }
-    const statusConnexion = user.connexion;
-    console.log("statut visible", statusConnexion);
-    if (!statusConnexion) {
-      res.status(200).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9j\xE0 d\xE9connect\xE9");
-    } else {
-      if (user) {
-        user.connexion = false;
-        await user.save();
-        res.status(201).json("Participant :  " + user.firstname + "  " + user.lastname + " est d\xE9sormais d\xE9connect\xE9");
-      }
+    const roomId = new import_mongoose10.Types.ObjectId(req.params.idRoom);
+    const room = await roomService.findById(roomId);
+    if (room) {
+      const moderatorId = room == null ? void 0 : room.moderatorId;
+      const connectedUsers = await service.findUsersConnectedToRoom(roomId, moderatorId);
+      res.status(200).json(connectedUsers);
     }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     next(err);
   }
 });

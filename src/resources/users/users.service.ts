@@ -20,6 +20,26 @@ export class UsersService {
 		console.log('researchedser in service user find', researchedUser);
 		return researchedUser;
 	}
+	// Nouvelle méthode pour trouver les prénoms et noms des utilisateurs connectés à une salle, en excluant le modérateur
+	async  findUserNamesConnectedToRoomExcludingModerator(roomId: Types.ObjectId, moderatorId: Types.ObjectId): Promise<{ firstname: string, lastname: string }[]> {
+		try {
+			const connectedUsers = await User.find({ connexion: roomId, _id: { $ne: moderatorId } }).select('firstname lastname');
+			return connectedUsers.map(user => ({ firstname: user.firstname, lastname: user.lastname }));
+		} catch (err) {
+			throw new Error('Error retrieving connected users excluding moderator: ' + err.message);
+		}
+	}
+
+	// Liste des utilisteurs connecté moderotor exclu 
+	async findUsersConnectedToRoom(roomId: Types.ObjectId, moderatorId: Types.ObjectId): Promise<IUser[]> {
+		try {
+			const connectedUsers = await User.find({ connexion: roomId, _id: { $ne: moderatorId } });
+			return connectedUsers;
+		} catch (err) {
+			throw new Error('Error retrieving connected users excluding moderator: ' + err.message);
+		}
+	}
+
 
 	// trouve un utilisateur via l'email
 	async findByEmail(email: string, instance?: string, room?: string): Promise<IUser | null> {

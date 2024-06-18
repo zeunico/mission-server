@@ -696,23 +696,33 @@ UsersController.route('/:idUser([a-z0-9]{24})/ismoderator/:idRoom([a-z0-9]{24})'
 	.get(async (req, res, next) => {
 		try {
 			const userId = new Types.ObjectId(req.params.idUser);
+			const roomId = new Types.ObjectId(req.params.idRoom);
 		
 			const user = await service.find(userId);
+			const room = await roomService.findById(roomId);
+			console.log('room', room);
+			 
+
 			console.log('user id', user);
 
-			const roomId = new Types.ObjectId(req.params.idRoom); 
-			const room = await roomService.findById(roomId);		
-			console.log('room', room);
+            if (!user) {
+                throw new NotFoundException('Utilisateur introuvable');
+            }
 
-			const modo = new Types.ObjectId(room.moderatorId);
-			console.log('modoooo',modo);
-			if (modo.equals(userId)) {
+            if (!room) {
+                throw new NotFoundException('Salle introuvable');
+            }
+			const roomModerator = room.moderatorId;
+			const roomCode = room.roomCode;
+				
+			
+			if (roomModerator.equals(userId)) {
 				return res.status(200).json('true');
 
 			}
 			else {return res.status(200).json('false');
-
 			}
+
 		} catch (err) {
 			console.log(err);
 			next(err);
@@ -723,24 +733,29 @@ UsersController.route('/:idUser([a-z0-9]{24})/ismoderator/:idRoom([a-z0-9]{24})'
 UsersController.route('/:idUser([a-z0-9]{24})/connect/:idRoom([a-z0-9]{24})')
 	.put(async (req, res, next) => {
 		try {
-			const id = new Types.ObjectId(req.params.id);
+			const userId = new Types.ObjectId(req.params.idUser);
+			const roomId = new Types.ObjectId(req.params.idRoom);
 		
-			const user = await service.find(id);
-			console.log('user id', user);
-			if (!user) {
-				throw new NotFoundException('Utilisateur introuvable');
-			}
+			const user = await service.find(userId);
+			const room = await roomService.findById(roomId);
 
-			const statusConnexion = user.connexion;
-			console.log('statut visible', statusConnexion);
+			const roomCode = room?.roomCode;
+
+            if (!user) {
+                throw new NotFoundException('Utilisateur introuvable');
+            }
+
+            if (!room) {
+                throw new NotFoundException('Salle introuvable');
+            }				
 			
-			if (statusConnexion) {
-				res.status(200).json('Participant :  ' + user.firstname +'  ' + user.lastname +' est déjà connecté');
+			if (room._id.equals(user.connexion)) {
+				res.status(200).json('Participant :  ' + user.firstname +'  ' + user.lastname +' est déjà connecté à ' + roomCode +'.');
 			} else {
 				if (user) {
 					user.connexion = new Types.ObjectId(room._id);
 					await user.save();
-					res.status(201).json('Participant :  '  + user.firstname +'  ' + user.lastname +' est désormais connecté');
+					res.status(201).json('Participant :  '  + user.firstname +'  ' + user.lastname +' est désormais connecté à ' + roomCode +'.');
 				}
 			} 	
 
@@ -754,61 +769,54 @@ UsersController.route('/:idUser([a-z0-9]{24})/connect/:idRoom([a-z0-9]{24})')
 	UsersController.route('/:idUser([a-z0-9]{24})/disconnect/:idRoom([a-z0-9]{24})')
 	.put(async (req, res, next) => {
 		try {
-			const id = new Types.ObjectId(req.params.id);
+			const userId = new Types.ObjectId(req.params.idUser);
+			const roomId = new Types.ObjectId(req.params.idRoom);
 		
-			const user = await service.find(id);
-			console.log('user id', user);
-			if (!user) {
-				throw new NotFoundException('Utilisateur introuvable');
-			}
+			const user = await service.find(userId);
+			const room = await roomService.findById(roomId);
 
-			const statusConnexion = user.connexion;
-			console.log('statut visible', statusConnexion);
-			if (!statusConnexion) {
-				res.status(200).json('Participant :  ' + user.firstname +'  ' + user.lastname +' est déjà déconnecté');
+			const roomCode = room?.roomCode;
+
+            if (!user) {
+                throw new NotFoundException('Utilisateur introuvable');
+            }
+
+            if (!room) {
+                throw new NotFoundException('Salle introuvable');
+            }
+				
+			if (!room._id.equals(user.connexion)) {
+				res.status(200).json('Participant :  ' + user.firstname +'  ' + user.lastname +' est déjà déconnecté de ' + roomCode +'.');
 			} else {
 				if (user) {
-					user.connexion = false;
+					user.connexion = null;
 					await user.save();
-					res.status(201).json('Participant :  ' + user.firstname +'  ' + user.lastname +' est désormais déconnecté');
+					res.status(200).json('Participant :  ' + user.firstname +'  ' + user.lastname +' est désormais déconnecté à ' + roomCode +'.');
 				}
 			} 	
-
 		} catch (err) {
 			console.log(err);
 			next(err);
 		}
 	});
+
 
 	
 //// LISTE DES UTILISATEURS CONNECTES
-UsersController.route('/listconnect')
+UsersController.route('/listconnect/:idRoom([a-z0-9]{24})')
 	.get(async (req, res, next) => {
 		try {
-			const id = new Types.ObjectId(req.params.id);
-		
-			const user = await service.find(id);
-			console.log('user id', user);
-			if (!user) {
-				throw new NotFoundException('Utilisateur introuvable');
-			}
-
-			const statusConnexion = user.connexion;
-			console.log('statut visible', statusConnexion);
-			if (!statusConnexion) {
-				res.status(200).json('Participant :  ' + user.firstname +'  ' + user.lastname +' est déjà déconnecté');
-			} else {
-				if (user) {
-					user.connexion = false;
-					await user.save();
-					res.status(201).json('Participant :  ' + user.firstname +'  ' + user.lastname +' est désormais déconnecté');
+			const roomId = new Types.ObjectId(req.params.idRoom);
+			const room = await roomService.findById(roomId);
+			if (room)
+				{
+					const moderatorId = room?.moderatorId;
+					const connectedUsers = await service.findUsersConnectedToRoom(roomId, moderatorId);
+					res.status(200).json(connectedUsers);
 				}
-			} 	
-
 		} catch (err) {
-			console.log(err);
+			console.error(err);
 			next(err);
 		}
 	});
-
 export default UsersController;

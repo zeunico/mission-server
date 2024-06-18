@@ -32,7 +32,8 @@ const UserSchema = new mongoose.Schema<IUser>({
 
 	'connexion': {
 		type: Schema.Types.ObjectId,
-		ref:'Room'
+		ref:'Room',
+		default: null 
 	},
 	
 	'roomId':  [{
