@@ -559,6 +559,101 @@ const activityService = new ActivityService();
  *         types:
  *          type: string
  *          description: Type de fichier acceptés dans l'activité Consulter ou Produire
+ * /activities/{idActivity}/{idUser}:
+ *   get:
+ *     summary: Récupère une activité avec l'état de l'utilisateur
+ *     tags: [Activity]
+ *     parameters:
+ *       - in: path
+ *         name: idActivity
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: "^[a-z0-9]{24}$"
+ *         description: L'ID de l'activité
+ *       - in: path
+ *         name: idUser
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: "^[a-z0-9]{24}$"
+ *         description: L'ID de l'utilisateur
+ *     responses:
+ *       200:
+ *         description: L'activité avec l'état de l'utilisateur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 _id:
+ *                   type: string
+ *                   description: L'ID de l'activité
+ *                   example: "667296bc1d9a23a22c9254f8"
+ *                 titre:
+ *                   type: string
+ *                   description: Le titre de l'activité
+ *                   example: "Mercredi"
+ *                 description:
+ *                   type: string
+ *                   description: La description de l'activité
+ *                   example: "Ceci est une description"
+ *                 description_detaillee_produire:
+ *                   type: string
+ *                   description: La description détaillée pour produire
+ *                   example: "Détails sur la production"
+ *                 description_detaillee_consulter:
+ *                   type: string
+ *                   description: La description détaillée pour consulter
+ *                   example: "Détails sur la consultation"
+ *                 type:
+ *                   type: string
+ *                   description: Le type d'activité
+ *                   example: "Type d'activité"
+ *                 types:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   description: Les types d'activité
+ *                   example: ["type1", "type2"]
+ *                 etat:
+ *                   type: string
+ *                   description: L'état de l'utilisateur dans l'activité
+ *                   example: "NON_DEMARREE"
+ *                 visible:
+ *                   type: boolean
+ *                   description: Visibilité de l'activité
+ *                   example: false
+ *                 active:
+ *                   type: boolean
+ *                   description: Si l'activité est active
+ *                   example: false
+ *                 guidee:
+ *                   type: boolean
+ *                   description: Si l'activité est guidée
+ *                   example: false
+ *                 __t:
+ *                   type: string
+ *                   description: Type discriminant
+ *                   example: "Activity"
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                   description: Date de création de l'activité
+ *                   example: "2024-06-19T08:28:44.719Z"
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *                   description: Date de mise à jour de l'activité
+ *                   example: "2024-06-19T08:30:09.859Z"
+ *                 __v:
+ *                   type: integer
+ *                   description: Version du document
+ *                   example: 0
+ *       404:
+ *         description: Participant ou activité introuvable
+ *       500:
+ *         description: Erreur interne du serveur
  * /activity/addToMission/{idActivity}/{idMission}:
  *  post:
  *   summary: Ajoute une mission à une activité en utilisant leurs IDs.
@@ -1461,7 +1556,7 @@ ActivityController.route('/:id([a-z0-9]{24})/')
 	try {
 		const id = new Types.ObjectId(req.params.id);
 		
-		const activity = await ActivityService.findById(id);	
+		const activity = await service.findById(id);	
 		return res.status(200).json(activity);
 	} catch (err) {
 		next(err);
@@ -1490,6 +1585,61 @@ ActivityController.route('/:id([a-z0-9]{24})/')
 		}
 	}
 );
+
+
+
+// ROUTE MISSION Id + ETAT USER Id
+
+ActivityController.route('/:idActivity([a-z0-9]{24})/:idUser([a-z0-9]{24})')
+	.get(async (req, res, next) => {
+		try {
+					const activityId = new Types.ObjectId(req.params.idActivity);
+					const activity = await service.find(activityId);	
+
+					const userId = new Types.ObjectId(req.params.idUser);
+					const user = await userService.find(userId);	
+					// Fonction pour obtenir l'état de l'utilisateur
+					if (user === null)
+						{res.status(404).send('Le participant est introuvable');}
+					else {
+						if (activity === null)
+							{res.status(404).send('La mission est introuvable');}
+						else {
+				
+						const userState = await service.etatByUser(activityId, userId);
+
+					
+
+				// Construire la nouvelle réponse
+				const newResponse = {
+					_id: activity._id,
+					titre: activity.titre,
+					description: activity.description,
+					description_detaillee_produire: activity.description_detaillee_produire,
+					description_detaillee_consulter: activity.description_detaillee_consulter,
+					type: activity.type,
+					types: activity.types,
+					etat: userState,  // Affecte l'état directement ici
+					visible: activity.visible,
+					active: activity.active,
+					guidee: activity.guidee,
+					__t: activity.__t,
+					createdAt : activity.createdAt,
+					updatedat: activity.updatedAt,
+					__v: activity.__v
+					
+				  };
+			
+				  return res.status(200).json(newResponse);
+			}
+		}
+
+				} catch (err) {
+					console.error('Error in get /missions/idmission/iduser:');
+					next(err);
+				}
+			});
+
 
 
 // AJOUT ET RETRAIT D'UNE ACTIVITE A UNE MISSION

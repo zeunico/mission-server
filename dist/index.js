@@ -2507,6 +2507,39 @@ MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
     });
   }
 });
+MissionController.route("/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})").get(async (req, res, next) => {
+  try {
+    const missionId = new import_mongoose16.Types.ObjectId(req.params.idMission);
+    const mission = await service2.find(missionId);
+    const userId = new import_mongoose16.Types.ObjectId(req.params.idUser);
+    const user = await userService5.find(userId);
+    if (user === null) {
+      res.status(404).send("Le participant est introuvable");
+    } else {
+      if (mission === null) {
+        res.status(404).send("La mission est introuvable");
+      } else {
+        const userState = await service2.etatByUser(missionId, userId);
+        const newResponse = {
+          _id: mission._id,
+          titre: mission.titre,
+          roomId: mission.roomId,
+          activites: mission.activites,
+          nb_activites: mission.nb_activites,
+          etat: userState,
+          visible: mission.visible,
+          active: mission.active,
+          guidee: mission.guidee,
+          visuel: mission.visuel
+        };
+        return res.status(200).json(newResponse);
+      }
+    }
+  } catch (err) {
+    console.error("Error in get /missions/idmission/iduser:");
+    next(err);
+  }
+});
 MissionController.route("/:id([a-z0-9]{24})/isVisible/").get(async (req, res) => {
   try {
     const id = new import_mongoose16.Types.ObjectId(req.params.id);
@@ -3008,7 +3041,7 @@ MissionController.route("/:missionId([a-z0-9]{24})/start/:userId([a-z0-9]{24})/"
             res.status(200).send(missionEnCoursPourUser);
           }
         } else
-          res.status(500).send("Le participant n'a pas \xE9t\xE9 inscrit \xE0 cette mission.");
+          res.status(500).send("Le participant n a jamais \xE9t\xE9 inscrit \xE0 la mission");
       }
     }
   } catch (error) {
@@ -3043,7 +3076,7 @@ MissionController.route("/:missionId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/").
             res.status(200).send(missionTermineePourUser);
           }
         } else
-          res.status(500).send("Le user na pas \xE9t\xE9 inscrit \xE0 la mission car il nest pas pr\xE9sent dan sles etats de celle ci");
+          res.status(500).send("Le participant n a jamais \xE9t\xE9 inscrit \xE0 la mission");
       }
     }
   } catch (error) {
@@ -3275,7 +3308,7 @@ ActivityController.route("/produire").post(async (req, res) => {
 ActivityController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
   try {
     const id = new import_mongoose18.Types.ObjectId(req.params.id);
-    const activity = await ActivityService.findById(id);
+    const activity = await service4.findById(id);
     return res.status(200).json(activity);
   } catch (err) {
     next(err);
@@ -3306,6 +3339,44 @@ ActivityController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
     return res.status(500).json({
       message: "Erreur du serveur"
     });
+  }
+});
+ActivityController.route("/:idActivity([a-z0-9]{24})/:idUser([a-z0-9]{24})").get(async (req, res, next) => {
+  try {
+    const activityId = new import_mongoose18.Types.ObjectId(req.params.idActivity);
+    const activity = await service4.find(activityId);
+    const userId = new import_mongoose18.Types.ObjectId(req.params.idUser);
+    const user = await userService6.find(userId);
+    if (user === null) {
+      res.status(404).send("Le participant est introuvable");
+    } else {
+      if (activity === null) {
+        res.status(404).send("La mission est introuvable");
+      } else {
+        const userState = await service4.etatByUser(activityId, userId);
+        const newResponse = {
+          _id: activity._id,
+          titre: activity.titre,
+          description: activity.description,
+          description_detaillee_produire: activity.description_detaillee_produire,
+          description_detaillee_consulter: activity.description_detaillee_consulter,
+          type: activity.type,
+          types: activity.types,
+          etat: userState,
+          visible: activity.visible,
+          active: activity.active,
+          guidee: activity.guidee,
+          __t: activity.__t,
+          createdAt: activity.createdAt,
+          updatedat: activity.updatedAt,
+          __v: activity.__v
+        };
+        return res.status(200).json(newResponse);
+      }
+    }
+  } catch (err) {
+    console.error("Error in get /missions/idmission/iduser:");
+    next(err);
   }
 });
 ActivityController.route("/addToMission/:idActivity([a-z0-9]{24})/:idMission([a-z0-9]{24})").post(async (req, res) => {
