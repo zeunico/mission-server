@@ -275,16 +275,13 @@ var UsersService = class {
           $ne: moderatorId
         }
       }).select("firstname lastname");
-      return connectedUsers.map((user) => ({
-        firstname: user.firstname,
-        lastname: user.lastname
-      }));
+      return connectedUsers.map((user) => user.firstname + " " + user.lastname);
     } catch (err) {
       throw new Error("Error retrieving connected users excluding moderator: " + err.message);
     }
   }
   // Liste des utilisteurs connecté moderotor exclu 
-  async findUsersConnectedToRoom(roomId, moderatorId) {
+  async findUsersConnectedToRoomExcludingModerator(roomId, moderatorId) {
     try {
       const connectedUsers = await user_model_default.find({
         connexion: roomId,
@@ -1309,7 +1306,7 @@ UsersController.route("/listconnect/:idRoom([a-z0-9]{24})").get(async (req, res,
     const room = await roomService.findById(roomId);
     if (room) {
       const moderatorId = room == null ? void 0 : room.moderatorId;
-      const connectedUsers = await service.findUsersConnectedToRoom(roomId, moderatorId);
+      const connectedUsers = await service.findUserNamesConnectedToRoomExcludingModerator(roomId, moderatorId);
       res.status(200).json(connectedUsers);
     }
   } catch (err) {

@@ -21,17 +21,17 @@ export class UsersService {
 		return researchedUser;
 	}
 	// Nouvelle méthode pour trouver les prénoms et noms des utilisateurs connectés à une salle, en excluant le modérateur
-	async  findUserNamesConnectedToRoomExcludingModerator(roomId: Types.ObjectId, moderatorId: Types.ObjectId): Promise<{ firstname: string, lastname: string }[]> {
+	async  findUserNamesConnectedToRoomExcludingModerator(roomId: Types.ObjectId, moderatorId: Types.ObjectId): Promise<String[]> {
 		try {
 			const connectedUsers = await User.find({ connexion: roomId, _id: { $ne: moderatorId } }).select('firstname lastname');
-			return connectedUsers.map(user => ({ firstname: user.firstname, lastname: user.lastname }));
+			return connectedUsers.map(user => (user.firstname + ' '+  user.lastname ));
 		} catch (err) {
 			throw new Error('Error retrieving connected users excluding moderator: ' + err.message);
 		}
 	}
 
 	// Liste des utilisteurs connecté moderotor exclu 
-	async findUsersConnectedToRoom(roomId: Types.ObjectId, moderatorId: Types.ObjectId): Promise<IUser[]> {
+	async findUsersConnectedToRoomExcludingModerator(roomId: Types.ObjectId, moderatorId: Types.ObjectId): Promise<IUser[]> {
 		try {
 			const connectedUsers = await User.find({ connexion: roomId, _id: { $ne: moderatorId } });
 			return connectedUsers;

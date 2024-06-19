@@ -418,6 +418,62 @@ const roomService = new RoomService();
  *             schema:
  *               type: string
  *               example: Erreur interne du serveur
+ * /listconnect/{idRoom}:
+ *   get:
+ *     summary: Liste des utilisateurs connectés
+ *     tags: [Users]
+ *     description: Ce point de terminaison récupère la liste des noms d'utilisateurs connectés à une salle spécifiée, à l'exclusion du modérateur.
+ *     parameters:
+ *       - in: path
+ *         name: idRoom
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-f0-9]{24}$'
+ *         description: L'ID de la salle
+ *     responses:
+ *       200:
+ *         description: Une liste de noms d'utilisateurs connectés à la salle spécifiée, à l'exclusion du modérateur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *               example:
+ *                 - user1
+ *                 - user2
+ *                 - user3
+ *       400:
+ *         description: Format de l'ID de la salle invalide
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Invalid room ID format."
+ *       404:
+ *         description: Salle non trouvée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Room not found."
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Internal server error."
  */
 
 async function createNewRoom(roomCode) {
@@ -811,7 +867,7 @@ UsersController.route('/listconnect/:idRoom([a-z0-9]{24})')
 			if (room)
 				{
 					const moderatorId = room?.moderatorId;
-					const connectedUsers = await service.findUsersConnectedToRoom(roomId, moderatorId);
+					const connectedUsers = await service.findUserNamesConnectedToRoomExcludingModerator(roomId, moderatorId);
 					res.status(200).json(connectedUsers);
 				}
 		} catch (err) {
