@@ -178,6 +178,12 @@ const roomService = new RoomService();
  *         instructions:
  *          type: array
  *          description: Liste des consignes de l'utilisateur
+ *         connexion:
+ *          type: string
+ *          description: Id de la salle où est actuellement connecté le participant.
+ *         roomId:
+ *          type: array
+ *          description: Liste des salles où le particiânt s'est cnnecté
  *    404:
  *     description: L'utilisateur n'a pas été trouvé en base de données.
  *     content:
@@ -515,16 +521,15 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 			let user: IUser | null;
 			if (req.query.instance) {
 				user = await service.findByEmail(email, req.query.instance.toString());
-				console.log('req.query.instance.toString()', req.query.instance.toString());
-				console.log('user by findByEmail reqquery', user);
 			} else {
 				user = await service.findByEmail(email);
-				console.log('user by findByEmail ', user);
-
 			}
+			console.log('user by findByEmail ', user);
+		
 
         // CREATION NOUVELLE ROOM SI CET USER PROVIENT D UNE ROOM PAR ENCORE EN BDD 
 			const roomCode = req.query.roomCode?.toString();
+			console.log('req params roomcode?????', roomCode);
 			let room: IRoom | null;
 			if (roomCode) {
 				room = await roomService.findByCode(roomCode);

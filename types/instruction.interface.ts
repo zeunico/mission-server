@@ -5,6 +5,6 @@ export interface IInstruction {
 	consigne: string,
 	userTarget: Types.ObjectId,
 	room: string,
-	createAt: Date,
-	updateAt: Date
+	createdAt: Date,
+	updatedAt: Date
 }

@@ -19,9 +19,11 @@ import { readFileSync } from 'fs';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import ActivityController from './resources/activity/activity.controller';
+import { MissionService } from './resources/mission/mission.service';
+import { UsersService } from './resources/users/users.service';
 
 
-// const cronJobs = require('./cronJobs'); 
+const cronJobs = require('./cronJobs'); 
 
 // Création d'une nouvelle instance express
 const app = express();
@@ -106,6 +108,22 @@ app.use((req, res, next) => {
 	res.charset = 'utf-8';
 	next();
 });
+
+
+// Routine pour ajouter les users connectés aux missions de leur(s) room(s)
+const addConnectedUsersToMission = async () => {
+    try {
+
+            console.log('Connected users added to mission');
+        }
+    catch (error) {
+        console.error('Error adding users to mission:', error);
+    }
+};
+
+// fréquence de l routine en ms
+setInterval(addConnectedUsersToMission, 5000);
+
 
 // On demande à express d'écouter les requetes sur le port défini dans la config
 const start = async () => {

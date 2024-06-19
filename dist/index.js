@@ -22,6 +22,9 @@ var __spreadValues = (a, b) => {
 };
 var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+var __commonJS = (cb, mod) => function __require() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+};
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
@@ -42,6 +45,20 @@ var __publicField = (obj, key, value) => {
   __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
   return value;
 };
+
+// src/cronJobs.ts
+var require_cronJobs = __commonJS({
+  "src/cronJobs.ts"() {
+    var cron = require("node-cron");
+    cron.schedule("* * * * *", () => {
+      console.log("Running a task every minute");
+      console.log("lalalal");
+    });
+    cron.schedule("0 0 * * *", () => {
+      console.log("Running a task every day at midnight");
+    });
+  }
+});
 
 // src/config.ts
 var import_path = require("path");
@@ -296,12 +313,25 @@ var UsersService = class {
   }
   // trouve un utilisateur via l'email
   async findByEmail(email, instance, room) {
-    const researchedUser = await user_model_default.findOne({
-      email,
-      instance,
-      room
-    });
-    return researchedUser;
+    if (!instance && !room) {
+      const researchedUser = await user_model_default.findOne({
+        email
+      });
+      return researchedUser;
+    } else if (!instance) {
+      const researchedUser = await user_model_default.findOne({
+        email,
+        room
+      });
+      return researchedUser;
+    } else {
+      const researchedUser = await user_model_default.findOne({
+        email,
+        room,
+        instance
+      });
+      return researchedUser;
+    }
   }
   async findByInstance(instance) {
     const userList = await user_model_default.find({
@@ -1030,13 +1060,12 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
     let user;
     if (req.query.instance) {
       user = await service.findByEmail(email, req.query.instance.toString());
-      console.log("req.query.instance.toString()", req.query.instance.toString());
-      console.log("user by findByEmail reqquery", user);
     } else {
       user = await service.findByEmail(email);
-      console.log("user by findByEmail ", user);
     }
+    console.log("user by findByEmail ", user);
     const roomCode = (_a9 = req.query.roomCode) == null ? void 0 : _a9.toString();
+    console.log("req params roomcode?????", roomCode);
     let room;
     if (roomCode) {
       room = await roomService.findByCode(roomCode);
@@ -2248,7 +2277,7 @@ var MissionService = class {
       throw error;
     }
   }
-  // Statut Activité de la missin
+  // Statut Activité de la mission
   async findActiveStatus(missionId) {
     try {
       const mission = await mission_model_default.findById(missionId);
@@ -2262,7 +2291,7 @@ var MissionService = class {
       throw error;
     }
   }
-  // Statut Guidée de la missin
+  // Statut Guidée de la mission
   async findGuideeStatus(missionId) {
     try {
       const mission = await mission_model_default.findById(missionId);
@@ -2345,7 +2374,7 @@ var MissionService = class {
       console.log(`User   ${userId} dans l etat "${foundKey}" `);
       return foundKey;
     } else
-      return "Cet utilisateur n a pas \xE9t\xE9 inscrit \xE0 la mission";
+      return "";
   }
   // AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
   async inscriptionMission(missionId, userId) {
@@ -2379,6 +2408,18 @@ var MissionService = class {
       return mission;
     } else
       return null;
+  }
+  // Toutes les missions dans une room
+  async findByRoomId(roomId) {
+    try {
+      const missions = await mission_model_default.find({
+        roomId
+      }).exec();
+      return missions;
+    } catch (error) {
+      console.error("Error in findByRoomId:", error);
+      throw error;
+    }
   }
 };
 __name(MissionService, "MissionService");
@@ -2530,13 +2571,53 @@ MissionController.route("/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})").get(a
           visible: mission.visible,
           active: mission.active,
           guidee: mission.guidee,
-          visuel: mission.visuel
+          visuel: mission.visuel,
+          createdAt: mission.createdAt,
+          updatedat: mission.updatedAt,
+          __v: mission.__v
         };
         return res.status(200).json(newResponse);
       }
     }
   } catch (err) {
     console.error("Error in get /missions/idmission/iduser:");
+    next(err);
+  }
+});
+MissionController.route("/listetat/:roomId([a-z0-9]{24})/:userId([a-z0-9]{24})").get(async (req, res, next) => {
+  try {
+    const roomId = new import_mongoose16.Types.ObjectId(req.params.roomId);
+    const missions = await service2.findByRoomId(roomId);
+    const userId = new import_mongoose16.Types.ObjectId(req.params.userId);
+    const user = await userService5.find(userId);
+    console.log("ussser", user);
+    if (!missions || missions.length === 0) {
+      return res.status(404).send("Aucune mission trouv\xE9e pour cette salle");
+    }
+    const responses = [];
+    for (const mission of missions) {
+      const userState = await service2.etatByUser(mission._id, user._id);
+      console.log("userstatttts", userState);
+      const newResponse = {
+        _id: mission._id,
+        titre: mission.titre,
+        roomId: mission.roomId,
+        activites: mission.activites,
+        nb_activites: mission.nb_activites,
+        etat: userState,
+        visible: mission.visible,
+        active: mission.active,
+        guidee: mission.guidee,
+        visuel: mission.visuel,
+        createdAt: mission.createdAt,
+        updatedAt: mission.updatedAt,
+        __v: mission.__v
+      };
+      responses.push(newResponse);
+    }
+    return res.status(200).json(responses);
+  } catch (err) {
+    console.error("Error in get /missions/room/roomId:");
     next(err);
   }
 });
@@ -2975,40 +3056,43 @@ MissionController.route("/:missionId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24}
     res.status(500).send("Internal Server Error");
   }
 });
-MissionController.route("/:missionId([a-z0-9]{24})/inscrireRoom/:roomId([a-z0-9]{24})/").post(async (req, res) => {
+MissionController.route("/:missionId([a-z0-9]{24})/inscrireRoom/").post(async (req, res) => {
   try {
     const missionId = new import_mongoose16.Types.ObjectId(req.params.missionId);
-    const roomId = new import_mongoose16.Types.ObjectId(req.params.roomId);
-    const room = await roomService3.findById(roomId);
-    if (!room) {
-      return res.status(404).send("Room non trouv\xE9e.");
-    }
-    const participants = room.participants || [];
-    const results = [];
-    for (const userId of participants) {
-      const userObjectId = new import_mongoose16.Types.ObjectId(userId);
-      const isInEtat = await missionService.etatByUser(missionId, userObjectId);
-      if (Object.values(etat_enum_default).includes(isInEtat)) {
-        results.push({
-          userId,
-          message: `Ce participant est d\xE9j\xE0 inscrit \xE0 cette mission. \xC9tat d'avancement: ${isInEtat}`
-        });
-      } else {
-        const inscription = await missionService.inscriptionMission(missionId, userObjectId);
-        if (inscription) {
+    const mission = await service2.findById(missionId);
+    const roomId = mission == null ? void 0 : mission.roomId;
+    if (roomId) {
+      const room = await roomService3.findById(roomId);
+      if (!room) {
+        return res.status(404).send("Room non trouv\xE9e.");
+      }
+      const participants = room.participants || [];
+      const results = [];
+      for (const userId of participants) {
+        const userObjectId = new import_mongoose16.Types.ObjectId(userId);
+        const isInEtat = await missionService.etatByUser(missionId, userObjectId);
+        if (Object.values(etat_enum_default).includes(isInEtat)) {
           results.push({
             userId,
-            message: "Inscription r\xE9ussie"
+            message: `Ce participant est d\xE9j\xE0 inscrit \xE0 cette mission. \xC9tat d'avancement: ${isInEtat}`
           });
         } else {
-          results.push({
-            userId,
-            message: "Erreur lors de l'inscription"
-          });
+          const inscription = await missionService.inscriptionMission(missionId, userObjectId);
+          if (inscription) {
+            results.push({
+              userId,
+              message: "Inscription r\xE9ussie"
+            });
+          } else {
+            results.push({
+              userId,
+              message: "Erreur lors de l'inscription"
+            });
+          }
         }
       }
+      res.status(200).json(results);
     }
-    res.status(200).json(results);
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");
@@ -3883,6 +3967,7 @@ ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/"
 var activity_controller_default = ActivityController;
 
 // src/index.ts
+var cronJobs = require_cronJobs();
 var app = (0, import_express10.default)();
 var httpServer = import_http.default.createServer(app);
 var swaggerOptions = {
@@ -3939,6 +4024,14 @@ app.use((req, res, next) => {
   res.charset = "utf-8";
   next();
 });
+var addConnectedUsersToMission = /* @__PURE__ */ __name(async () => {
+  try {
+    console.log("Connected users added to mission");
+  } catch (error) {
+    console.error("Error adding users to mission:", error);
+  }
+}, "addConnectedUsersToMission");
+setInterval(addConnectedUsersToMission, 5e3);
 var start = /* @__PURE__ */ __name(async () => {
   try {
     httpServer.listen(config2.API_PORT);

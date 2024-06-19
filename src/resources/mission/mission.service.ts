@@ -18,15 +18,14 @@ const mediaService = new MediaService();
 export class MissionService {
 
     // Creation d une nouvelle mission
-
 	async createMission(datas: IMission): Promise<IMission> {
 		const newMission: IMission = {
 			...datas,
 		};
 		return await Mission.create(newMission);
 	}
-	   // Creation d une nouvelle mission par le roomCode
 
+	// Creation d une nouvelle mission par le roomCode
 	async createMissionByCode(datas: IMission, roomId: Types.ObjectId): Promise<IMission> {
 		const newMission: IMission = {
 			...datas,
@@ -35,7 +34,6 @@ export class MissionService {
 		};
 		return await Mission.create(newMission);
 	}
-
 
 	// Trouve une mission par son ID
 	async find(_id: Types.ObjectId): Promise<IMission | null> {
@@ -60,6 +58,7 @@ export class MissionService {
 		const deletedMission = await Mission.findByIdAndDelete(missionId);
 		return deletedMission;
 	}
+
     // Statut Visible de la mission
 	async findVisibilityStatus(missionId: Types.ObjectId): Promise<Boolean> {
 		try {
@@ -75,7 +74,8 @@ export class MissionService {
 			throw error;
 		}	
 	}	
-    // Statut Activité de la missin
+
+    // Statut Activité de la mission
 	async findActiveStatus(missionId: Types.ObjectId): Promise<Boolean> {
 		try {
 			const mission = await Mission.findById(missionId);
@@ -90,7 +90,8 @@ export class MissionService {
 			throw error;
 		}	
 	}
-	// Statut Guidée de la missin
+
+	// Statut Guidée de la mission
 	async findGuideeStatus(missionId: Types.ObjectId): Promise<Boolean> {
 		try {
 			const mission = await Mission.findById(missionId);
@@ -121,10 +122,7 @@ export class MissionService {
 		}	
 	}
 
-	
-
-	// ETAT D'AVANCEMENT D'UNE MISSION
-
+// ETAT D'AVANCEMENT D'UNE MISSION
 	// Statut Etat de la Mission
 	async findEtat(missionId: Types.ObjectId): Promise<IMission["etat"]> {
 		try {
@@ -141,7 +139,6 @@ export class MissionService {
 		}	
 	}
 
-
   	//  LE VISUEL DE LA MISSION 	
 	  async visuel(missionId: Types.ObjectId): Promise<IMedia | null> {
 		try {
@@ -149,64 +146,62 @@ export class MissionService {
 			
 			if (!mission) {
 				throw new Error('Mission introuvable');
-			} else if (mission) {
-				console.log('mission', mission);
-				const mediaId = mission.visuel;
-				
-				if (mediaId)
-					{
-					console.log('mediaId', mediaId);
-					const media = await mediaService.find(mediaId);
-					if (media) {
-						return media;
-						}
-					} 
-				else {return null;}
+				} else 
+					if (mission) {
+					console.log('mission', mission);
+					const mediaId = mission.visuel;
+					
+					if (mediaId)
+						{
+						console.log('mediaId', mediaId);
+						const media = await mediaService.find(mediaId);
+						if (media) {
+							return media;
+							}
+						} 
+					else {return null;}
+				}
 			}
-		}
 			catch (error) {
 			console.error('Erreur lors de la recherche de la mission:', error);
 			throw error;
 			}	
 		}
 
+	// ETAT d un USER dans une mission
+	async etatByUser(missionId: Types.ObjectId, userId: Types.ObjectId): Promise<String> {
+		let foundKey = null;
+		console.log('misionnnnIdd',missionId);
+		const mission = await Mission.findById(missionId);	
+		console.log('misionnnn',mission);
 
-		// ETAT d un USER dans une mission
-		async etatByUser(missionId: Types.ObjectId, userId: Types.ObjectId): Promise<String> {
-			let foundKey = null;
-			console.log('misionnnnIdd',missionId);
-			const mission = await Mission.findById(missionId);	
-			console.log('misionnnn',mission);
-
-				// Iterate over each key-value pair in activity.etat
-				for (const [key, value] of mission.etat.entries()) {
-				// Check if userId exists in the array associated with the current key
-					if (value.includes(userId)) {
-						foundKey = key; 
-						console.log('key', key);	
-					}
+			// Iterate over each key-value pair in activity.etat
+			for (const [key, value] of mission.etat.entries()) {
+			// Check if userId exists in the array associated with the current key
+				if (value.includes(userId)) {
+					foundKey = key; 
+					console.log('key', key);	
 				}
-				if (foundKey !== null) {
-					console.log(`User   ${userId} dans l etat "${foundKey}" `);
-					return foundKey;
-				}
-				else return 'Cet utilisateur n a pas été inscrit à la mission';
-		}	
+			}
+			if (foundKey !== null) {
+				console.log(`User   ${userId} dans l etat "${foundKey}" `);
+				return foundKey;
+			}
+			else return '';
+	}	
 
+	// AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
+	async inscriptionMission(missionId: Types.ObjectId, userId: Types.ObjectId): Promise<IMission | null> {
+		const mission = await Mission.findById(missionId);
+		if (mission) {
+			// Ajout du userId a l' array NON_DEMARREE
+			mission.etat.set("NON_DEMARREE", mission.etat.get("NON_DEMARREE").concat(userId));
+			mission.save();
+			return mission;}
+		else return null;
+	}
 
-		// AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
-		async inscriptionMission(missionId: Types.ObjectId, userId: Types.ObjectId): Promise<IMission | null> {
-			const mission = await Mission.findById(missionId);
-			if (mission) {
-				// Ajout du userId a l' array NON_DEMARREE
-				mission.etat.set("NON_DEMARREE", mission.etat.get("NON_DEMARREE").concat(userId));
-				mission.save();
-				return mission;}
-			else return null;
-		}
-
-
-				// PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE LA MISSION
+	// PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE LA MISSION
 	async startMission(missionId: Types.ObjectId, userId: Types.ObjectId): Promise<IMission | null> {
 		const mission = await Mission.findById(missionId);
 		if (mission) {
@@ -230,6 +225,15 @@ export class MissionService {
 			return mission;}
 		else return null;
 	}
-	
 
+	// Toutes les missions dans une room
+	async findByRoomId(roomId: Types.ObjectId): Promise<IMission[]> {
+        try {
+            const missions = await Mission.find({ roomId }).exec();
+            return missions;
+        } catch (error) {
+            console.error('Error in findByRoomId:', error);
+            throw error;
+        }
+    }
 }

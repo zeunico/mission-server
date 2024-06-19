@@ -9,8 +9,8 @@ export interface IActivity {
 	visible: boolean,
 	active: boolean,
 	guidee: boolean,
-	createAt: Date,
-	updateAt: Date
+	createdAt: Date,
+	updatedAt: Date
 }
 // Interface pour ActivityConsulter
 export interface IActivityConsulter extends IActivity {

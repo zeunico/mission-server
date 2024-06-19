@@ -6,6 +6,6 @@ export interface IRoom {
     moderatorId: Types.ObjectId,
 	participants: Types.ObjectId[],
 	mission: Types.ObjectId[],
-	createAt: Date,
-	updateAt: Date
+	createdAt: Date,
+	updatedAt: Date
 }

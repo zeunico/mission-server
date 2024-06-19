@@ -369,95 +369,6 @@ const userService = new UsersService();
  *         visuel :
  *          type: string
  *          description: Visuel
-  * /missions/{idMission}/{idUser}:
- *   get:
- *     summary: Récupère une mission avec l'état de l'utilisateur
- *     tags: [Mission]
- *     parameters:
- *       - in: path
- *         name: idMission
- *         required: true
- *         schema:
- *           type: string
- *           pattern: "^[a-z0-9]{24}$"
- *         description: L'ID de la mission
- *       - in: path
- *         name: idUser
- *         required: true
- *         schema:
- *           type: string
- *           pattern: "^[a-z0-9]{24}$"
- *         description: L'ID de l'utilisateur
- *     responses:
- *       200:
- *         description: La mission avec l'état de l'utilisateur
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 _id:
- *                   type: string
- *                   description: L'ID de la mission
- *                   example: "667296bc1d9a23a22c9254f8"
- *                 titre:
- *                   type: string
- *                   description: Le titre de la mission
- *                   example: "Mercredi"
- *                 roomId:
- *                   type: string
- *                   description: L'ID de la salle associée à la mission
- *                   example: "666b00ad3899c398b1172cb3"
- *                 activites:
- *                   type: array
- *                   items:
- *                     type: object
- *                   description: Liste des activités
- *                   example: []
- *                 nb_activites:
- *                   type: integer
- *                   description: Nombre d'activités
- *                   example: 0
- *                 etat:
- *                   type: string
- *                   description: L'état de l'utilisateur dans la mission
- *                   example: "NON_DEMARREE"
- *                 visible:
- *                   type: boolean
- *                   description: Visibilité de la mission
- *                   example: false
- *                 active:
- *                   type: boolean
- *                   description: Si la mission est active
- *                   example: false
- *                 guidee:
- *                   type: boolean
- *                   description: Si la mission est guidée
- *                   example: false
- *                 visuel:
- *                   type: string
- *                   nullable: true
- *                   description: Visuel associé à la mission
- *                   example: null
- *                 createdAt:
- *                   type: string
- *                   format: date-time
- *                   description: Date de création de la mission
- *                   example: "2024-06-19T08:28:44.719Z"
- *                 updatedAt:
- *                   type: string
- *                   format: date-time
- *                   description: Date de mise à jour de la mission
- *                   example: "2024-06-19T08:30:09.859Z"
- *                 __v:
- *                   type: integer
- *                   description: Version du document
- *                   example: 0
- *       404:
- *         description: Participant ou mission introuvable
- *       500:
- *         description: Erreur interne du serveur
- * 
  * /mission/{id}/isVisible:
  *  get:
  *   summary: Vérifie si une mission est visible.
@@ -1173,7 +1084,7 @@ const userService = new UsersService();
  *         message:
  *          type: string
  *          description: Message d'erreur indiquant une erreur interne du serveur.
- * /mission/{idMission}/inscrireRoom/{idRoom}:
+ * /mission/{idMission}/inscrireRoom/:
  *  post:
  *   summary: Inscription de tous les participants d'une salle à une mission (non déjà présent dans la mission)
  *   tags: [Mission]
@@ -1181,13 +1092,6 @@ const userService = new UsersService();
  *    - name: idMission
  *      in: path
  *      description: ID de la mission
- *      required: true
- *      schema:
- *        type: string
- *        pattern: "^[a-z0-9]{24}$"
- *    - name: idRoom
- *      in: path
- *      description: ID de la salle 
  *      required: true
  *      schema:
  *        type: string
@@ -1365,6 +1269,156 @@ const userService = new UsersService();
  *         message:
  *          type: string
  *          description: Message d'erreur indiquant une erreur interne du serveur.
+ * /mission/{idMission}/{idUser}:
+ *   get:
+ *     summary: Récupère une mission et l'état d'un utilisateur pour cette mission
+ *     tags: [Mission]
+ *     parameters:
+ *       - in: path
+ *         name: idMission
+ *         schema:
+ *           type: string
+ *           pattern: "^[a-z0-9]{24}$"
+ *         required: true
+ *         description: ID de la mission
+ *       - in: path
+ *         name: idUser
+ *         schema:
+ *           type: string
+ *           pattern: "^[a-z0-9]{24}$"
+ *         required: true
+ *         description: ID de l'utilisateur
+ *     responses:
+ *       200:
+ *         description: Informations sur la mission et l'état de l'utilisateur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 _id:
+ *                   type: string
+ *                   example: "60d5ec49e0d2b524789a1c4b"
+ *                 titre:
+ *                   type: string
+ *                   example: "Mission Title"
+ *                 roomId:
+ *                   type: string
+ *                   example: "60d5ec49e0d2b524789a1c4b"
+ *                 activites:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                     example: "60d5ec49e0d2b524789a1c4b"
+ *                 nb_activites:
+ *                   type: number
+ *                   example: 5
+ *                 etat:
+ *                   type: string
+ *                   example: "EN_COURS"
+ *                 visible:
+ *                   type: boolean
+ *                   example: true
+ *                 active:
+ *                   type: boolean
+ *                   example: true
+ *                 guidee:
+ *                   type: boolean
+ *                   example: true
+ *                 visuel:
+ *                   type: string
+ *                   example: "60d5ec49e0d2b524789a1c4b"
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2021-06-25T15:20:49.000Z"
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2021-06-25T15:20:49.000Z"
+ *                 __v:
+ *                   type: number
+ *                   example: 0
+ *       404:
+ *         description: La mission ou l'utilisateur est introuvable
+ *       500:
+ *         description: Erreur serveur
+ * /missions/listetat/{roomId}/{userId}:
+ *   get:
+ *     summary: Récupère la liste des missions dans une salle avec l'état pour un utilisateur
+ *     tags: [Mission]
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         schema:
+ *           type: string
+ *           pattern: "^[a-z0-9]{24}$"
+ *         required: true
+ *         description: ID de la salle
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: string
+ *           pattern: "^[a-z0-9]{24}$"
+ *         required: true
+ *         description: ID de l'utilisateur
+ *     responses:
+ *       200:
+ *         description: Liste des missions et l'état de l'utilisateur pour chaque mission
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                     example: "60d5ec49e0d2b524789a1c4b"
+ *                   titre:
+ *                     type: string
+ *                     example: "Mission Title"
+ *                   roomId:
+ *                     type: string
+ *                     example: "60d5ec49e0d2b524789a1c4b"
+ *                   activites:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                       example: "60d5ec49e0d2b524789a1c4b"
+ *                   nb_activites:
+ *                     type: number
+ *                     example: 5
+ *                   etat:
+ *                     type: string
+ *                     example: "EN_COURS"
+ *                   visible:
+ *                     type: boolean
+ *                     example: true
+ *                   active:
+ *                     type: boolean
+ *                     example: true
+ *                   guidee:
+ *                     type: boolean
+ *                     example: true
+ *                   visuel:
+ *                     type: string
+ *                     example: "60d5ec49e0d2b524789a1c4b"
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2021-06-25T15:20:49.000Z"
+ *                   updatedAt:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2021-06-25T15:20:49.000Z"
+ *                   __v:
+ *                     type: number
+ *                     example: 0
+ *       404:
+ *         description: Aucune mission trouvée pour cette salle ou utilisateur introuvable
+ *       500:
+ *         description: Erreur serveur
  */
 // ROUTE RACINE LISTE TOUTES LES MISSIONS
 MissionController.route('/')
@@ -1500,8 +1554,7 @@ MissionController.route('/:id([a-z0-9]{24})/')
 	);
 
 
-// ROUTE MISSION Id + ETAT USER Id
-
+// ROUTE MISSION Id + ETAT USER Id pour une mission
 MissionController.route('/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})')
 	.get(async (req, res, next) => {
 		try {
@@ -1533,7 +1586,10 @@ MissionController.route('/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})')
 					visible: mission.visible,
 					active: mission.active,
 					guidee: mission.guidee,
-					visuel: mission.visuel
+					visuel: mission.visuel,
+					createdAt : mission.createdAt,
+					updatedat: mission.updatedAt,
+					__v: mission.__v
 				  };
 			
 				  return res.status(200).json(newResponse);
@@ -1545,6 +1601,63 @@ MissionController.route('/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})')
 					next(err);
 				}
 			});
+
+// LISTE DES MISSIONS (DANS UNE ROOM) FULL OBJECT BUT ETAT POUR UN USER
+MissionController.route('/listetat/:roomId([a-z0-9]{24})/:userId([a-z0-9]{24})')
+	.get(async (req, res, next) => {
+		try {
+			const roomId = new Types.ObjectId(req.params.roomId);
+			
+			// Trouver toutes les missions associées à la roomId
+			const missions = await service.findByRoomId(roomId);
+
+			const userId = new Types.ObjectId(req.params.userId);
+			const user = await userService.find(userId);	
+			console.log('ussser', user);
+
+			if (!missions || missions.length === 0) {
+				return res.status(404).send('Aucune mission trouvée pour cette salle');
+			}
+
+			// Tableau pour stocker les résultats
+			const responses = [];
+
+			// Boucle sur chaque mission pour construire newResponse
+			for (const mission of missions) {
+			
+					const userState = await service.etatByUser(mission._id, user._id);
+					console.log('userstatttts', userState);
+
+					// Construire newResponse pour chaque utilisateur
+					const newResponse = {
+						_id: mission._id,
+						titre: mission.titre,
+						roomId: mission.roomId,
+						activites: mission.activites,
+						nb_activites: mission.nb_activites,
+						etat: userState,  // Affecte l'état directement ici
+						visible: mission.visible,
+						active: mission.active,
+						guidee: mission.guidee,
+						visuel: mission.visuel,
+						createdAt: mission.createdAt,
+						updatedAt: mission.updatedAt,
+						__v: mission.__v
+					};
+
+					// Ajouter la réponse à la liste
+					responses.push(newResponse);
+				
+			}
+
+			// Retourner la liste des réponses
+			return res.status(200).json(responses);
+
+		} catch (err) {
+			console.error('Error in get /missions/room/roomId:');
+			next(err);
+		}
+	});
 
 
 
@@ -1663,7 +1776,7 @@ MissionController.route('/:id([a-z0-9]{24})/change-to-active/')
 		}
 	});
 // ROUTE CHANGE TO NOT ACTIVE
-	MissionController.route('/:id([a-z0-9]{24})/change-to-not-active/')
+MissionController.route('/:id([a-z0-9]{24})/change-to-not-active/')
 	.post(async (req, res) => {
 		const id = req.params.id;
 		const mission = await service.find(new Types.ObjectId(id));
@@ -2014,9 +2127,8 @@ MissionController.route('/:idMission([a-z0-9]{24})/change-visuel')
 		}
 	});
 
-
 	//  GESTION DES ETATS 
-// QUEL ETAT POUR UN USER
+	// QUEL ETAT POUR UN USER
 MissionController.route('/:missionId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/') 
 	.get(async (req, res) => {
 		const missionId = new Types.ObjectId(req.params.missionId);
@@ -2043,7 +2155,6 @@ MissionController.route('/:missionId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/')
 		}
 	}}
 	});
-
 
 	// ROUTE INSCRIRE  POUR UN USER DANS UNE MISSION ======= INSCRIPTION ==============
 MissionController.route('/:missionId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24})/') 
@@ -2078,19 +2189,19 @@ MissionController.route('/:missionId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24}
 		res.status(500).send('Internal Server Error');
 	}
 });
-// ROUTE INSCRIRE  POUR TOUS LES PARTICIPANTS D UNE SALLE A UNE MISSION ======= INSCRIPTION SALLE ENTIERE ==============
-MissionController.route('/:missionId([a-z0-9]{24})/inscrireRoom/:roomId([a-z0-9]{24})/') 
+	// ROUTE INSCRIRE  POUR TOUS LES PARTICIPANTS D UNE SALLE A UNE MISSION ======= INSCRIPTION SALLE ENTIERE ==============
+MissionController.route('/:missionId([a-z0-9]{24})/inscrireRoom/') 
 	.post(async (req, res) => {
         try {
             const missionId = new Types.ObjectId(req.params.missionId);
-            const roomId = new Types.ObjectId(req.params.roomId);
+			const mission = await service.findById(missionId);
+			const roomId = mission?.roomId;
 
-            // Fetch the room object to get the list of participants
-            const room = await roomService.findById(roomId);
-            if (!room) {
-                return res.status(404).send('Room non trouvée.');
-            }
-
+            if (roomId) {const room = await roomService.findById(roomId);
+				if (!room) {
+					return res.status(404).send('Room non trouvée.');
+				}
+			
             const participants = room.participants || [];
             const results = [];
 
@@ -2110,9 +2221,11 @@ MissionController.route('/:missionId([a-z0-9]{24})/inscrireRoom/:roomId([a-z0-9]
                         results.push({ userId, message: 'Erreur lors de l\'inscription' });
                     }
                 }
+				
             }
-
-            res.status(200).json(results);
+			res.status(200).json(results);
+		}
+        
         } catch (error) {
             console.error(error);
             res.status(500).send('Internal Server Error');

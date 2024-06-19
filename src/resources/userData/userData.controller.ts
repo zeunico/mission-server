@@ -427,49 +427,49 @@ UserDataController.route('/')
 					})();
 					}
 				
-				else if (media.type == "video"){
+					else if (media.type == "video"){
 
-					// Traitement des fichiers videos => thumbnail
-	
-					// Dossier Cible
-					const outputThumbDir = `${thumb.path()}/`;
-											
-					// fluent-ffmpeg
-					const ffmpegStatic = require('ffmpeg-static');
-					const ffmpeg = require('fluent-ffmpeg');
-					ffmpeg.setFfmpegPath(ffmpegStatic);
+						// Traitement des fichiers videos => thumbnail
+		
+						// Dossier Cible
+						const outputThumbDir = `${thumb.path()}/`;
+												
+						// fluent-ffmpeg
+						const ffmpegStatic = require('ffmpeg-static');
+						const ffmpeg = require('fluent-ffmpeg');
+						ffmpeg.setFfmpegPath(ffmpegStatic);
 
-					// Pour mise à jour document MongoDB
-					const thumbId = thumb?._id; 
-					const newName = thumb ? thumb.name + '.png' : ''; // Ajout '.png' au fichier '.mp4'
-					
-					ffmpeg(originalFilePath)
-						.on('filenames', function(filenames: string[]) {
-							console.log('Prêt pour  ' + filenames.join(', '))
-						})
-						.on('end', function() {
-							console.log('Screenshots vid ok');
+						// Pour mise à jour document MongoDB
+						const thumbId = thumb?._id; 
+						const newName = thumb ? thumb.name + '.png' : ''; // Ajout '.png' au fichier '.mp4'
+						
+						ffmpeg(originalFilePath)
+							.on('filenames', function(filenames: string[]) {
+								console.log('Prêt pour  ' + filenames.join(', '))
+							})
+							.on('end', function() {
+								console.log('Screenshots vid ok');
 
-							async function updateThumbName(thumbId: Object, newName: Object) {
-								try {
-									// Mise à jour du nom du thumb
-									const result = await MThumb.updateOne(
-									{ _id: thumbId },
-									{ $set: { name: newName } }
-									);					  
-									console.log(`Mise à jour du document MongoDB : ok`);
-								} catch (error) {
-									console.error('Mise à jour du document MongoDB : une erreur est survenue.', error);
-								}
-								}					
-							updateThumbName(thumbId, newName);
-								})
-						.screenshots({
-							count: 1,
-							filename: thumb.name + '.png',
-							folder: outputThumbDir
-						});
-				}
+								async function updateThumbName(thumbId: Object, newName: Object) {
+									try {
+										// Mise à jour du nom du thumb
+										const result = await MThumb.updateOne(
+										{ _id: thumbId },
+										{ $set: { name: newName } }
+										);					  
+										console.log(`Mise à jour du document MongoDB : ok`);
+									} catch (error) {
+										console.error('Mise à jour du document MongoDB : une erreur est survenue.', error);
+									}
+									}					
+								updateThumbName(thumbId, newName);
+									})
+							.screenshots({
+								count: 1,
+								filename: thumb.name + '.png',
+								folder: outputThumbDir
+							});
+					}
 			}
 
 			const newUserData = await userDataService.createUserData(user, activity._id, media?._id, thumb?._id, req.body);

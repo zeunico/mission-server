@@ -13,6 +13,6 @@ export interface IMission {
 	active: boolean,
 	guidee: boolean,
 	visuel?: Types.ObjectId,
-	createAt: Date,
-	updateAt: Date
+	createdAt: Date,
+	updatedAt: Date
 }

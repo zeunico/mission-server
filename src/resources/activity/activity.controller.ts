@@ -601,21 +601,13 @@ const activityService = new ActivityService();
  *                 description_detaillee_produire:
  *                   type: string
  *                   description: La description détaillée pour produire
- *                   example: "Détails sur la production"
- *                 description_detaillee_consulter:
- *                   type: string
- *                   description: La description détaillée pour consulter
- *                   example: "Détails sur la consultation"
- *                 type:
- *                   type: string
- *                   description: Le type d'activité
- *                   example: "Type d'activité"
+ *                   example: "Détails de l'activité production"
  *                 types:
  *                   type: array
  *                   items:
  *                     type: string
- *                   description: Les types d'activité
- *                   example: ["type1", "type2"]
+ *                   description: Les fichiers media acceptés dans les réponses de l'activité
+ *                   example: ["audio", "video"]
  *                 etat:
  *                   type: string
  *                   description: L'état de l'utilisateur dans l'activité

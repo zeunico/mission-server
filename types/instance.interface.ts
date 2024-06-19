@@ -4,6 +4,6 @@ export interface IInstance {
 	_id: Types.ObjectId,
 	name: string,
 	rooms: [Types.ObjectId],
-	createAt: Date,
-	updateAt: Date
+	createdAt: Date,
+	updatedAt: Date
 }
