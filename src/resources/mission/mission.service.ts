@@ -171,23 +171,20 @@ export class MissionService {
 	// ETAT d un USER dans une mission
 	async etatByUser(missionId: Types.ObjectId, userId: Types.ObjectId): Promise<String> {
 		let foundKey = null;
-		console.log('misionnnnIdd',missionId);
 		const mission = await Mission.findById(missionId);	
-		console.log('misionnnn',mission);
-
 			// Iterate over each key-value pair in activity.etat
+			if (mission) {
 			for (const [key, value] of mission.etat.entries()) {
 			// Check if userId exists in the array associated with the current key
 				if (value.includes(userId)) {
 					foundKey = key; 
-					console.log('key', key);	
 				}
 			}
 			if (foundKey !== null) {
-				console.log(`User   ${userId} dans l etat "${foundKey}" `);
 				return foundKey;
 			}
 			else return '';
+		}
 	}	
 
 	// AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE

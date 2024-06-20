@@ -40,6 +40,16 @@ export class UsersService {
 		}
 	}
 
+	// NBRE DE USERS CONNECTES A UN SALLE
+	async countConnectedUsersExcludingModerator(roomId: Types.ObjectId, moderatorId: Types.ObjectId): Promise<number> {
+        try {
+            const connectedUserNames = await this.findUserNamesConnectedToRoomExcludingModerator(roomId, moderatorId);
+            return connectedUserNames.length;
+        } catch (err) {
+            throw new Error('Error counting connected users excluding moderator: ' + err.message);
+        }
+    }
+
 	// trouve un utilisateur via l'email
 	async findByEmail(email: string, instance?: string, room?: string): Promise<IUser | null> {
 	//	const researchedUser = await User.findOne({ email, instance, room});

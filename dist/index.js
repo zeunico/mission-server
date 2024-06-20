@@ -22,9 +22,6 @@ var __spreadValues = (a, b) => {
 };
 var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
-var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-};
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
@@ -45,20 +42,6 @@ var __publicField = (obj, key, value) => {
   __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
   return value;
 };
-
-// src/cronJobs.ts
-var require_cronJobs = __commonJS({
-  "src/cronJobs.ts"() {
-    var cron = require("node-cron");
-    cron.schedule("* * * * *", () => {
-      console.log("Running a task every minute");
-      console.log("lalalal");
-    });
-    cron.schedule("0 0 * * *", () => {
-      console.log("Running a task every day at midnight");
-    });
-  }
-});
 
 // src/config.ts
 var import_path = require("path");
@@ -309,6 +292,15 @@ var UsersService = class {
       return connectedUsers;
     } catch (err) {
       throw new Error("Error retrieving connected users excluding moderator: " + err.message);
+    }
+  }
+  // NBRE DE USERS CONNECTES A UN SALLE
+  async countConnectedUsersExcludingModerator(roomId, moderatorId) {
+    try {
+      const connectedUserNames = await this.findUserNamesConnectedToRoomExcludingModerator(roomId, moderatorId);
+      return connectedUserNames.length;
+    } catch (err) {
+      throw new Error("Error counting connected users excluding moderator: " + err.message);
     }
   }
   // trouve un utilisateur via l'email
@@ -1083,8 +1075,6 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
           "mission-token": TokenHandler()
         }
       }).then(async (resAxios) => {
-        console.log("mission-token", TokenHandler());
-        console.log("resAxios", resAxios);
         if (!user) {
           if (room) {
             console.log("resAxios.data.user.moderatorId", resAxios.data.user.isModerator);
@@ -1162,7 +1152,6 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
           }
         } else {
           if (room && room._id) {
-            const newRoomId = new import_mongoose10.Types.ObjectId(room._id);
             if (!user.roomId.includes(room._id)) {
               user.roomId.push(room._id);
               const userUpdated = await service.update({
@@ -1172,6 +1161,10 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
             } else {
               console.log("La salle est d\xE9j\xE0 pr\xE9sente dans les infos de ce participant.");
             }
+            const userUpdatedWithConnexion = await service.update({
+              connexion: room._id
+            }, user._id);
+            console.log("CONNEXION UP:", userUpdatedWithConnexion);
           } else {
             console.log("roomCode ou RoomId invalide.");
           }
@@ -1340,6 +1333,27 @@ UsersController.route("/listconnect/:idRoom([a-z0-9]{24})").get(async (req, res,
     }
   } catch (err) {
     console.error(err);
+    next(err);
+  }
+});
+UsersController.route("/nbrconnect/:idRoom([a-z0-9]{24})").get(async (req, res, next) => {
+  try {
+    const roomId = new import_mongoose10.Types.ObjectId(req.params.idRoom);
+    const room = await roomService.findById(roomId);
+    if (room) {
+      const moderatorId = room == null ? void 0 : room.moderatorId;
+      const nbrConnectedUsers = await service.countConnectedUsersExcludingModerator(roomId, moderatorId);
+      res.status(200).json(nbrConnectedUsers);
+    } else {
+      res.status(404).json({
+        error: "Salle introuvable."
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Internal server error."
+    });
     next(err);
   }
 });
@@ -2361,20 +2375,18 @@ var MissionService = class {
   // ETAT d un USER dans une mission
   async etatByUser(missionId, userId) {
     let foundKey = null;
-    console.log("misionnnnIdd", missionId);
     const mission = await mission_model_default.findById(missionId);
-    console.log("misionnnn", mission);
-    for (const [key, value] of mission.etat.entries()) {
-      if (value.includes(userId)) {
-        foundKey = key;
-        console.log("key", key);
+    if (mission) {
+      for (const [key, value] of mission.etat.entries()) {
+        if (value.includes(userId)) {
+          foundKey = key;
+        }
       }
+      if (foundKey !== null) {
+        return foundKey;
+      } else
+        return "";
     }
-    if (foundKey !== null) {
-      console.log(`User   ${userId} dans l etat "${foundKey}" `);
-      return foundKey;
-    } else
-      return "";
   }
   // AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
   async inscriptionMission(missionId, userId) {
@@ -3967,7 +3979,7 @@ ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/"
 var activity_controller_default = ActivityController;
 
 // src/index.ts
-var cronJobs = require_cronJobs();
+var missionService3 = new MissionService();
 var app = (0, import_express10.default)();
 var httpServer = import_http.default.createServer(app);
 var swaggerOptions = {
@@ -4024,9 +4036,17 @@ app.use((req, res, next) => {
   res.charset = "utf-8";
   next();
 });
+var axios4 = require("axios");
 var addConnectedUsersToMission = /* @__PURE__ */ __name(async () => {
   try {
-    console.log("Connected users added to mission");
+    const rooms = await RoomService.findAll();
+    for (const room of rooms) {
+      const missions = await missionService3.findByRoomId(room._id);
+      for (const mission of missions) {
+        const missionId = mission._id;
+        const response = await axios4.post(`${config2.BASE_URL}/mission/${missionId}/inscrireRoom/`);
+      }
+    }
   } catch (error) {
     console.error("Error adding users to mission:", error);
   }

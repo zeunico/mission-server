@@ -21,9 +21,11 @@ import swaggerUi from 'swagger-ui-express';
 import ActivityController from './resources/activity/activity.controller';
 import { MissionService } from './resources/mission/mission.service';
 import { UsersService } from './resources/users/users.service';
+import { RoomService } from './resources/room/room.service';
 
 
-const cronJobs = require('./cronJobs'); 
+// new MisionService pour routine inscription 
+const missionService = new MissionService();
 
 // Création d'une nouvelle instance express
 const app = express();
@@ -110,19 +112,36 @@ app.use((req, res, next) => {
 });
 
 
+const axios = require('axios');
+
+
 // Routine pour ajouter les users connectés aux missions de leur(s) room(s)
 const addConnectedUsersToMission = async () => {
     try {
-
-            console.log('Connected users added to mission');
-        }
-    catch (error) {
+        //console.log('Routine inscription');
+		//liste all rooms
+		const rooms = await RoomService.findAll();
+		for (const room of rooms) {
+			// list all missions in one room
+			const missions = await missionService.findByRoomId(room._id);
+			for (const mission of missions) {
+				const missionId = mission._id;
+				const response = await axios.post(`${config.BASE_URL}/mission/${missionId}/inscrireRoom/`);
+			//	console.log('Inscriptions :', response.data);
+				}
+			}
+    } catch (error) {
         console.error('Error adding users to mission:', error);
     }
 };
 
 // fréquence de l routine en ms
 setInterval(addConnectedUsersToMission, 5000);
+
+
+
+
+
 
 
 // On demande à express d'écouter les requetes sur le port défini dans la config

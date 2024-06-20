@@ -301,8 +301,6 @@ const roomService = new RoomService();
  *         error:
  *          type: string
  *          description: Message d'erreur
- * 
- * 
  * /users/{idUser}/ismoderator/{idRoom}:
  *  get:
  *   summary: Récupère le statut de l'utilisateur. Est-il moderator (animateur) de la salle ou non ? 
@@ -340,90 +338,80 @@ const roomService = new RoomService();
  *          error:
  *           type: string
  *           description: Message d'erreur
- * /users/{id}/connect:
+ * /users/{idUser}/connect/{idRoom}:
  *   put:
- *     summary: Changer la statut de connexion de l'utilisateur à vrai
+ *     summary: Connecte un utilisateur à une salle.
+ *     description: Connecte un utilisateur à une salle spécifique en mettant à jour le champ `connexion` de l'utilisateur avec l'ID de la salle.
  *     tags: [Users]
- *     description: Ce point de terminaison changer le statut de connexion de l'utilisateur à vrai.
  *     parameters:
  *       - in: path
- *         name: id
- *         required: true
+ *         name: idUser
  *         schema:
  *           type: string
- *           pattern: '^[a-z0-9]{24}$'
- *         description: L'ID de l'utilisateur
+ *         required: true
+ *         description: L'ID du participant
+ *       - in: path
+ *         name: idRoom
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: L'ID de la salle 
  *     responses:
- *       200:
- *         description:  Le statut de connexion de l'utilisateur est changé à vrai
- *         content:
- *           application/json:
- *             schema:
- *               type: string
- *               example: Participant {user} est déjà connecté
  *       201:
- *         description:  Le statut de connexion de l'utilisateur est déjà à vrai
+ *         description: Message indiquant que le participant est connecté à la salle avec succès.
  *         content:
  *           application/json:
  *             schema:
  *               type: string
- *               example: Participant {user} est désormais connecté
- *       400:
- *         description: Le champ ID du participant est manquant
+ *       200:
+ *         description: Message indiquant que le participant est déjà connecté à la salle.
  *         content:
- *           text/plain:
+ *           application/json:
  *             schema:
  *               type: string
- *               example: Le champ ID est manquant.
+ *       404:
+ *         description: L'utilisateur ou la salle spécifiée n'existe pas.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Utilisateur introuvable
  *       500:
- *         description: Erreur interne du serveur
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *               example: Erreur interne du serveur
-  * /users/{id}/disconnect:
+ *         description: Erreur interne du serveur.
+ * /users/{idUser}/disconnect/{idRoom}:
  *   put:
- *     summary: Changer la statut de connexion de l'utilisateur à faux
+ *     summary: Déconnecte un utilisateur d'une salle.
  *     tags: [Users]
- *     description: Ce point de terminaison changer le statut de connexion de l'utilisateur à faux.
+ *     description: Déconnecte un utilisateur d'une salle spécifique en mettant à jour le champ `connexion` de l'utilisateur à `null`.
  *     parameters:
  *       - in: path
- *         name: id
- *         required: true
+ *         name: idUser
  *         schema:
  *           type: string
- *           pattern: '^[a-z0-9]{24}$'
- *         description: L'ID de l'utilisateur
+ *         required: true
+ *         description: L'ID du participant
+ *       - in: path
+ *         name: idRoom
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: L'ID de la salle
  *     responses:
  *       200:
- *         description:  Le statut de connexion de l'utilisateur est changé à faux
+ *         description: Message indiquant que l'utilisateur est déconnecté de la salle avec succès.
  *         content:
  *           application/json:
  *             schema:
  *               type: string
- *               example: Participant {user} est déjà déconnecté
- *       201:
- *         description:  Le statut de connexion de l'utilisateur est déjà à faux
+ *       404:
+ *         description: L'utilisateur ou la salle spécifiée n'existe pas.
  *         content:
  *           application/json:
  *             schema:
  *               type: string
- *               example: Participant {user} est déconnecté
- *       400:
- *         description: Le champ ID du participant est manquant
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *               example: Le champ ID est manquant.
+ *               example: Utilisateur introuvable
  *       500:
- *         description: Erreur interne du serveur
- *         content:
- *           text/plain:
- *             schema:
- *               type: string
- *               example: Erreur interne du serveur
+ *         description: Erreur interne du serveur.
  * /listconnect/{idRoom}:
  *   get:
  *     summary: Liste des utilisateurs connectés
@@ -462,6 +450,47 @@ const roomService = new RoomService();
  *                   example: "Invalid room ID format."
  *       404:
  *         description: Salle non trouvée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Room not found."
+ *       500:
+ *         description: Erreur interne du serveur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Internal server error."
+ * /nbrconnect/{idRoom}:
+ *   get:
+ *     summary: Nombre des utilisateurs connectés pour une salle
+ *     tags: [Users]
+ *     description: Ce point de terminaison récupère le nombre d'utilisateurs connectés à une salle spécifiée, à l'exclusion du modérateur.
+ *     parameters:
+ *       - in: path
+ *         name: idRoom
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-f0-9]{24}$'
+ *         description: L'ID de la salle
+ *     responses:
+ *       200:
+ *         description: Le nombre d'utilisateurs connectés à la salle spécifiée, à l'exclusion du modérateur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: integer
+ *               example: 3
+ *       404:
+ *         description: Salle introuvable
  *         content:
  *           application/json:
  *             schema:
@@ -546,8 +575,6 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 					'userEmail': email
 				}, { headers: { 'mission-token': TokenHandler() } })
 					.then(async (resAxios) => {
-						console.log('mission-token', TokenHandler());
-						console.log('resAxios', resAxios);
 						if (!user) {
 								if (room) {
 									console.log('resAxios.data.user.moderatorId',  resAxios.data.user.isModerator );
@@ -645,9 +672,8 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 						else {
 							// Ajout room à l'array room du participant si elle n est pas déjà
 							if (room && room._id) {
-								const newRoomId = new Types.ObjectId(room._id);
 								
-								// Check if the room ID is already in the user's roomId array
+								// On vérifie si la salle est dans l'array sinon on l'ajoute
 								if (!user.roomId.includes(room._id)) {
 									user.roomId.push(room._id);
 									const userUpdated = await service.update({ roomId: user.roomId }, new Types.ObjectId(user._id));
@@ -656,6 +682,13 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 								} else {
 									console.log('La salle est déjà présente dans les infos de ce participant.');
 								}
+
+								// On modifie le user.connexion nveel room._id
+							//	const userUpdatedWithConnexion  = await service.update({ connexion: user.connexion }, new Types.ObjectId(room._id));
+							const userUpdatedWithConnexion = await service.update({ connexion: room._id }, user._id);
+								console.log('CONNEXION UP:', userUpdatedWithConnexion );
+								
+
 							} else {
 								console.log('roomCode ou RoomId invalide.');
 							}
@@ -863,7 +896,7 @@ UsersController.route('/:idUser([a-z0-9]{24})/connect/:idRoom([a-z0-9]{24})')
 
 
 	
-//// LISTE DES UTILISATEURS CONNECTES
+//// LISTE DES UTILISATEURS CONNECTES POUR UNE SALLE
 UsersController.route('/listconnect/:idRoom([a-z0-9]{24})')
 	.get(async (req, res, next) => {
 		try {
@@ -880,4 +913,28 @@ UsersController.route('/listconnect/:idRoom([a-z0-9]{24})')
 			next(err);
 		}
 	});
+
+//// NBR DES UTILISATEURS CONNECTES POUR UNE SALLE
+UsersController.route('/nbrconnect/:idRoom([a-z0-9]{24})')
+    .get(async (req, res, next) => {
+        try {
+            const roomId = new Types.ObjectId(req.params.idRoom);
+            const room = await roomService.findById(roomId);
+            if (room) {
+                const moderatorId = room?.moderatorId;
+                const nbrConnectedUsers = await service.countConnectedUsersExcludingModerator(roomId, moderatorId);
+                res.status(200).json(nbrConnectedUsers);
+            } else {
+                res.status(404).json({ error: "Salle introuvable." });
+            }
+        } catch (err) {
+                console.error(err);
+                res.status(500).json({ error: "Internal server error." });
+				next(err);
+            }
+
+        
+    });
+
+
 export default UsersController;
