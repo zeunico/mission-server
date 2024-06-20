@@ -52,17 +52,17 @@ export class UsersService {
 
 	// trouve un utilisateur via l'email
 	async findByEmail(email: string, instance?: string, room?: string): Promise<IUser | null> {
-	//	const researchedUser = await User.findOne({ email, instance, room});
-		if (!instance && !room) {
-			const researchedUser = await User.findOne({ email});
-			return researchedUser;
-		} else if (!instance) {	const researchedUser = await User.findOne({ email, room}); 
-			return researchedUser;}
-			else {const researchedUser = await User.findOne({ email, room, instance});
-			return researchedUser;
+		//	const researchedUser = await User.findOne({ email, instance, room});
+			if (!instance && !room) {
+				const researchedUser = await User.findOne({ email});
+				return researchedUser;
+			} else if (!instance) {	const researchedUser = await User.findOne({ email, room}); 
+				return researchedUser;}
+				else {const researchedUser = await User.findOne({ email, room, instance});
+				return researchedUser;
+			}
 		}
-	}
-
+	
 	async findByInstance(instance: string): Promise<IUser[]> {
 		const userList = await User.find({ instance });
 		return userList;

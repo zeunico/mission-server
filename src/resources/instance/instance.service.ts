@@ -5,7 +5,7 @@ import { IInstance } from '~~/types/instance.interface';
 export class InstanceService {
 
 
-	// Creation d une nouvelle salle par NOM
+	// Creation d une nouvelle instance par NOM
 
 	static async createInstanceByName(instanceName) {
 		try {
@@ -22,7 +22,7 @@ export class InstanceService {
 	  }
 
 
-    // Creation d une nouvelle salle
+    // Creation d une nouvelle instance
 
 	static async create(data: IInstance): Promise<IInstance> {
 		const newInstance: IInstance = {
@@ -60,23 +60,33 @@ export class InstanceService {
 
 	// AJOUT D'UNE SALLE A UNE INSTANCE
 
-	static async  addRoomToInstance(instanceName: string, roomId: Types.ObjectId) {
+	static async addRoomToInstance(instanceName: string, roomId: Types.ObjectId) {
 		try {
+		  // Find the instance by name
 		  const instance = await InstanceService.findByName(instanceName);
-		  console.log('Instance by name:', instance);
-	  
+		  console.log('Instance found by name:', instance);
+	
 		  if (instance) {
-			instance.rooms.push(roomId);
-	  
-			const updatedInstance = await InstanceService.update({ rooms: instance.rooms }, instance._id);
-			console.log('Updated instance:', updatedInstance);
+			// Add the room ID to the instance's rooms array if it's not already there
+			if (!instance.rooms.includes(roomId)) {
+			  instance.rooms.push(roomId);
+			  console.log('Room ID added to instance rooms array:', roomId);
+			  
+			  // Update the instance with the new rooms array
+			  const updatedInstance = await InstanceService.update({ rooms: instance.rooms }, instance._id);
+			  console.log('Updated instance:', updatedInstance);
+			  return updatedInstance;
+			} else {
+			  console.log('Room ID already exists in the instance rooms array:', roomId);
+			}
 		  } else {
-			console.log('No instance found with the given name.');
+			console.log('No instance found with the given name:', instanceName);
 		  }
 		} catch (error) {
 		  console.error('Error updating instance:', error);
 		}
 	  }
 }
+	
 
 

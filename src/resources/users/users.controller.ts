@@ -302,42 +302,40 @@ const roomService = new RoomService();
  *          type: string
  *          description: Message d'erreur
  * /users/{idUser}/ismoderator/{idRoom}:
- *  get:
- *   summary: Récupère le statut de l'utilisateur. Est-il moderator (animateur) de la salle ou non ? 
- *   tags: [Users]
- *   parameters:
- *    - name: idUser
- *      in: path
- *      description: ID de l'utilisateur 
- *      type: string
- *      required: true 
- *    - name: idRoom
- *      in: path
- *      description: ID de la room
- *      type: string
- *      required: true
- *   responses:
- *     200:
- *      description: Vérification du statut de l'utilisateur réussie!
- *      content:
- *       application/json:
- *        schema:
- *         type: object
- *         properties:
- *          isModerator:
- *           type: boolean
- *           example: false
- *           description: Code identifiant de l'utilisateur généré par la base de données
- *     404:
- *      description: L'utilisateur n'a pas été trouvé en base de données.
- *      content:
- *       application/json:
- *        schema:
- *         type: object
- *         properties:
- *          error:
+ *   get:
+ *     summary: Vérifie si un utilisateur est modérateur d'une salle.
+ *     description: Vérifie si l'utilisateur identifié par `idUser` est le modérateur de la salle identifiée par `idRoom`.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: idUser
+ *         schema:
  *           type: string
- *           description: Message d'erreur
+ *         required: true
+ *         description: L'ID de l'utilisateur (24 caractères hexadécimaux).
+ *       - in: path
+ *         name: idRoom
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: L'ID de la salle (24 caractères hexadécimaux).
+ *     responses:
+ *       '200':
+ *         description: Retourne un booléen indiquant si l'utilisateur est le modérateur de la salle.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: boolean
+ *               example: true
+ *       '404':
+ *         description: L'utilisateur ou la salle spécifiée n'existe pas.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Utilisateur introuvable
+ *       '500':
+ *         description: Erreur interne du serveur.
  * /users/{idUser}/connect/{idRoom}:
  *   put:
  *     summary: Connecte un utilisateur à une salle.
@@ -589,62 +587,60 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 										instructions: [],
 										instance: req.query.instance !== undefined ? req.query.instance.toString() : config.MOBITEACH_URL,
 										roomId: [room._id],
-								});			
+									});			
 
-								/// MODERATEUR
-								const isModerator = resAxios.data.user.isModerator;
-								console.log('ismodo from axios', isModerator);
-								if (isModerator) {
-									// Le modérateur est ajouté comme modérateur de la salle
-								
-										console.log('Cet user est le moderator de la salle ! Il est ajouté dans la salle ');
-										room.moderatorId = user._id;
+									/// MODERATEUR
+									const isModerator = resAxios.data.user.isModerator;
+									console.log('ismodo from axios', isModerator);
+									if (isModerator) {
+										// Le modérateur est ajouté comme modérateur de la salle
 									
-										const updatedRoom = await RoomService.update({ moderatorId: user._id }, room._id);
-										console.log('Updated room:', updatedRoom);
-									} else {
-										// On ajoute le user à la liste des participants dans la salle SEULEMENT SI il n'est pas moderator
-										room.participants.push(user._id);
-									}
-								
-
-								RoomService.update(room, room._id);
-								const roomCode = room.roomCode;
-								console.log('rommcode', roomCode);
-
-								
-								const instanceName = user.instance;
-								console.log('instance name', instanceName);
-								
-								if (instanceName) {
-									const instance = await InstanceService.findByName(instanceName);
-									console.log('instance', instance);
-									const roomId = room._id;
-									if (instance === null) {
-										// CREATION NOUVELLE INSTANCE PAR NOM user.instance
-										await InstanceService.createInstanceByName(instanceName);
-										const instance = await InstanceService.findByName(instanceName);
-										if (instance) {
-										const newInstanceName = instance.name;
-										// AJOUT SALLE DANS INSTANCE
-										InstanceService.addRoomToInstance(newInstanceName, new Types.ObjectId(roomId));
+											console.log('Cet user est le moderator de la salle ! Il est ajouté dans la salle ');
+											room.moderatorId = user._id;
+										
+											const updatedRoom = await RoomService.update({ moderatorId: user._id }, room._id);
+											console.log('Updated room:', updatedRoom);
+										} else {
+											// On ajoute le user à la liste des participants dans la salle SEULEMENT SI il n'est pas moderator
+											room.participants.push(user._id);
 										}
+									
+									RoomService.update(room, room._id);
+									const roomCode = room.roomCode;
 
-									} else {
-											// L'instance existe! On vérifie si la room est déjà dans l'array de l'instance, si non on l'ajoute
-											const isRoomId = instance.rooms.includes(roomId);
-											if (isRoomId) {
-											  console.log('La salle existe déjà dans cette instance');
-											} else {
-													InstanceService.addRoomToInstance(instanceName, roomId);
-											  		console.log('La salle a été ajoutée à cette instance');
+
+									  /// INSTANCES 
+											const instanceName = user.instance;
+											console.log('instance name', instanceName);
+											
+											if (instanceName) {
+												const instance = await InstanceService.findByName(instanceName);
+												console.log('instance', instance);
+												const roomId = room._id;
+												if (instance === null) {
+													// CREATION NOUVELLE INSTANCE PAR NOM user.instance
+													await InstanceService.createInstanceByName(instanceName);
+													const instance = await InstanceService.findByName(instanceName);
+													if (instance) {
+													const newInstanceName = instance.name;
+													// AJOUT SALLE DANS INSTANCE
+													InstanceService.addRoomToInstance(newInstanceName, new Types.ObjectId(roomId));
 													}
+			
+												} else {
+														// L'instance existe! On vérifie si la room est déjà dans l'array de l'instance, si non on l'ajoute
+														const isRoomId = instance.rooms.includes(roomId);
+														console.log('bool isroomid',isRoomId)
+														if (isRoomId) {
+														  console.log('La salle existe déjà dans cette instance');
+														} else {
+																InstanceService.addRoomToInstance(instanceName, roomId);
+																  console.log('La salle a été ajoutée à cette instance');
+																}
+														}
 											}
-								}
-							} else {
-								console.error("Pas de Room, room is null");
-							}
-							
+												
+							// USER PICTURE
 							const userPicture = resAxios.data.user.image;
 							// L'image de profil existe dans la réponse 
 							if (userPicture && userPicture !== '') {
@@ -669,46 +665,110 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 								user = await service.update({ picture: media._id }, user._id);
 							}					
 						}
-						else {
-							// Ajout room à l'array room du participant si elle n est pas déjà
-							if (room && room._id) {
-								
-								// On vérifie si la salle est dans l'array sinon on l'ajoute
-								if (!user.roomId.includes(room._id)) {
+					}
+					else { 
+						// l utilisateur existe déjà mise à jour Nvelle roomId dans user ? Nvelle instance ? Nvelle connexion ? MOderation
+						console.log('user exisrs  avant check', user);
+						console.log('room._id avant check', room._id);
+						// Ajout room à l'array room du participant si elle n est pas déjà
+						if (room && room._id) {
+							
+							// On vérifie si la salle est dans l'array sinon on l'ajoute
+							if(user.roomId.includes(room._id))
+								{ 
+									await service.update({ connexion: room._id }, user._id);
+								} else
+								{ 
 									user.roomId.push(room._id);
-									const userUpdated = await service.update({ roomId: user.roomId }, new Types.ObjectId(user._id));
-
-									console.log('Updated participa room array:', userUpdated);
-								} else {
-									console.log('La salle est déjà présente dans les infos de ce participant.');
+									await service.update({ roomId: user.roomId }, new Types.ObjectId(user._id));
 								}
-
-								// On modifie le user.connexion nveel room._id
-							//	const userUpdatedWithConnexion  = await service.update({ connexion: user.connexion }, new Types.ObjectId(room._id));
-							const userUpdatedWithConnexion = await service.update({ connexion: room._id }, user._id);
-								console.log('CONNEXION UP:', userUpdatedWithConnexion );
-								
-
+							await service.update({ connexion: room._id }, user._id);
+									
 							} else {
 								console.log('roomCode ou RoomId invalide.');
 							}
+
+																  /// INSTANCES 
+																  const instanceName = user.instance;
+																  console.log('instance name', instanceName);
+																  
+																  if (instanceName) {
+																	  const instance = await InstanceService.findByName(instanceName);
+																	  console.log('instance', instance);
+																	  const roomId = room._id;
+																	  if (instance === null) {
+																		  // CREATION NOUVELLE INSTANCE PAR NOM user.instance
+																		  await InstanceService.createInstanceByName(instanceName);
+																		  const instance = await InstanceService.findByName(instanceName);
+																		  if (instance) {
+																		  const newInstanceName = instance.name;
+																		  // AJOUT SALLE DANS INSTANCE
+																		  InstanceService.addRoomToInstance(newInstanceName, new Types.ObjectId(roomId));
+																		  }
+								  
+																	  } else {
+																			  // L'instance existe! On vérifie si la room est déjà dans l'array de l'instance, si non on l'ajoute
+																			  const isRoomId = instance.rooms.includes(roomId);
+																			  console.log('bool isroomid',isRoomId)
+																			  if (isRoomId) {
+																				console.log('La salle existe déjà dans cette instance');
+																			  } else {
+																					  InstanceService.addRoomToInstance(instanceName, roomId);
+																						console.log('La salle a été ajoutée à cette instance');
+																					  }
+																			  }
+																  }
+
+
+				/// MODERATEUR
+									const isModerator = resAxios.data.user.isModerator;
+									console.log('ismodo from axios', isModerator);
+									if (isModerator) {
+										// Le modérateur est ajouté comme modérateur de la salle
+									
+											console.log('Cet user est le moderator de la salle ! Il est ajouté dans la salle ');
+											room.moderatorId = user._id;
+										
+											const updatedRoom = await RoomService.update({ moderatorId: user._id }, room._id);
+											console.log('Updated room:', updatedRoom);
+										} else {
+											// On ajoute le user à la liste des participants dans la salle SEULEMENT SI il n'est pas moderator
+											room.participants.push(user._id);
+										}
+									
+									RoomService.update(room, room._id);
+									const roomCode = room.roomCode;
+
+
+
+
+
 						}
-					})
-					.catch((err) => {
-						console.log('ERROR', err);
-					});
-
-			} else if (!user) {
-				// Ce n'est pas l'utilisateur que vous recherchez
-				throw new NotFoundException('Utilisateur introuvable');
-			}
-
-			return res.status(200).json(user);
-		
-		} catch (err) {
+			
+			const updatedUser = await service.find(user._id);
+			return res.status(200).json(updatedUser);
+		})
+		.catch((err) => {
+			console.log('ERROR', err);
 			next(err);
+		});
+	} else {
+		// Handle case where roomCode is not provided but user is found
+		if (!user) {
+			throw new NotFoundException('Utilisateur introuvable');
 		}
-	});
+		const updatedUser = await service.findById(user._id);
+		return res.status(200).json(updatedUser);
+	}
+} catch (err) {
+next(err);
+}
+});
+
+
+
+
+
 
 UsersController.route('/:id([a-z0-9]{24})')
 	.get(async (req, res, next) => {
@@ -785,7 +845,7 @@ UsersController.route('/:id([a-z0-9]{24})/image')
 	});
 
 
-//// IS MODERATOR /////////////// 
+//// IS MODERATOR SeLON UNE ROOM
 UsersController.route('/:idUser([a-z0-9]{24})/ismoderator/:idRoom([a-z0-9]{24})')
 	.get(async (req, res, next) => {
 		try {
@@ -807,14 +867,13 @@ UsersController.route('/:idUser([a-z0-9]{24})/ismoderator/:idRoom([a-z0-9]{24})'
                 throw new NotFoundException('Salle introuvable');
             }
 			const roomModerator = room.moderatorId;
-			const roomCode = room.roomCode;
 				
 			
 			if (roomModerator.equals(userId)) {
-				return res.status(200).json('true');
+				return res.status(200).json(true);
 
 			}
-			else {return res.status(200).json('false');
+			else {return res.status(200).json(false);
 			}
 
 		} catch (err) {
@@ -822,6 +881,40 @@ UsersController.route('/:idUser([a-z0-9]{24})/ismoderator/:idRoom([a-z0-9]{24})'
 			next(err);
 		}
 	});
+
+	//// IS MODERATOR DE LA SALLE OU LE PARTICIPANT EST CONNECTE
+UsersController.route('/:idUser([a-z0-9]{24})/ismoderatorConnect')
+.get(async (req, res, next) => {
+	try {
+		const userId = new Types.ObjectId(req.params.idUser);
+		const user = await service.find(userId);
+		console.log('ududeu',user);
+		const roomId = new Types.ObjectId(user?.connexion);
+		const room = await roomService.findById(roomId);
+		if (!user) {
+			throw new NotFoundException('Utilisateur introuvable');
+		}
+
+		if (!room) {
+			throw new NotFoundException('Salle introuvable');
+		}
+
+		const roomModerator = room.moderatorId;
+		console.log('remoodera', roomModerator);
+			
+		
+		if (roomModerator.equals(userId)) {
+			return res.status(200).json(true);
+
+		}
+		else {return res.status(200).json(false);
+		}
+
+	} catch (err) {
+		console.log(err);
+		next(err);
+	}
+});
 
 //// SE CONNECTE /////////////// 
 UsersController.route('/:idUser([a-z0-9]{24})/connect/:idRoom([a-z0-9]{24})')

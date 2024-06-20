@@ -923,7 +923,7 @@ var instance_model_default = MInstance;
 // src/resources/instance/instance.service.ts
 var import_mongoose9 = require("mongoose");
 var InstanceService = class {
-  // Creation d une nouvelle salle par NOM
+  // Creation d une nouvelle instance par NOM
   static async createInstanceByName(instanceName) {
     try {
       const instanceData = {
@@ -937,7 +937,7 @@ var InstanceService = class {
       console.error("Error creating room:", error);
     }
   }
-  // Creation d une nouvelle salle
+  // Creation d une nouvelle instance
   static async create(data) {
     const newInstance = __spreadValues({}, data);
     console.log("instance .service : nouvelle instance \xE0 cr\xE9er", newInstance);
@@ -973,15 +973,21 @@ var InstanceService = class {
   static async addRoomToInstance(instanceName, roomId) {
     try {
       const instance = await InstanceService.findByName(instanceName);
-      console.log("Instance by name:", instance);
+      console.log("Instance found by name:", instance);
       if (instance) {
-        instance.rooms.push(roomId);
-        const updatedInstance = await InstanceService.update({
-          rooms: instance.rooms
-        }, instance._id);
-        console.log("Updated instance:", updatedInstance);
+        if (!instance.rooms.includes(roomId)) {
+          instance.rooms.push(roomId);
+          console.log("Room ID added to instance rooms array:", roomId);
+          const updatedInstance = await InstanceService.update({
+            rooms: instance.rooms
+          }, instance._id);
+          console.log("Updated instance:", updatedInstance);
+          return updatedInstance;
+        } else {
+          console.log("Room ID already exists in the instance rooms array:", roomId);
+        }
       } else {
-        console.log("No instance found with the given name.");
+        console.log("No instance found with the given name:", instanceName);
       }
     } catch (error) {
       console.error("Error updating instance:", error);
@@ -1105,7 +1111,6 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
             }
             RoomService.update(room, room._id);
             const roomCode2 = room.roomCode;
-            console.log("rommcode", roomCode2);
             const instanceName = user.instance;
             console.log("instance name", instanceName);
             if (instanceName) {
@@ -1121,6 +1126,7 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
                 }
               } else {
                 const isRoomId = instance.rooms.includes(roomId);
+                console.log("bool isroomid", isRoomId);
                 if (isRoomId) {
                   console.log("La salle existe d\xE9j\xE0 dans cette instance");
                 } else {
@@ -1129,53 +1135,97 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
                 }
               }
             }
-          } else {
-            console.error("Pas de Room, room is null");
-          }
-          const userPicture = resAxios.data.user.image;
-          if (userPicture && userPicture !== "") {
-            const [file, filename] = await downloadFile(resAxios.data.user.image);
-            const media = await mediaService2.create(user._id, {
-              name: user._id + "_profile" + (0, import_path8.extname)(filename),
-              type: media_enum_default.IMAGE
-            });
-            const dest = media.path().split(import_path8.sep).slice(0, -1).join(import_path8.sep);
-            if (!(0, import_fs4.existsSync)(dest)) {
-              await (0, import_promises2.mkdir)(dest, {
-                recursive: true
+            const userPicture = resAxios.data.user.image;
+            if (userPicture && userPicture !== "") {
+              const [file, filename] = await downloadFile(resAxios.data.user.image);
+              const media = await mediaService2.create(user._id, {
+                name: user._id + "_profile" + (0, import_path8.extname)(filename),
+                type: media_enum_default.IMAGE
               });
+              const dest = media.path().split(import_path8.sep).slice(0, -1).join(import_path8.sep);
+              if (!(0, import_fs4.existsSync)(dest)) {
+                await (0, import_promises2.mkdir)(dest, {
+                  recursive: true
+                });
+              }
+              await (0, import_promises2.writeFile)(media.path(), file);
+              user = await service.update({
+                picture: media._id
+              }, user._id);
             }
-            await (0, import_promises2.writeFile)(media.path(), file);
-            user = await service.update({
-              picture: media._id
-            }, user._id);
           }
         } else {
+          console.log("user exisrs  avant check", user);
+          console.log("room._id avant check", room._id);
           if (room && room._id) {
-            if (!user.roomId.includes(room._id)) {
+            if (user.roomId.includes(room._id)) {
+              await service.update({
+                connexion: room._id
+              }, user._id);
+            } else {
               user.roomId.push(room._id);
-              const userUpdated = await service.update({
+              await service.update({
                 roomId: user.roomId
               }, new import_mongoose10.Types.ObjectId(user._id));
-              console.log("Updated participa room array:", userUpdated);
-            } else {
-              console.log("La salle est d\xE9j\xE0 pr\xE9sente dans les infos de ce participant.");
             }
-            const userUpdatedWithConnexion = await service.update({
+            await service.update({
               connexion: room._id
             }, user._id);
-            console.log("CONNEXION UP:", userUpdatedWithConnexion);
           } else {
             console.log("roomCode ou RoomId invalide.");
           }
+          const instanceName = user.instance;
+          console.log("instance name", instanceName);
+          if (instanceName) {
+            const instance = await InstanceService.findByName(instanceName);
+            console.log("instance", instance);
+            const roomId = room._id;
+            if (instance === null) {
+              await InstanceService.createInstanceByName(instanceName);
+              const instance2 = await InstanceService.findByName(instanceName);
+              if (instance2) {
+                const newInstanceName = instance2.name;
+                InstanceService.addRoomToInstance(newInstanceName, new import_mongoose10.Types.ObjectId(roomId));
+              }
+            } else {
+              const isRoomId = instance.rooms.includes(roomId);
+              console.log("bool isroomid", isRoomId);
+              if (isRoomId) {
+                console.log("La salle existe d\xE9j\xE0 dans cette instance");
+              } else {
+                InstanceService.addRoomToInstance(instanceName, roomId);
+                console.log("La salle a \xE9t\xE9 ajout\xE9e \xE0 cette instance");
+              }
+            }
+          }
+          const isModerator = resAxios.data.user.isModerator;
+          console.log("ismodo from axios", isModerator);
+          if (isModerator) {
+            console.log("Cet user est le moderator de la salle ! Il est ajout\xE9 dans la salle ");
+            room.moderatorId = user._id;
+            const updatedRoom = await RoomService.update({
+              moderatorId: user._id
+            }, room._id);
+            console.log("Updated room:", updatedRoom);
+          } else {
+            room.participants.push(user._id);
+          }
+          RoomService.update(room, room._id);
+          const roomCode2 = room.roomCode;
         }
+        const updatedUser = await service.find(user._id);
+        return res.status(200).json(updatedUser);
       }).catch((err) => {
         console.log("ERROR", err);
+        next(err);
       });
-    } else if (!user) {
-      throw new NotFoundException("Utilisateur introuvable");
+    } else {
+      if (!user) {
+        throw new NotFoundException("Utilisateur introuvable");
+      }
+      const updatedUser = await service.findById(user._id);
+      return res.status(200).json(updatedUser);
     }
-    return res.status(200).json(user);
   } catch (err) {
     next(err);
   }
@@ -1257,11 +1307,35 @@ UsersController.route("/:idUser([a-z0-9]{24})/ismoderator/:idRoom([a-z0-9]{24})"
       throw new NotFoundException("Salle introuvable");
     }
     const roomModerator = room.moderatorId;
-    const roomCode = room.roomCode;
     if (roomModerator.equals(userId)) {
-      return res.status(200).json("true");
+      return res.status(200).json(true);
     } else {
-      return res.status(200).json("false");
+      return res.status(200).json(false);
+    }
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+UsersController.route("/:idUser([a-z0-9]{24})/ismoderatorConnect").get(async (req, res, next) => {
+  try {
+    const userId = new import_mongoose10.Types.ObjectId(req.params.idUser);
+    const user = await service.find(userId);
+    console.log("ududeu", user);
+    const roomId = new import_mongoose10.Types.ObjectId(user == null ? void 0 : user.connexion);
+    const room = await roomService.findById(roomId);
+    if (!user) {
+      throw new NotFoundException("Utilisateur introuvable");
+    }
+    if (!room) {
+      throw new NotFoundException("Salle introuvable");
+    }
+    const roomModerator = room.moderatorId;
+    console.log("remoodera", roomModerator);
+    if (roomModerator.equals(userId)) {
+      return res.status(200).json(true);
+    } else {
+      return res.status(200).json(false);
     }
   } catch (err) {
     console.log(err);
