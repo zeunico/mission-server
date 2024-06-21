@@ -1081,6 +1081,7 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
           "mission-token": TokenHandler()
         }
       }).then(async (resAxios) => {
+        var _a10;
         if (!user) {
           if (room) {
             console.log("resAxios.data.user.moderatorId", resAxios.data.user.isModerator);
@@ -1210,8 +1211,30 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
           } else {
             room.participants.push(user._id);
           }
-          RoomService.update(room, room._id);
-          const roomCode2 = room.roomCode;
+          const userPictureId = new import_mongoose10.Types.ObjectId((_a10 = user.picture) == null ? void 0 : _a10.toString());
+          const userPicture = await mediaService2.find(userPictureId);
+          if (userPicture) {
+            console.log("pistcure user deja en bdd");
+          } else {
+            const userPicture2 = resAxios.data.user.image;
+            if (userPicture2 && userPicture2 !== "") {
+              const [file, filename] = await downloadFile(resAxios.data.user.image);
+              const media = await mediaService2.create(user._id, {
+                name: user._id + "_profile" + (0, import_path8.extname)(filename),
+                type: media_enum_default.IMAGE
+              });
+              const dest = media.path().split(import_path8.sep).slice(0, -1).join(import_path8.sep);
+              if (!(0, import_fs4.existsSync)(dest)) {
+                await (0, import_promises2.mkdir)(dest, {
+                  recursive: true
+                });
+              }
+              await (0, import_promises2.writeFile)(media.path(), file);
+              user = await service.update({
+                picture: media._id
+              }, user._id);
+            }
+          }
         }
         const updatedUser = await service.find(user._id);
         return res.status(200).json(updatedUser);

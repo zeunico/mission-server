@@ -301,41 +301,6 @@ const roomService = new RoomService();
  *         error:
  *          type: string
  *          description: Message d'erreur
- * /users/{idUser}/ismoderator/{idRoom}:
- *   get:
- *     summary: Vérifie si un utilisateur est modérateur d'une salle.
- *     description: Vérifie si l'utilisateur identifié par `idUser` est le modérateur de la salle identifiée par `idRoom`.
- *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: idUser
- *         schema:
- *           type: string
- *         required: true
- *         description: L'ID de l'utilisateur (24 caractères hexadécimaux).
- *       - in: path
- *         name: idRoom
- *         schema:
- *           type: string
- *         required: true
- *         description: L'ID de la salle (24 caractères hexadécimaux).
- *     responses:
- *       '200':
- *         description: Retourne un booléen indiquant si l'utilisateur est le modérateur de la salle.
- *         content:
- *           application/json:
- *             schema:
- *               type: boolean
- *               example: true
- *       '404':
- *         description: L'utilisateur ou la salle spécifiée n'existe pas.
- *         content:
- *           application/json:
- *             schema:
- *               type: string
- *               example: Utilisateur introuvable
- *       '500':
- *         description: Erreur interne du serveur.
  * /users/{idUser}/connect/{idRoom}:
  *   put:
  *     summary: Connecte un utilisateur à une salle.
@@ -376,6 +341,77 @@ const roomService = new RoomService();
  *               example: Utilisateur introuvable
  *       500:
  *         description: Erreur interne du serveur.
+ * /users/{idUser}/ismoderator/{idRoom}:
+ *   get:
+ *     summary: Vérifie si un utilisateur est modérateur d'une salle.
+ *     description: Vérifie si l'utilisateur identifié par `idUser` est le modérateur de la salle identifiée par `idRoom`.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: idUser
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: L'ID de l'utilisateur (24 caractères hexadécimaux).
+ *       - in: path
+ *         name: idRoom
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: L'ID de la salle (24 caractères hexadécimaux).
+ *     responses:
+ *       '200':
+ *         description: Retourne un booléen indiquant si l'utilisateur est le modérateur de la salle.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: boolean
+ *               example: true
+ *       '404':
+ *         description: L'utilisateur ou la salle spécifiée n'existe pas.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Utilisateur introuvable
+ *       '500':
+ *         description: Erreur interne du serveur.
+ * /users/{idUser}/ismoderatorConnect:
+ *   get:
+ *     summary: Vérifie si l'utilisateur est le modérateur de la salle à laquelle il est connecté.
+ *     description: Vérifie si l'utilisateur spécifié par `idUser` est le modérateur de la salle à laquelle il est connecté.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: idUser
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-z0-9]{24}$'
+ *         required: true
+ *         description: L'ID de l'utilisateur
+ *     responses:
+ *       200:
+ *         description: Indique si l'utilisateur est le modérateur de la salle.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: boolean
+ *               example: true
+ *       404:
+ *         description: L'utilisateur ou la salle spécifiée n'existe pas.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Utilisateur introuvable ou Salle introuvable
+ *       500:
+ *         description: Erreur interne du serveur.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *               example: Erreur interne du serveur.
+
  * /users/{idUser}/disconnect/{idRoom}:
  *   put:
  *     summary: Déconnecte un utilisateur d'une salle.
@@ -688,7 +724,7 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 								console.log('roomCode ou RoomId invalide.');
 							}
 
-																  /// INSTANCES 
+					  				/// CREATION INSTANCES  ET/OU MAJ ROOM
 																  const instanceName = user.instance;
 																  console.log('instance name', instanceName);
 																  
@@ -720,7 +756,7 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 																  }
 
 
-				/// MODERATEUR
+									/// CREATION OU MAJ MODERATEUR
 									const isModerator = resAxios.data.user.isModerator;
 									console.log('ismodo from axios', isModerator);
 									if (isModerator) {
@@ -736,14 +772,42 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 											room.participants.push(user._id);
 										}
 									
-									RoomService.update(room, room._id);
-									const roomCode = room.roomCode;
+									// RoomService.update(room, room._id);
 
 
-
-
-
-						}
+									///   update media si disparu de la base
+									const userPictureId = new Types.ObjectId(user.picture?.toString());
+									const userPicture = await mediaService.find(userPictureId);
+									if (userPicture)
+										{
+											console.log('pistcure user deja en bdd');
+										}
+										else {
+												const userPicture = resAxios.data.user.image;
+												// L'image de profil existe dans la réponse 
+												if (userPicture && userPicture !== '') {
+													// On télécharge l'image
+													const [file, filename] = await downloadFile(resAxios.data.user.image);
+					
+													// On créé le document media associé
+													// @ts-ignore
+													const media = await mediaService.create(user._id, {
+														name: user._id + '_profile' + extname(filename),
+														type: EMedia.IMAGE,
+													});
+					
+													const dest = media.path().split(sep).slice(0, -1).join(sep);
+													if (!existsSync(dest)) {
+														await mkdir(dest, { recursive: true });
+													}
+													// On écrit sur le systeme le fichier
+													await writeFile(media.path(), file);
+					
+													// On met à jour l'utilisateur
+													user = await service.update({ picture: media._id }, user._id);
+												}
+										}
+									}
 			
 			const updatedUser = await service.find(user._id);
 			return res.status(200).json(updatedUser);
