@@ -559,7 +559,7 @@ const activityService = new ActivityService();
  *         types:
  *          type: string
  *          description: Type de fichier acceptés dans l'activité Consulter ou Produire
- * /activities/{idActivity}/{idUser}:
+ * /activity/{idActivity}/{idUser}:
  *   get:
  *     summary: Récupère une activité avec l'état de l'utilisateur
  *     tags: [Activity]

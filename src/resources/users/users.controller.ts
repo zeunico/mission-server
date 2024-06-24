@@ -411,7 +411,6 @@ const roomService = new RoomService();
  *             schema:
  *               type: string
  *               example: Erreur interne du serveur.
-
  * /users/{idUser}/disconnect/{idRoom}:
  *   put:
  *     summary: Déconnecte un utilisateur d'une salle.
@@ -446,7 +445,7 @@ const roomService = new RoomService();
  *               example: Utilisateur introuvable
  *       500:
  *         description: Erreur interne du serveur.
- * /listconnect/{idRoom}:
+ * /users/listconnect/{idRoom}:
  *   get:
  *     summary: Liste des utilisateurs connectés
  *     tags: [Users]
@@ -502,7 +501,7 @@ const roomService = new RoomService();
  *                 error:
  *                   type: string
  *                   example: "Internal server error."
- * /nbrconnect/{idRoom}:
+ * /users/nbrconnect/{idRoom}:
  *   get:
  *     summary: Nombre des utilisateurs connectés pour une salle
  *     tags: [Users]
