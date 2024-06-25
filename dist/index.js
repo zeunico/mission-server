@@ -2596,10 +2596,20 @@ MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next
       room == null ? void 0 : room.mission.push(mission._id);
       await RoomService.update(room, roomId);
       return res.status(201).json(mission);
+    } else {
+      return res.status(404).json({
+        message: "Room not found"
+      });
     }
-  } catch (err) {
-    console.error("Error in POST /missions/roomCode:");
-    next(err);
+  } catch (error) {
+    console.error("Error in POST /missions/:roomCode:");
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({
+        message: `Mission validation failed: ${messages.join(", ")}`
+      });
+    }
+    next(error);
   }
 }).get(async (req, res, next) => {
   try {

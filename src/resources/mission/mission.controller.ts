@@ -1479,13 +1479,23 @@ MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
 				await RoomService.update(room, roomId);				
 
 				
-				return res.status(201).json(mission);}		
-		}
-		catch (err) {
-			console.error('Error in POST /missions/roomCode:');
-			next(err);
-		}
-	})
+				return res.status(201).json(mission);
+				} else {
+                return res.status(404).json({ message: 'Room not found' });
+            	}
+        } catch (error) {
+            console.error('Error in POST /missions/:roomCode:');
+
+            if (error.name === 'ValidationError') {
+                // Extracting the validation error messages
+                const messages = Object.values(error.errors).map(err => err.message);
+                // Responding with a user-friendly message
+                return res.status(400).json({ message: `Echecà la validation de la mission  : ${messages.join(', ')}` });
+            }
+
+            next(error); // Passes the error to the next middleware (could be an error handling middleware)
+        }
+    })
 	.get(async (req, res, next) => {
 		try {
 			const room = await roomService.findByCode(req.params.roomCode);
