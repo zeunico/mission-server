@@ -28,7 +28,7 @@ const UserDataSchema = new mongoose.Schema<IUserData>({
 
 	'room': {
 		type: String,
-		required: true
+		required: false
 	},
 
 	'userId': {

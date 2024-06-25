@@ -14,8 +14,7 @@ const missionService = new MissionService();
 
 
 export class ActivityService {
-
-		
+	// Création d une activité !!! HORS CLASS PRODUIRE OU CONSULTER // PAS DE CHAMP TYPE OU decription_detailleee_.....
 	async create(data:IActivity): Promise<IActivity> {
 		const newActivity: IActivity = {
 
@@ -51,7 +50,7 @@ export class ActivityService {
 		return deletedActivity;
 	}
 
-		// Statut Visible de l'activité
+	// Statut Visible de l'activité
 	async findVisibilityStatus(activityId: Types.ObjectId): Promise<boolean> {
 		try {
 			const activity = await Activity.Activity.findById(activityId);
@@ -70,7 +69,7 @@ export class ActivityService {
 
 	// GESTION DES ETATS
 	
-		// ETAT d un USER dans une activité
+	// ETAT d un USER dans une activité
 	async etatByUser(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<String> {
 				let foundKey = null;
 				const activity = await Activity.Activity.findById(activityId);	
@@ -86,7 +85,7 @@ export class ActivityService {
 					}
 					else return 'Cet utilisateur n a pas été inscrit à l activité';
 	}
-		// AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
+	// AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
     async inscriptionActivity(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {
 		const activity = await Activity.Activity.findById(activityId);
 		if (activity) {
@@ -99,7 +98,7 @@ export class ActivityService {
 	}
 
 
-		// PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
+	// PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
 	async startActivity(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {
 		const activity = await Activity.Activity.findById(activityId);
 		if (activity) {
@@ -174,8 +173,8 @@ export class ActivityService {
 }
 
 
-export class ActivityConsulterService extends ActivityService {
-
+export class ActivityConsulterService extends ActivityService {	
+	// Création d une activité CONSULTER
 	static async createConsulter(data:IActivityConsulter): Promise<IActivityConsulter | undefined> {
 		console.log('data', data);
 		if (!data.type && !data.description_detaillee_consulter){	
@@ -190,7 +189,6 @@ export class ActivityConsulterService extends ActivityService {
 		console.log('new act in createCONSULTER via  ...', newActivityConsulter);
 		return  ActivityConsulter.ActivityConsulter.create(newActivityConsulter);
 		};
-		
 	}
 		
 	// Trouve tous les activités CONSULTER
@@ -200,6 +198,7 @@ export class ActivityConsulterService extends ActivityService {
 		return allActivitiesConsulter;
 	}
 
+	// Trouve une activité CONSULTER par son ID
 	static async findById(_id: Types.ObjectId): Promise<IActivityConsulter | null> {
 		const researchedActivity = await ActivityConsulter.ActivityConsulter.findOne({ _id});
 		return researchedActivity;
@@ -208,7 +207,7 @@ export class ActivityConsulterService extends ActivityService {
 }
 
 export class ActivityProduireService extends ActivityService {
-
+	// Création d une activité PRODUIRE
 	static async createProduire(data:IActivityProduire): Promise<IActivityProduire | undefined> {
 		console.log('data', data);
 		if (!data.types && !data.description_detaillee_produire){	
@@ -225,15 +224,15 @@ export class ActivityProduireService extends ActivityService {
 		return  ActivityProduire.ActivityProduire.create(newActivityProduire);
 		};
 	}
-	
 		
-	// Trouve tous les activités (produire et consulter confondues)
+	// Trouve tous les activités PRODUIRE
 	static async findAll(): Promise<IActivityProduire[]> {
 		const allActivities = await ActivityProduire.ActivityProduire.find();
 		console.log('allAct', allActivities);
 		return allActivities;
 	}
 	
+	// Trouve une activité PRODUIRE par son ID
 	static async findById(_id: Types.ObjectId): Promise<IActivityProduire | null> {
 		const researchedActivity = await ActivityConsulter.ActivityProduire.findOne({ _id});
 		return researchedActivity;

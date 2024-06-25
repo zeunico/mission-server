@@ -133,7 +133,7 @@ const addConnectedUsersToMission = async () => {
 				}
 			}
     } catch (error) {
-        console.error('Error adding users to mission:', error);
+        console.error('Error adding users to mission:',  error);
     }
 };
 

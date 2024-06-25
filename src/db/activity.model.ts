@@ -56,7 +56,7 @@ const ActivityConsulterSchema = extendSchema(ActivitySchema,{
 
     'description_detaillee_consulter': {
         type: String,
-        required: false
+        required: true
     },
 	
 	'type': {

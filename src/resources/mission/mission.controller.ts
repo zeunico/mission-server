@@ -1420,7 +1420,7 @@ const userService = new UsersService();
  *       500:
  *         description: Erreur serveur
  */
-// ROUTE RACINE LISTE TOUTES LES MISSIONS
+// ROUTE RACINE LISTE TOUTES LES MISSIONS ET ROUTE POST PAR ROOM ID
 MissionController.route('/')
 	.get(async (req, res) => {
 		
@@ -1460,10 +1460,8 @@ MissionController.route('/')
 			return res.status(500).json({ message: 'Erreur de pramàtres' });
 		}
 	});
-
-
 // ROUTE POST MISSION DANS UNE SALLE IDENTIFIEE PAR SON ROOMCODE &&
-// GET MISSION DANS UNE SALLE PAR UN ROOMCODE  
+// GET LISTE DES MISSIONS DANS UNE SALLE PAR UN ROOMCODE  
 MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
 	.post(async (req, res, next) => {
 		try {
@@ -1487,14 +1485,12 @@ MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
             console.error('Error in POST /missions/:roomCode:');
 
             if (error.name === 'ValidationError') {
-                // Extracting the validation error messages
                 const messages = Object.values(error.errors).map(err => err.message);
-                // Responding with a user-friendly message
                 return res.status(400).json({ message: `Echec à la validation de la mission  : ${messages.join(', ')}` });
             }
 
-            next(error); // Passes the error to the next middleware (could be an error handling middleware)
-        }
+            next(error);
+		}
     })
 	.get(async (req, res, next) => {
 		try {
@@ -1521,9 +1517,6 @@ MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
 			next(err);
 		}
 	});
-	
-
-
 // ROUTE MISSION PAR SON ID
 MissionController.route('/:id([a-z0-9]{24})/')
 	.get(async (req, res, next) => {
@@ -1557,8 +1550,6 @@ MissionController.route('/:id([a-z0-9]{24})/')
 			}
 		}
 	);
-
-
 // ROUTE MISSION Id + ETAT USER Id pour une mission
 MissionController.route('/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})')
 	.get(async (req, res, next) => {
@@ -1603,7 +1594,30 @@ MissionController.route('/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})')
 					next(err);
 				}
 			});
+// LISTE DES MISSIONS DANS UNE ROOM PAR ROOMID
+MissionController.route('/byRoomId/:roomId([a-z0-9]{24})/')
+	.get(async (req, res, next) => {
+		try {
+			const roomId = new Types.ObjectId(req.params.roomId);
+			
+			// Trouver toutes les missions associées à la roomId
+			const missions = await service.findByRoomId(roomId);
 
+			const userId = new Types.ObjectId(req.params.userId);
+			const user = await userService.find(userId);	
+			console.log('ussser', user);
+
+			if (!missions || missions.length === 0) {
+				return res.status(404).send('Aucune mission trouvée pour cette salle');
+			}	
+			// Retourner la liste des missions
+			return res.status(200).json(missions);
+
+		} catch (err) {
+			console.error('Error in get /missions/room/roomId:');
+			next(err);
+		}
+	});
 // LISTE DES MISSIONS (DANS UNE ROOM) FULL OBJECT AVEC ETAT POUR UN USERID COMME ETAT
 MissionController.route('/listetat/:roomId([a-z0-9]{24})/:userId([a-z0-9]{24})')
 	.get(async (req, res, next) => {
@@ -1658,10 +1672,6 @@ MissionController.route('/listetat/:roomId([a-z0-9]{24})/:userId([a-z0-9]{24})')
 			next(err);
 		}
 	});
-
-
-
-
 // ROUTES ET FONCTIONS POUR STATUS VISIBLE, ACTIVE et GUIDEE 
 // STATUT VISIBLE CHECK
 MissionController.route('/:id([a-z0-9]{24})/isVisible/')
@@ -2208,7 +2218,7 @@ MissionController.route('/:missionId([a-z0-9]{24})/inscrireRoom/')
             for (const userId of participants) {
                 const userObjectId = new Types.ObjectId(userId);
                 
-                // Ensure the user is not already in the states
+                // S assurer que le participant n est pas déjà inscrit à la mission (ie est présent dans larray etat)
                 const isInEtat = await service.etatByUser(missionId, userObjectId);
 				if (Object.values(EEtat).includes(isInEtat)) {
 
@@ -2218,6 +2228,7 @@ MissionController.route('/:missionId([a-z0-9]{24})/inscrireRoom/')
                     if (inscription) {
                         results.push({ userId, message: 'Inscription réussie' });
                     } else {
+						console.log('AAA');
                         results.push({ userId, message: 'Erreur lors de l\'inscription' });
                     }
                 }

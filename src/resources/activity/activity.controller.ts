@@ -1570,6 +1570,8 @@ const activityService = new ActivityService();
  *          type: string
  *          description: Message d'erreur indiquant une erreur interne du serveur.
  */
+
+// POST ACTIVITY 
 ActivityController.route('/')
 	.get(async (req, res, next) => {
         try {
@@ -1586,31 +1588,42 @@ ActivityController.route('/')
 			if (req.body.description_detaillee_consulter) {	   
 				const savedConsulter = await ActivityConsulterService.createConsulter(req.body);
 				return res.status(201).json(savedConsulter);
-			} else {
-				if (req.body.description_detaillee_produire) {
+				} else 
+					if (req.body.description_detaillee_produire) {
+						const savedProduire = await ActivityProduireService.createProduire(req.body);
+						return res.status(201).json(savedProduire);
+						}
+					else
+					{
+						const savedActivity = await service.create(req.body);
+						return res.status(201).json(savedActivity);				
+					}
+			
+        } catch (error) {
+            console.error('Error in POST /activity/');
 
-					const savedProduire = await ActivityProduireService.createProduire(req.body);
-					console.log('Controller / ActivityProduire return from ActProdSer:', savedProduire);
-					return res.status(201).json(savedProduire);
-				}
-			}
-		} catch (err) {
-			next(err);
-		}
-	});
+            if (error.name === 'ValidationError') {                
+                const messages = Object.values(error.errors).map(err => err.message);         
+                return res.status(400).json({ message: `Echec à la validation de l activité : ${messages.join(', ')}` });
+            }
+            next(error);
+        }
+    });
 
 ActivityController.route('/consulter')
 	.post(async (req, res, next) => {
 		try {
 			const activityConsulter = await ActivityConsulterService.createConsulter(req.body);
-		
 			return res.status(201).send(activityConsulter);
-		} catch (err) {
-			next(err);
-		}
-	})
-
-	.get(async (req, res, next) => {
+        } catch (error) {
+            console.error('Error in POST /activity/consulter');
+                   
+                return res.status(400).json({ message: `Echec à la validation de l activité consulter: ${messages.join(', ')}` });
+       
+            next(error);
+        }
+    })
+	.get(async (res, next) => {
 		try {
 			const activityConsulterList = await ActivityConsulterService.findAll();
 			return res.status(200).send(activityConsulterList);
@@ -1620,16 +1633,20 @@ ActivityController.route('/consulter')
 	});
 
 ActivityController.route('/produire')
-	.post(async (req, res) => {
+	.post(async (req, res, next) => {
 		try {
 			const activityProduire = await ActivityProduireService.createProduire(req.body);
-		
 			return res.status(201).send(activityProduire);
-		} catch (error) {
-			return res.status(400).send(error);
-		}
-	})
-	.get(async (req, res, next) => {
+        } catch (error) {
+            console.error('Error in POST /activity/produire');
+            if (error.name === 'ValidationError') {                
+                const messages = Object.values(error.errors).map(err => err.message);         
+                return res.status(400).json({ message: `Echec à la validation de l activité produire: ${messages.join(', ')}` });
+            }
+            next(error);
+        }
+    })
+	.get(async (res, next) => {
 		try {
 			const activityProduireList = await ActivityProduireService.findAll();
 			return res.json(activityProduireList);
@@ -1639,7 +1656,7 @@ ActivityController.route('/produire')
 	});
 
 
-// ROUTE ACTIVITE SELON SON ID ET DELETE BY ID => SUPPRESSION DE L ACTIVITE DANS LES MISSIONS QUI L ONT INTEGREE
+// ROUTE ACTIVITE SELON SON ID ET DELETE BY ID => SUPPRESSION DE L ACTIVITE DANS LA MISSION QUI L A INTEGREE
 ActivityController.route('/:id([a-z0-9]{24})/')
 .get(async (req, res, next) => {
 	try {
@@ -1658,13 +1675,12 @@ ActivityController.route('/:id([a-z0-9]{24})/')
 		return res.status(404).json({ error: `Activité avec ID ${id} non trouvée` });
 		}
 	try {	
-        // Toutes les missions qui contiennent l'activity
+        // La  mission qui contiennent l'activity
         const missions = await Mission.find({ activites: id });
-        // Update each mission
         for (const mission of missions) {
             mission.activites.pull(id); // On retire l activité de l'array activites
-            mission.nb_activites = mission.activites.length; // Update the number of activities
-            await mission.save(); // Save the updated mission
+            mission.nb_activites = mission.activites.length; 
+            await mission.save(); 
         }						
 			await service.delete(id);
 			return res.status(200).json({ message:  `Activité  ${id} supprimée avec succès` });
@@ -1744,7 +1760,7 @@ ActivityController.route('/listetat/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24
 							// On retrouve les activités de la mission
 							const activityIdList = mission.activites;
 							if (!activityIdList || activityIdList.length === 0) {
-								return res.status(404).send('Aucune mission trouvée pour cette salle');
+								return res.status(404).send('Aucune activité trouvée pour cette mission');
 							}
 							// Tableau pour stocker les résultats
 							const responses = [];

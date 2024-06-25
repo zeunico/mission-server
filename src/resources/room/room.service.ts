@@ -28,15 +28,23 @@ export class RoomService {
 	/// ATTENTION findByCode  NE FCTINNE QUE POUR UNE INSTANCE UNIQUE
 	async findByCode(roomCode: string): Promise<IRoom | null> {
 		console.log('roomCode in service', roomCode);
-		const researchedRoom = await Room.findOne({ roomCode});
+		const researchedRoom = await Room.findOne({roomCode});
 		console.log('researchedromm',researchedRoom);
 		return researchedRoom;
+	}
+
+	// Find ROOMCODE BY ROOMID
+	async findCodeById(_id: Types.ObjectId): Promise<String | undefined> {
+		console.log('roomCode in service', _id);
+		const researchedRoom = await Room.findOne({_id});
+		const reserchedCode = researchedRoom?.roomCode;
+		return reserchedCode;
 	}
 
 
 
 	async findById(_id: Types.ObjectId): Promise<IRoom | null> {
-		const researchedRoom = await Room.findOne({ _id});
+		const researchedRoom = await Room.findOne({_id});
 		return researchedRoom;
 	}
 

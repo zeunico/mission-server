@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { Types } from 'mongoose';
 import { UserDataService } from './userData.service';
 import { MediaService } from '../media/media.service';
+import { MissionService } from '../mission/mission.service';
 import { ThumbService } from '../thumb/thumb.service';
 import { RoomService } from '../room/room.service';
 import { NotFoundException } from '~/utils/exceptions';
@@ -14,21 +15,28 @@ import { UsersService } from '../users/users.service';
 import EMedia from '~~/types/media.enum';
 import { IMedia } from '~~/types/media.interface';
 import { IThumb } from '~~/types/thumb.interface'; 
+import { IMission } from '~~/types/mission.interface'; 
+
 import MThumb from '~/db/thumb.model';
 import axios from 'axios';
 import { TokenHandler } from '~/middlewares/token.handler';
 import { ActivityService } from '../activity/activity.service';
+import Mission from '~/db/mission.model';
+import Room from '~/db/room.model';
+
 
 // Création d'un Router Express
 const UserDataController: Router = Router();
 
 // Instanciation des services
-const userDataService = new UserDataService();
+const service = new UserDataService();
 const mediaService = new MediaService();
 const userService = new UsersService();
 const thumbService = new ThumbService();
 const activityService = new ActivityService();
 const roomService = new RoomService();
+const missionService = new MissionService();
+
 
 
 /**
@@ -162,126 +170,24 @@ const roomService = new RoomService();
  *         message:
  *          type: string
  *          description: Message d'erreur
- * 
- * /datas/{room}/{instance}:
+ * /datas/{activityId}/{userId}:
  *  get:
- *   summary: Récupération des réponses utilisateurs d'une salle à partir du code de la salle virtuelle passé en paramètre.
+ *   summary: Récupération les ressources postées par un modérateur ou les réponses d'un utilisateur pour une activité 
  *   tags: [UserData]
  *   parameters:
- *    - name: room
- *      in: path
- *      description: code de la salle virtuelle
- *      required: true
- *    - name: instance
- *      in: path
- *      description: Nom de l'instance Mobiteach
- *      required: true
- *      schema:
- *        type: string
- *        pattern: "^[a-z0-9]{24}$"  
- *   responses:
- *    200:
- *     description: Réponses utilisateurs trouvées
- *     content:
- *      application/json:
- *       schema:
- *        type: array
- *        items:
- *         type: object
- *         properties:
- *          _id:
- *           type: string
- *           description: ID de la réponse utilisateur
- *          description:
- *           type: string
- *           description: Description de la réponse utilisateur
- *          userId:
- *           type: string
- *           description: ID de l'utilisateur
- *          mediaId:
- *           type: string
- *           description: ID du média
- *    404:
- *     description: Réponses utilisateurs introuvables
- *     content:
- *      application/json:
- *       schema:
- *        type: object
- *        properties:
- *         message:
- *          type: string
- *          description: Message d'erreur
- *
- * /datas/{room}/{userId}:
- *  get:
- *   summary: Récupération des réponses utilisateurs d'une salle à partir du code de la salle virtuelle et de l'ID de l'utilisateur passés en paramètres.
- *   tags: [UserData]
- *   parameters:
- *    - name: room
- *      in: path
- *      description: Code de la salle virtuelle
- *      required: true
- *      type: string
- *    - name: userId
- *      in: path
- *      description: ID de l'utilisateur
- *      required: true
- *      type: string
- *   responses:
- *    200:
- *     description: Réponses utilisateurs trouvées
- *     content:
- *      application/json:
- *       schema:
- *        type: array
- *        items:
- *         type: object
- *         properties:
- *          _id:
- *           type: string
- *           description: ID de la réponse utilisateur
- *          description:
- *           type: string
- *           description: Description de la réponse utilisateur
- *          userId:
- *           type: string
- *           description: ID de l'utilisateur
- *          mediaId:
- *           type: string
- *           description: ID du média
- *    404:
- *     description: Réponses utilisateurs introuvables
- *     content:
- *      application/json:
- *       schema:
- *        type: object
- *        properties:
- *         message:
- *          type: string
- *          description: Message d'erreur
- * /datas/{room}/{userId}/{activityId}:
- *  get:
- *   summary: Récupération des réponses d'un utilisateur pour une activité
- *   tags: [UserData]
- *   parameters:
- *    - name: room
- *      in: path
- *      description: Code de la salle virtuelle
- *      required: true
- *      type: string
- *    - name: userId
- *      in: path
- *      description: ID de l'utilisateur
- *      required: true
- *      type: string
  *    - name: activityId
  *      in: path
- *      description: ID de l'actvité
+ *      description: ID de l'activité
+ *      required: true
+ *      type: string
+ *    - name: userId
+ *      in: path
+ *      description: ID de l'utilisateur
  *      required: true
  *      type: string
  *   responses:
  *    200:
- *     description: Réponses utilisateurs trouvées pour l'&ctivité
+ *     description: Réponses utilisateurs trouvées pour l'activité
  *     content:
  *      application/json:
  *       schema:
@@ -292,15 +198,58 @@ const roomService = new RoomService();
  *          _id:
  *           type: string
  *           description: ID de la réponse utilisateur
+ *          activityId:
+ *           type: string
+ *           description: ID de l'activité
+ *          mediaId:
+ *           type: object
+ *           properties:
+ *            _id:
+ *             type: string
+ *             description: ID du média
+ *            type:
+ *             type: string
+ *             description: Type de média (par exemple, "image")
+ *          thumbId:
+ *           type: string
+ *           description: ID de la miniature
  *          description:
  *           type: string
  *           description: Description de la réponse utilisateur
+ *          room:
+ *           type: string
+ *           description: Code de la salle virtuelle
  *          userId:
  *           type: string
  *           description: ID de l'utilisateur
- *          mediaId:
+ *          instance:
  *           type: string
- *           description: ID du média
+ *           description: Instance de l'application
+ *          createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date de création de la réponse
+ *          updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Date de mise à jour de la réponse
+ *          __v:
+ *           type: integer
+ *           description: Version du document
+ *        example:
+ *         _id: "667a907af9f5eb146762ae9b"
+ *         activityId: "667a720bd06e40d821e91978"
+ *         mediaId:
+ *          _id: "667a907af9f5eb146762ae97"
+ *          type: "image"
+ *         thumbId: "667a907af9f5eb146762ae99"
+ *         description: "picto casque"
+ *         room: "ADC001"
+ *         userId: "6228b3b4d558d809023a8dbb"
+ *         instance: "demo.mobiteach.net"
+ *         createdAt: "2024-06-25T09:40:10.546Z"
+ *         updatedAt: "2024-06-25T09:40:10.546Z"
+ *         __v: 0
  *    404:
  *     description: Réponses utilisateurs introuvables pour cette activité
  *     content:
@@ -472,7 +421,7 @@ UserDataController.route('/')
 					}
 			}
 
-			const newUserData = await userDataService.createUserData(user, activity._id, media?._id, thumb?._id, req.body);
+			const newUserData = await service.createUserData(user, activity._id, media?._id, thumb?._id, req.body);
 			console.log('newuserdata', newUserData);
 
         	// Connexion Axios à Mobiteach
@@ -499,7 +448,7 @@ UserDataController.route('/')
 	})
 	.delete(async (req, res, next) => {
 		try {
-			await userDataService.clear();
+			await service.clear();
 
 			return res.status(200).json();
 		}
@@ -513,7 +462,7 @@ UserDataController.route('/:id([a-z0-9]{24})')
 	.get(async (req, res, next) => {
 		try {
 			const userDataId = new Types.ObjectId(req.params.id);
-			const userData = await userDataService.find(userDataId);
+			const userData = await service.find(userDataId);
 			
 			if (!userData) {
 				throw new NotFoundException('Réponse introuvable');
@@ -527,7 +476,7 @@ UserDataController.route('/:id([a-z0-9]{24})')
 	.delete(async (req, res, next) => {
 		try {
 			const userDataId = new Types.ObjectId(req.params.id);
-			const userData = await userDataService.find(userDataId);
+			const userData = await service.find(userDataId);
 
 			if (!userData) {
 				throw new NotFoundException('Réponse introuvable');
@@ -536,7 +485,7 @@ UserDataController.route('/:id([a-z0-9]{24})')
 			await axios.delete('https://' + userData.instance + '/html/mobiApp/data/?roomCode=' + userData.room + '&userId=' + userData.userId + '&dataId=' + userDataId, { headers: { 'mission-token': TokenHandler() } })
 				.then(async () => {
 					try {
-						await userDataService.delete(userDataId);
+						await service.delete(userDataId);
 						if (userData.mediaId) {
 							await mediaService.delete(userData.mediaId);
 							console.log('Media supprimé !');
@@ -547,7 +496,7 @@ UserDataController.route('/:id([a-z0-9]{24})')
 					}
 				})
 				.catch(async (err) => {
-					await userDataService.delete(userDataId);
+					await service.delete(userDataId);
 					console.log(err);
 				});
 			console.log('Réponse supprimée !');
@@ -556,7 +505,7 @@ UserDataController.route('/:id([a-z0-9]{24})')
 			next(err);
 		}
 	});
-	
+// 	!!!!! utilise le roomcode sans verif instance !!! RETIREE DE LA DOC @swagger !! Mal documentée à l origine
 UserDataController.route('/:room([a-z0-9]{6})')
 	.get(async (req, res, next) => {
 		try {
@@ -566,10 +515,10 @@ UserDataController.route('/:room([a-z0-9]{6})')
 
 			let dataList;
 			if (req.query.instance) {
-				dataList = await userDataService.findAll(req.params.room, req.query.instance.toString());
+				dataList = await service.findAll(req.params.room, req.query.instance.toString());
 				console.log('dataList', dataList);
 			} else {
-				dataList = await userDataService.findAll(req.params.room);
+				dataList = await service.findAll(req.params.room);
 			}
 
 			const parsedDataList = dataList.map((data) => {
@@ -601,7 +550,7 @@ UserDataController.route('/:room([a-z0-9]{6})')
 			next(err);
 		}
 	});
-// ROUTE LISTE DES REPONSES PAR ROOM ET UTILISATEUR
+// ROUTE LISTE DES REPONSES PAR ROOM ET UTILISATEUR !!!!! utilise le roomcode sans verif instance !!! RETIREE DE LA DOC @swagger 
 UserDataController.route('/:room([a-z0-9]{6})/:userId([a-z0-9]{24})')
 	.get(async (req, res, next) => {
 		try {
@@ -617,7 +566,7 @@ UserDataController.route('/:room([a-z0-9]{6})/:userId([a-z0-9]{24})')
 				throw new NotFoundException('Utilisateur introuvable');
 			}
 
-			const dataList = await userDataService.findByUserId(user, req.params.room);
+			const dataList = await service.findByUserId(user, req.params.room);
 			console.log('dataList',dataList);
 			return res.status(200).json(dataList);
 		} catch (err) {
@@ -625,7 +574,7 @@ UserDataController.route('/:room([a-z0-9]{6})/:userId([a-z0-9]{24})')
 		}
 	});
 
-// ROUTE LISTE DES REPONSES PAR ROOM, UTILISATEUR ET PAR ACTIVITE
+// ROUTE LISTE DES REPONSES PAR ROOMCODE, UTILISATEUR ET PAR ACTIVITE !!!!! utilise le roomcode sans verif instance !!! RETIREE DE LA DOC @swagger 
 UserDataController.route('/:room([a-z0-9]{6})/:userId([a-z0-9]{24})/:activityId([a-z0-9]{24})')
 	.get(async (req, res, next) => {
 		try {
@@ -637,16 +586,51 @@ UserDataController.route('/:room([a-z0-9]{6})/:userId([a-z0-9]{24})/:activityId(
 
 			const activityId = new Types.ObjectId(req.params.activityId);
 			console.log('activityId',activityId);
-			const activity = await activityService.find(activityId);
-			console.log('activity',activity);
+
 			console.log('activity._id',activity?._id);
 			if (!user) {
 				throw new NotFoundException('Utilisateur introuvable');
 			}
 
-			const dataList = await userDataService.findByUserIdAndActivityId(user, req.params.room, req.params.activityId);
+			const dataList = await service.findByUserIdAndActivityId(user, req.params.room, req.params.activityId);
 			console.log('dataList',dataList);
 			return res.status(200).json(dataList);
+		} catch (err) {
+			next(err);
+		}
+	});
+
+// ROUTE LISTE DES REPONSES PAR UTILISATEUR ET PAR ACTIVITE
+UserDataController.route('/:activityId([a-z0-9]{24})/:userId([a-z0-9]{24})')
+	.get(async (req, res, next) => {
+		try {
+			const userId = new Types.ObjectId(req.params.userId);
+			const user = await userService.find(userId);
+			if (!user) {
+				throw new NotFoundException('Utilisateur introuvable');
+			}
+
+			const activityId = new Types.ObjectId(req.params.activityId);
+			const activity = await activityService.find(activityId);
+			if (!activity) {
+				throw new NotFoundException('Activité introuvable');
+			}
+
+			const mission = await Mission.find({ activites: activityId });
+			console.log('missin', mission);
+			if (!mission) {
+				throw new NotFoundException('L activité n est dans aucune mission');
+				} 
+			const roomId = new Types.ObjectId(mission[0].roomId);
+			console.log('roomId', roomId);
+			const roomCode = await roomService.findCodeById(roomId);
+			console.log('roomId', roomCode);
+			
+
+			const dataList = await service.findByUserIdAndActivityId(user, roomCode , activityId);
+			console.log('dataList',dataList);
+			return res.status(200).json(dataList);
+			
 		} catch (err) {
 			next(err);
 		}
