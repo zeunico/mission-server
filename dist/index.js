@@ -263,7 +263,6 @@ var UsersService = class {
   // trouve un utilisateur en particulier
   async find(_id) {
     const researchedUser = await user_model_default.findById(_id);
-    console.log("researchedser in service user find", researchedUser);
     return researchedUser;
   }
   // Nouvelle méthode pour trouver les prénoms et noms des utilisateurs connectés à une salle, en excluant le modérateur
@@ -2529,7 +2528,7 @@ MoodleController.route("/userDatas/:instance([a-zA-Z0-9]+.mobiteach.net)").get(a
       });
     });
   }
-  res.status(200).json(userDataList);
+  return res.status(200).json(userDataList);
 });
 var moodle_controller_default = MoodleController;
 
@@ -2662,10 +2661,10 @@ MissionController.route("/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})").get(a
     const userId = new import_mongoose16.Types.ObjectId(req.params.idUser);
     const user = await userService5.find(userId);
     if (user === null) {
-      res.status(404).send("Le participant est introuvable");
+      return res.status(404).send("Le participant est introuvable");
     } else {
       if (mission === null) {
-        res.status(404).send("La mission est introuvable");
+        return res.status(404).send("La mission est introuvable");
       } else {
         const userState = await service2.etatByUser(missionId, userId);
         const newResponse = {
@@ -2750,17 +2749,17 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-visible/").post(async (req
     console.log("status visible", statusVisible);
     const titre = await service2.findTitreByid(new import_mongoose16.Types.ObjectId(id));
     if (statusVisible === true) {
-      res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 visible");
+      return res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 visible");
     } else {
       if (mission) {
         mission.visible = true;
         await mission.save();
-        res.status(201).json("Mission :  " + titre + " est d\xE9sormais visible");
+        return res.status(201).json("Mission :  " + titre + " est d\xE9sormais visible");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 MissionController.route("/:id([a-z0-9]{24})/change-to-not-visible/").post(async (req, res) => {
@@ -2774,17 +2773,17 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-not-visible/").post(async 
     const titre = await service2.findTitreByid(new import_mongoose16.Types.ObjectId(id));
     console.log("statut visible", statusVisible);
     if (!statusVisible) {
-      res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 non visible");
+      return res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 non visible");
     } else {
       if (mission) {
         mission.visible = false;
         await mission.save();
-        res.status(201).json("Mission :  " + titre + " est d\xE9sormais non visible");
+        return res.status(201).json("Mission :  " + titre + " est d\xE9sormais non visible");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 MissionController.route("/:id([a-z0-9]{24})/isActive/").get(async (req, res) => {
@@ -2810,17 +2809,17 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-active/").post(async (req,
     console.log("status visible", statusActive);
     const titre = await service2.findTitreByid(new import_mongoose16.Types.ObjectId(id));
     if (statusActive === true) {
-      res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 active");
+      return res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 active");
     } else {
       if (mission) {
         mission.active = true;
         await mission.save();
-        res.status(201).json("Mission :  " + titre + " est d\xE9sormais active");
+        return res.status(201).json("Mission :  " + titre + " est d\xE9sormais active");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 MissionController.route("/:id([a-z0-9]{24})/change-to-not-active/").post(async (req, res) => {
@@ -2834,17 +2833,17 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-not-active/").post(async (
     const titre = await service2.findTitreByid(new import_mongoose16.Types.ObjectId(id));
     console.log("statut visible", statusActive);
     if (!statusActive) {
-      res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 non active");
+      return res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 non active");
     } else {
       if (mission) {
         mission.active = false;
         await mission.save();
-        res.status(201).json("Mission :  " + titre + " est d\xE9sormais non active");
+        return res.status(201).json("Mission :  " + titre + " est d\xE9sormais non active");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 MissionController.route("/:id([a-z0-9]{24})/isGuidee/").get(async (req, res) => {
@@ -2870,17 +2869,17 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-guidee/").post(async (req,
     console.log("status visible", statusGuidee);
     const titre = await service2.findTitreByid(new import_mongoose16.Types.ObjectId(id));
     if (statusGuidee === true) {
-      res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 guid\xE9e");
+      return res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 guid\xE9e");
     } else {
       if (mission) {
         mission.guidee = true;
         await mission.save();
-        res.status(201).json("Mission :  " + titre + " est d\xE9sormais guid\xE9e");
+        return res.status(201).json("Mission :  " + titre + " est d\xE9sormais guid\xE9e");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 MissionController.route("/:id([a-z0-9]{24})/change-to-not-guidee/").post(async (req, res) => {
@@ -2894,17 +2893,17 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-not-guidee/").post(async (
     const titre = await service2.findTitreByid(new import_mongoose16.Types.ObjectId(id));
     console.log("statut visible", statusActive);
     if (!statusActive) {
-      res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 non guid\xE9e");
+      return res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 non guid\xE9e");
     } else {
       if (mission) {
         mission.guidee = false;
         await mission.save();
-        res.status(201).json("Mission :  " + titre + " est d\xE9sormais non guid\xE9e");
+        return res.status(201).json("Mission :  " + titre + " est d\xE9sormais non guid\xE9e");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 MissionController.route("/:id([a-z0-9]{24})/activitesID").get(async (req, res) => {
@@ -2916,13 +2915,13 @@ MissionController.route("/:id([a-z0-9]{24})/activitesID").get(async (req, res) =
     const mission = await service2.find(new import_mongoose16.Types.ObjectId(id));
     const activityList = mission == null ? void 0 : mission.activites;
     if (mission) {
-      res.status(200).json(activityList);
+      return res.status(200).json(activityList);
     } else {
-      res.status(404).json("Mission non trouv\xE9e.");
+      return res.status(404).json("Mission non trouv\xE9e.");
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json("Internal Server Error");
+    return res.status(500).json("Internal Server Error");
   }
 });
 MissionController.route("/:id([a-z0-9]{24})/activites").get(async (req, res) => {
@@ -2939,10 +2938,10 @@ MissionController.route("/:id([a-z0-9]{24})/activites").get(async (req, res) => 
     }
     const activityIds = mission.activites || [];
     const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose16.Types.ObjectId(activityId))));
-    res.status(200).json(activities);
+    return res.status(200).json(activities);
   } catch (error) {
-    console.error("Error fetching mission activities:", error);
-    res.status(500).json({
+    console.error("Erreur lors de la r\xE9cup\xE9ration des activit\xE9s de la mission.", error);
+    return res.status(500).json({
       error: "Internal Server Error"
     });
   }
@@ -2962,10 +2961,10 @@ MissionController.route("/:id([a-z0-9]{24})/activitesVisibles").get(async (req, 
     const activityIds = mission.activites || [];
     const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose16.Types.ObjectId(activityId))));
     const visibleActivities = activities.filter((activity) => activity.visible === true);
-    res.status(200).json(visibleActivities);
+    return res.status(200).json(visibleActivities);
   } catch (error) {
     console.error("Error fetching mission visible activities:", error);
-    res.status(500).json({
+    return res.status(500).json({
       error: "Internal Server Error"
     });
   }
@@ -2985,10 +2984,10 @@ MissionController.route("/:id([a-z0-9]{24})/activitesActives").get(async (req, r
     const activityIds = mission.activites || [];
     const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose16.Types.ObjectId(activityId))));
     const activeActivities = activities.filter((activity) => activity.active === true);
-    res.status(200).json(activeActivities);
+    return res.status(200).json(activeActivities);
   } catch (error) {
     console.error("Error fetching mission visible activities:", error);
-    res.status(500).json({
+    return res.status(500).json({
       error: "Internal Server Error"
     });
   }
@@ -3008,10 +3007,10 @@ MissionController.route("/:id([a-z0-9]{24})/activitesGuidees").get(async (req, r
     const activityIds = mission.activites || [];
     const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose16.Types.ObjectId(activityId))));
     const guideeActivities = activities.filter((activity) => (activity == null ? void 0 : activity.guidee) === true);
-    res.status(200).json(guideeActivities);
+    return res.status(200).json(guideeActivities);
   } catch (error) {
     console.error("Error fetching mission visible activities:", error);
-    res.status(500).json({
+    return res.status(500).json({
       error: "Internal Server Error"
     });
   }
@@ -3030,10 +3029,10 @@ MissionController.route("/:id([a-z0-9]{24})/visuel").get(async (req, res) => {
       console.log("visue", visuel);
       if (visuel === null) {
         console.log("ca opass ici");
-        res.sendFile((0, import_path11.join)(config2.ATTACHEMENT_SRC, "mission-visuel-default.jpg"));
+        return res.sendFile((0, import_path11.join)(config2.ATTACHEMENT_SRC, "mission-visuel-default.jpg"));
       }
       if (visuel) {
-        res.sendFile((0, import_path11.join)(config2.ATTACHEMENT_SRC, "VISUEL-MISSIONS", "images", visuel.name));
+        return res.sendFile((0, import_path11.join)(config2.ATTACHEMENT_SRC, "VISUEL-MISSIONS", "images", visuel.name));
       }
     }
   } catch (error) {
@@ -3113,21 +3112,21 @@ MissionController.route("/:missionId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/")
   const mission = await service2.find(missionId);
   console.log("userid", user);
   if (user === null) {
-    res.status(404).send("Le participant est introuvable");
+    return res.status(404).send("Le participant est introuvable");
   } else {
     if (mission === null) {
-      res.status(404).send("La mission est introuvable");
+      return res.status(404).send("La mission est introuvable");
     } else {
       try {
         const etatByUser = await service2.etatByUser(missionId, userId);
         if (Object.values(etat_enum_default).includes(etatByUser)) {
-          res.status(200).send(etatByUser);
+          return res.status(200).send(etatByUser);
         } else {
-          res.status(200).send(etatByUser);
+          return res.status(200).send(etatByUser);
         }
       } catch (error) {
         console.error(error);
-        res.status(500).send("Internal Server Error");
+        return res.status(500).send("Internal Server Error");
       }
     }
   }
@@ -3140,26 +3139,26 @@ MissionController.route("/:missionId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24}
     const mission = await service2.find(missionId);
     console.log("userid", user);
     if (user === null) {
-      res.status(404).send("Le participant est introuvable");
+      return res.status(404).send("Le participant est introuvable");
     } else {
       if (mission === null) {
-        res.status(404).send("La mission est introuvable");
+        return res.status(404).send("La mission est introuvable");
       } else {
         const isInEtat = await service2.etatByUser(missionId, userId);
         if (isInEtat === "NON_DEMARREE" || isInEtat === "EN_COURS" || isInEtat === "TERMINEE") {
           console.log("User d\xE9j\xE0 in array", isInEtat);
-          res.status(500).send(`Ce participant est d\xE9j\xE0 inscrit \xE0 cette mission. \xC9tat d'avancement: ${isInEtat}`);
+          return res.status(500).send(`Ce participant est d\xE9j\xE0 inscrit \xE0 cette mission. \xC9tat d'avancement: ${isInEtat}`);
         } else {
           const actvityEtatNonDem = await service2.inscriptionMission(missionId, userId);
           if (actvityEtatNonDem) {
-            res.status(200).send(actvityEtatNonDem);
+            return res.status(200).send(actvityEtatNonDem);
           }
         }
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 MissionController.route("/:missionId([a-z0-9]{24})/inscrireRoom/").post(async (req, res) => {
@@ -3197,11 +3196,11 @@ MissionController.route("/:missionId([a-z0-9]{24})/inscrireRoom/").post(async (r
           }
         }
       }
-      res.status(200).json(results);
+      return res.status(200).json(results);
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 MissionController.route("/:missionId([a-z0-9]{24})/start/:userId([a-z0-9]{24})/").post(async (req, res) => {
@@ -3210,33 +3209,32 @@ MissionController.route("/:missionId([a-z0-9]{24})/start/:userId([a-z0-9]{24})/"
     const userId = new import_mongoose16.Types.ObjectId(req.params.userId);
     const user = await userService5.find(userId);
     const mission = await service2.find(missionId);
-    console.log("userid", user);
     if (user === null) {
-      res.status(404).send("Le participant est introuvable");
+      return res.status(404).send("Le participant est introuvable");
     } else {
       if (mission === null) {
-        res.status(404).send("La mission est introuvable");
+        return res.status(404).send("La mission est introuvable");
       } else {
         const isInEtat = await service2.etatByUser(missionId, userId);
         console.log("Isinetat", isInEtat);
         if (isInEtat === "EN_COURS") {
           console.log("User d\xE9j\xE0 in array", isInEtat);
-          res.status(500).send("Mission d\xE9j\xE0 en cours pour ce participant");
+          return res.status(500).send("Mission d\xE9j\xE0 en cours pour ce participant");
         } else if (isInEtat === "TERMINEE") {
           console.log("User d\xE9j\xE0 in array", isInEtat);
-          res.status(500).send("Mission d\xE9j\xE0 termin\xE9e pour ce participant");
+          return res.status(500).send("Mission d\xE9j\xE0 termin\xE9e pour ce participant");
         } else if (isInEtat === "NON_DEMARREE") {
           const missionEnCoursPourUser = await service2.startMission(missionId, userId);
           if (missionEnCoursPourUser) {
-            res.status(200).send(missionEnCoursPourUser);
+            return res.status(200).send(missionEnCoursPourUser);
           }
         } else
-          res.status(500).send("Le participant n a jamais \xE9t\xE9 inscrit \xE0 la mission");
+          return res.status(500).send("Le participant n a jamais \xE9t\xE9 inscrit \xE0 la mission");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 MissionController.route("/:missionId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/").post(async (req, res) => {
@@ -3247,31 +3245,31 @@ MissionController.route("/:missionId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/").
     const mission = await service2.find(missionId);
     console.log("userid", user);
     if (user === null) {
-      res.status(404).send("Le participant est introuvable");
+      return res.status(404).send("Le participant est introuvable");
     } else {
       if (mission === null) {
-        res.status(404).send("La mission est introuvable");
+        return res.status(404).send("La mission est introuvable");
       } else {
         const isInEtat = await service2.etatByUser(missionId, userId);
         console.log("Isinetat", isInEtat);
         if (isInEtat === "NON_DEMARREE") {
           console.log("Le participant n a pas commenc\xE9 la mission.");
-          res.status(500).send("Mission jamais commenc\xE9e pour ce participant");
+          return res.status(500).send("Mission jamais commenc\xE9e pour ce participant");
         } else if (isInEtat === "TERMINEE") {
           console.log("User d\xE9j\xE0 in array", isInEtat);
-          res.status(500).send("Mission d\xE9j\xE0 termin\xE9e pour ce participant");
+          return res.status(500).send("Mission d\xE9j\xE0 termin\xE9e pour ce participant");
         } else if (isInEtat === "EN_COURS") {
           const missionTermineePourUser = await service2.endMission(missionId, userId);
           if (missionTermineePourUser) {
-            res.status(200).send(missionTermineePourUser);
+            return res.status(200).send(missionTermineePourUser);
           }
         } else
-          res.status(500).send("Le participant n a jamais \xE9t\xE9 inscrit \xE0 la mission");
+          return res.status(500).send("Le participant n a jamais \xE9t\xE9 inscrit \xE0 la mission");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 var mission_controller_default = MissionController;
@@ -3468,14 +3466,14 @@ ActivityController.route("/").get(async (req, res, next) => {
 ActivityController.route("/consulter").post(async (req, res, next) => {
   try {
     const activityConsulter = await ActivityConsulterService.createConsulter(req.body);
-    res.status(201).send(activityConsulter);
+    return res.status(201).send(activityConsulter);
   } catch (err) {
     next(err);
   }
 }).get(async (req, res, next) => {
   try {
     const activityConsulterList = await ActivityConsulterService.findAll();
-    res.status(200).send(activityConsulterList);
+    return res.status(200).send(activityConsulterList);
   } catch (err) {
     next(err);
   }
@@ -3483,14 +3481,14 @@ ActivityController.route("/consulter").post(async (req, res, next) => {
 ActivityController.route("/produire").post(async (req, res) => {
   try {
     const activityProduire = await ActivityProduireService.createProduire(req.body);
-    res.status(201).send(activityProduire);
+    return res.status(201).send(activityProduire);
   } catch (error) {
-    res.status(400).send(error);
+    return res.status(400).send(error);
   }
 }).get(async (req, res, next) => {
   try {
     const activityProduireList = await ActivityProduireService.findAll();
-    res.json(activityProduireList);
+    return res.json(activityProduireList);
   } catch (err) {
     next(err);
   }
@@ -3538,10 +3536,10 @@ ActivityController.route("/:idActivity([a-z0-9]{24})/:idUser([a-z0-9]{24})").get
     const userId = new import_mongoose18.Types.ObjectId(req.params.idUser);
     const user = await userService6.find(userId);
     if (user === null) {
-      res.status(404).send("Le participant est introuvable");
+      return res.status(404).send("Le participant est introuvable");
     } else {
       if (activity === null) {
-        res.status(404).send("L activit\xE9 est introuvable");
+        return res.status(404).send("L activit\xE9 est introuvable");
       } else {
         const userState = await service4.etatByUser(activityId, userId);
         const newResponse = {
@@ -3576,10 +3574,10 @@ ActivityController.route("/listetat/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24
     const userId = new import_mongoose18.Types.ObjectId(req.params.idUser);
     const user = await userService6.find(userId);
     if (user === null) {
-      res.status(404).send("Le participant est introuvable");
+      return res.status(404).send("Le participant est introuvable");
     } else {
       if (mission === null) {
-        res.status(404).send("La mission est introuvable");
+        return res.status(404).send("La mission est introuvable");
       } else {
         const activityIdList = mission.activites;
         if (!activityIdList || activityIdList.length === 0) {
@@ -3779,17 +3777,17 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-visible").post(async (req
     console.log("status visible", statusVisible);
     const titre = await service4.findTitreById(new import_mongoose18.Types.ObjectId(id));
     if (statusVisible === true) {
-      res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 visible");
+      return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 visible");
     } else {
       if (activity) {
         activity.visible = true;
         await activity.save();
-        res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais visible");
+        return res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais visible");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-not-visible").post(async (req, res) => {
@@ -3806,17 +3804,17 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-visible").post(async 
     const titre = await service4.findTitreById(new import_mongoose18.Types.ObjectId(id));
     console.log("statut visible", statusVisible);
     if (!statusVisible) {
-      res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non visible");
+      return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non visible");
     } else {
       if (activity) {
         activity.visible = false;
         await activity.save();
-        res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais non visible");
+        return res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais non visible");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 ActivityController.route("/:id([a-z0-9]{24})/isActive").get(async (req, res) => {
@@ -3845,17 +3843,17 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-active").post(async (req,
     const titre = await service4.findTitreById(new import_mongoose18.Types.ObjectId(id));
     console.log("statut visible", statusActive);
     if (statusActive === true) {
-      res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 active");
+      return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 active");
     } else {
       if (activity) {
         activity.visible = true;
         await activity.save();
-        res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais active");
+        return res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais active");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-not-active").post(async (req, res) => {
@@ -3872,17 +3870,17 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-active").post(async (
     const titre = await service4.findTitreById(new import_mongoose18.Types.ObjectId(id));
     console.log("statut visible", statusActive);
     if (!statusActive) {
-      res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non active");
+      return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non active");
     } else {
       if (activity) {
         activity.active = false;
         await activity.save();
-        res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais non active");
+        return res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais non active");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 ActivityController.route("/:id([a-z0-9]{24})/isGuidee").get(async (req, res) => {
@@ -3911,17 +3909,17 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-guidee").post(async (req,
     const titre = await service4.findTitreById(new import_mongoose18.Types.ObjectId(id));
     console.log("statut visible", statusGuidee);
     if (statusGuidee === true) {
-      res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 guid\xE9e");
+      return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 guid\xE9e");
     } else {
       if (activity) {
         activity.guidee = true;
         await activity.save();
-        res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais guid\xE9e");
+        return res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais guid\xE9e");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-not-guidee").post(async (req, res) => {
@@ -3938,17 +3936,17 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-guidee").post(async (
     const titre = await service4.findTitreById(new import_mongoose18.Types.ObjectId(id));
     console.log("statut guidee", statusGuidee);
     if (!statusGuidee) {
-      res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non guid\xE9e");
+      return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non guid\xE9e");
     } else {
       if (activity) {
         activity.guidee = false;
         await activity.save();
-        res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais non guid\xE9e");
+        return res.status(201).json("Activit\xE9 :  " + titre + " est d\xE9sormais non guid\xE9e");
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/").get(async (req, res) => {
@@ -3959,24 +3957,24 @@ ActivityController.route("/:activityId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/
     const activity = await service4.find(activityId);
     console.log("userid", user);
     if (user === null) {
-      res.status(404).send("Le participant est introuvable");
+      return res.status(404).send("Le participant est introuvable");
     } else {
       {
         if (activity === null) {
-          res.status(404).send("L activit\xE9 est introuvable");
+          return res.status(404).send("L activit\xE9 est introuvable");
         } else {
           const etatByUser = await service4.etatByUser(activityId, userId);
           if (Object.values(etat_enum_default).includes(etatByUser)) {
-            res.status(200).send(etatByUser);
+            return res.status(200).send(etatByUser);
           } else {
-            res.status(200).send(etatByUser);
+            return res.status(200).send(etatByUser);
           }
         }
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24})/").post(async (req, res) => {
@@ -3987,20 +3985,20 @@ ActivityController.route("/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{2
     const activity = await service4.find(activityId);
     console.log("userid", user);
     if (user === null) {
-      res.status(404).send("Le participant n existe pas en bdd");
+      return res.status(404).send("Le participant n existe pas en bdd");
     } else {
       {
         if (activity === null) {
-          res.status(404).send("L activit\xE9 est introuvable");
+          return res.status(404).send("L activit\xE9 est introuvable");
         } else {
           const isInEtat = await service4.etatByUser(activityId, userId);
           if (isInEtat === "NON_DEMARREE" || isInEtat === "EN_COURS" || isInEtat === "TERMINEE") {
             console.log("User d\xE9j\xE0 in array", isInEtat);
-            res.status(500).send(`Ce participant est d\xE9j\xE0 inscrit \xE0 cette activit\xE9. \xC9tat d'avancement: ${isInEtat}`);
+            return res.status(500).send(`Ce participant est d\xE9j\xE0 inscrit \xE0 cette activit\xE9. \xC9tat d'avancement: ${isInEtat}`);
           } else {
             const actvityEtatNonDem = await service4.inscriptionActivity(activityId, userId);
             if (actvityEtatNonDem) {
-              res.status(200).send(actvityEtatNonDem);
+              return res.status(200).send(actvityEtatNonDem);
             }
           }
         }
@@ -4008,7 +4006,7 @@ ActivityController.route("/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{2
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/inscrireRoom/").post(async (req, res) => {
@@ -4045,10 +4043,10 @@ ActivityController.route("/:activityId([a-z0-9]{24})/inscrireRoom/").post(async 
         }
       }
     }
-    res.status(200).json(results);
+    return res.status(200).json(results);
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/start/:userId([a-z0-9]{24})/").post(async (req, res) => {
@@ -4096,7 +4094,7 @@ ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/"
     const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
     const user = await userService6.find(userId);
     if (user === null) {
-      res.status(404).send("Le participant est introuvable");
+      return res.status(404).send("Le participant est introuvable");
     } else {
       const isInEtat = await service4.etatByUser(activityId, userId);
       console.log("Isinetat", isInEtat);
@@ -4110,15 +4108,16 @@ ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/"
         const actvityTermineePourUser = await service4.endActivity(activityId, userId);
         if (actvityTermineePourUser) {
           const mission = await missionService2.findMissionByActivity(activityId);
+          if (mission === null) {
+            return res.status(404).send("Mission introuvable");
+          }
           const activityIdList = mission == null ? void 0 : mission.activites;
           const result = [];
           for (const activityId2 of activityIdList) {
             const etatUser = await service4.etatByUser(activityId2, userId);
             result.push(etatUser);
           }
-          console.log("result", result);
           const allTerminee = result.every((etat) => etat === "TERMINEE");
-          console.log("allterminee", allTerminee);
           if (allTerminee) {
             console.log("Toutes les activit\xE9s de la mission sont 'terminee'");
             await missionService2.endMission(mission == null ? void 0 : mission._id, userId);

@@ -1560,10 +1560,10 @@ MissionController.route('/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})')
 					const user = await userService.find(userId);	
 					// Fonction pour obtenir l'état de l'utilisateur
 					if (user === null)
-						{res.status(404).send('Le participant est introuvable');}
+						{return res.status(404).send('Le participant est introuvable');}
 					else {
 						if (mission === null)
-							{res.status(404).send('La mission est introuvable');}
+							{return res.status(404).send('La mission est introuvable');}
 						else {
 				
 						const userState = await service.etatByUser(missionId, userId);
@@ -1682,17 +1682,17 @@ MissionController.route('/:id([a-z0-9]{24})/change-to-visible/')
 			console.log('status visible', statusVisible);
 			const titre = await service.findTitreByid(new Types.ObjectId(id));
 			if (statusVisible === true) {
-				res.status(200).json('Mission :  ' + titre + ' est déjà visible');
+				return res.status(200).json('Mission :  ' + titre + ' est déjà visible');
 			} else {
 				if (mission) {
 					mission.visible = true;
 					await mission.save();
-				res.status(201).json('Mission :  ' + titre + ' est désormais visible');
+					return res.status(201).json('Mission :  ' + titre + ' est désormais visible');
 				}
 			} 	
 		} catch (error) {
 			console.error(error);
-			res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
 		}
 	});
 // ROUTE CHANGE TO NOT VISIBLE
@@ -1709,17 +1709,17 @@ MissionController.route('/:id([a-z0-9]{24})/change-to-visible/')
 			const titre = await service.findTitreByid(new Types.ObjectId(id));
 			console.log('statut visible', statusVisible);
 			if (!statusVisible) {
-				res.status(200).json('Mission :  ' + titre + ' est déjà non visible');
+				return res.status(200).json('Mission :  ' + titre + ' est déjà non visible');
 			} else {
 				if (mission) {
 					mission.visible = false;
 					await mission.save();
-					res.status(201).json('Mission :  ' + titre + ' est désormais non visible');
+					return res.status(201).json('Mission :  ' + titre + ' est désormais non visible');
 				}
 			} 	
 		} catch (error) {
 			console.error(error);
-			res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
 		}
 	});
 // ROUTE STATUT ACTIVE
@@ -1752,17 +1752,17 @@ MissionController.route('/:id([a-z0-9]{24})/change-to-active/')
 			console.log('status visible', statusActive);
 			const titre = await service.findTitreByid(new Types.ObjectId(id));
 			if (statusActive === true) {
-				res.status(200).json('Mission :  ' + titre + ' est déjà active');
+				return res.status(200).json('Mission :  ' + titre + ' est déjà active');
 			} else {
 				if (mission) {
 					mission.active = true;
 					await mission.save();
-				res.status(201).json('Mission :  ' + titre + ' est désormais active');
+					return res.status(201).json('Mission :  ' + titre + ' est désormais active');
 				}
 			} 	
 		} catch (error) {
 			console.error(error);
-			res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
 		}
 	});
 // ROUTE CHANGE TO NOT ACTIVE
@@ -1779,17 +1779,17 @@ MissionController.route('/:id([a-z0-9]{24})/change-to-not-active/')
 			const titre = await service.findTitreByid(new Types.ObjectId(id));
 			console.log('statut visible', statusActive);
 			if (!statusActive) {
-				res.status(200).json('Mission :  ' + titre + ' est déjà non active');
+				return res.status(200).json('Mission :  ' + titre + ' est déjà non active');
 			} else {
 				if (mission) {
 					mission.active = false;
 					await mission.save();
-					res.status(201).json('Mission :  ' + titre + ' est désormais non active');
+					return res.status(201).json('Mission :  ' + titre + ' est désormais non active');
 				}
 			} 	
 		} catch (error) {
 			console.error(error);
-			res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
 		}
 	});
 // ROUTE STATUT GUIDEE
@@ -1823,17 +1823,17 @@ MissionController.route('/:id([a-z0-9]{24})/change-to-guidee/')
 			console.log('status visible', statusGuidee);
 			const titre = await service.findTitreByid(new Types.ObjectId(id));
 			if (statusGuidee === true) {
-				res.status(200).json('Mission :  ' + titre + ' est déjà guidée');
+				return res.status(200).json('Mission :  ' + titre + ' est déjà guidée');
 			} else {
 				if (mission) {
 					mission.guidee = true;
 					await mission.save();
-				res.status(201).json('Mission :  ' + titre + ' est désormais guidée');
+					return res.status(201).json('Mission :  ' + titre + ' est désormais guidée');
 				}
 			} 	
 		} catch (error) {
 			console.error(error);
-			res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
 		}
 	});
 // ROUTE CHANGE TO NOT GUIDEE
@@ -1850,17 +1850,17 @@ MissionController.route('/:id([a-z0-9]{24})/change-to-not-guidee/')
 			const titre = await service.findTitreByid(new Types.ObjectId(id));
 			console.log('statut visible', statusActive);
 			if (!statusActive) {
-				res.status(200).json('Mission :  ' + titre + ' est déjà non guidée');
+				return res.status(200).json('Mission :  ' + titre + ' est déjà non guidée');
 			} else {
 				if (mission) {
 					mission.guidee = false;
 					await mission.save();
-					res.status(201).json('Mission :  ' + titre + ' est désormais non guidée');
+					return res.status(201).json('Mission :  ' + titre + ' est désormais non guidée');
 				}
 			} 	
 		} catch (error) {
 			console.error(error);
-			res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
 		}
 	});
 
@@ -1878,13 +1878,13 @@ MissionController.route('/:id([a-z0-9]{24})/activitesID')
             const activityList = mission?.activites;
 
             if (mission) {
-                res.status(200).json(activityList);
+				return res.status(200).json(activityList);
             } else {
-                res.status(404).json('Mission non trouvée.');
+                return res.status(404).json('Mission non trouvée.');
             }
         } catch (error) {
             console.error(error);
-            res.status(500).json('Internal Server Error');
+            return res.status(500).json('Internal Server Error');
         }
     });
 
@@ -1907,10 +1907,10 @@ MissionController.route('/:id([a-z0-9]{24})/activites')
                 activityIds.map(activityId => activityService.find(new Types.ObjectId(activityId)))
             );
 
-            res.status(200).json(activities);
+            return res.status(200).json(activities);
         } catch (error) {
-            console.error('Error fetching mission activities:', error);
-            res.status(500).json({ error: 'Internal Server Error' });
+            console.error('Erreur lors de la récupération des activités de la mission.', error);
+            return res.status(500).json({ error: 'Internal Server Error' });
         }
     });
 
@@ -1936,10 +1936,10 @@ MissionController.route('/:id([a-z0-9]{24})/activitesVisibles')
 
             // Filter activities to only include those with visible === true
             const visibleActivities = activities.filter(activity => activity.visible === true);
-            res.status(200).json(visibleActivities);
+            return res.status(200).json(visibleActivities);
         } catch (error) {
             console.error('Error fetching mission visible activities:', error);
-            res.status(500).json({ error: 'Internal Server Error' });
+            return res.status(500).json({ error: 'Internal Server Error' });
         }
     });
 
@@ -1965,10 +1965,10 @@ MissionController.route('/:id([a-z0-9]{24})/activitesActives')
 
 			// Filter activities to only include those with visible === true
 			const activeActivities = activities.filter(activity => activity.active === true);
-			res.status(200).json(activeActivities);
+			return res.status(200).json(activeActivities);
 		} catch (error) {
 			console.error('Error fetching mission visible activities:', error);
-			res.status(500).json({ error: 'Internal Server Error' });
+			return res.status(500).json({ error: 'Internal Server Error' });
 		}
 	});
 	
@@ -1994,10 +1994,10 @@ MissionController.route('/:id([a-z0-9]{24})/activitesGuidees')
 	
 			// Filter activities to only include those with visible === true
 			const guideeActivities = activities.filter(activity => activity?.guidee === true);
-			res.status(200).json(guideeActivities);
+			return res.status(200).json(guideeActivities);
 		} catch (error) {
 			console.error('Error fetching mission visible activities:', error);
-			res.status(500).json({ error: 'Internal Server Error' });
+			return res.status(500).json({ error: 'Internal Server Error' });
 		}
 	});
 
@@ -2018,10 +2018,10 @@ MissionController.route('/:id([a-z0-9]{24})/visuel')
 				console.log('visue', visuel);
 				if (visuel === null) {
 					console.log('ca opass ici');
-					res.sendFile(join(config.ATTACHEMENT_SRC, 'mission-visuel-default.jpg')); 
+					return res.sendFile(join(config.ATTACHEMENT_SRC, 'mission-visuel-default.jpg')); 
 				}
 				if (visuel) {
-					res.sendFile(join(config.ATTACHEMENT_SRC, 'VISUEL-MISSIONS', 'images' , visuel.name));	
+					return res.sendFile(join(config.ATTACHEMENT_SRC, 'VISUEL-MISSIONS', 'images' , visuel.name));	
 				}
 
 			}
@@ -2127,21 +2127,21 @@ MissionController.route('/:missionId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/')
 		const mission = await service.find(missionId);
 		console.log('userid',user);
 		if (user === null)
-			{res.status(404).send('Le participant est introuvable');}
+			{return res.status(404).send('Le participant est introuvable');}
 		else {
 			if (mission === null)
-				{res.status(404).send('La mission est introuvable');}
+				{return res.status(404).send('La mission est introuvable');}
 			else {
 		try {
 			const etatByUser = await service.etatByUser(missionId, userId);
 			if (Object.values(EEtat).includes(etatByUser)) {
-				res.status(200).send(etatByUser);
+				return res.status(200).send(etatByUser);
 			} else {
-				res.status(200).send(etatByUser);
+				return res.status(200).send(etatByUser);
 			}
 		} catch (error) {
 			console.error(error);
-			res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
 		}
 	}}
 	});
@@ -2156,27 +2156,27 @@ MissionController.route('/:missionId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24}
 		const mission = await service.find(missionId);
 		console.log('userid',user);
 		if (user === null)
-			{res.status(404).send('Le participant est introuvable');}
+			{return res.status(404).send('Le participant est introuvable');}
 		else {
 			if (mission === null)
-				{res.status(404).send('La mission est introuvable');}
+				{return res.status(404).send('La mission est introuvable');}
 			else {
 		// S assurer que le userId n est pas déjà dans les etats
 		const isInEtat = await service.etatByUser(missionId, userId);
 		if (isInEtat === 'NON_DEMARREE' || isInEtat === 'EN_COURS' || isInEtat === 'TERMINEE') {
 			console.log('User déjà in array', isInEtat );
-			res.status(500).send(`Ce participant est déjà inscrit à cette mission. État d'avancement: ${isInEtat}`);
+			return res.status(500).send(`Ce participant est déjà inscrit à cette mission. État d'avancement: ${isInEtat}`);
 
 		} else {
 			const actvityEtatNonDem = await service.inscriptionMission(missionId, userId);
 			if (actvityEtatNonDem)
-			{res.status(200).send(actvityEtatNonDem);}
+			{return res.status(200).send(actvityEtatNonDem);}
 		}
 		}
 	}
 	} catch (error) {
 		console.error(error);
-		res.status(500).send('Internal Server Error');
+		return res.status(500).send('Internal Server Error');
 	}
 });
 	// ROUTE INSCRIRE  POUR TOUS LES PARTICIPANTS D UNE SALLE A UNE MISSION ======= INSCRIPTION SALLE ENTIERE ==============
@@ -2213,12 +2213,12 @@ MissionController.route('/:missionId([a-z0-9]{24})/inscrireRoom/')
                 }
 				
             }
-			res.status(200).json(results);
+			return res.status(200).json(results);
 		}
         
         } catch (error) {
             console.error(error);
-            res.status(500).send('Internal Server Error');
+            return res.status(500).send('Internal Server Error');
         }
     });
 
@@ -2231,35 +2231,35 @@ MissionController.route('/:missionId([a-z0-9]{24})/start/:userId([a-z0-9]{24})/'
 		const userId = new Types.ObjectId(req.params.userId);
 		const user = await userService.find(userId);
 		const mission = await service.find(missionId);
-		console.log('userid',user);
+
 		if (user === null)
-				{res.status(404).send('Le participant est introuvable');}
+				{return res.status(404).send('Le participant est introuvable');}
 			else {
 				if (mission === null)
-					{res.status(404).send('La mission est introuvable');}
+					{return res.status(404).send('La mission est introuvable');}
 				else {
 				// S assurer que le userId n est pas déjà dans les etats
 				const isInEtat = await service.etatByUser(missionId, userId);
 				console.log('Isinetat',isInEtat);
 				if (isInEtat === 'EN_COURS') {
 					console.log('User déjà in array', isInEtat );
-					res.status(500).send('Mission déjà en cours pour ce participant');
+					return res.status(500).send('Mission déjà en cours pour ce participant');
 
 				} else  if (isInEtat === 'TERMINEE'){
 					console.log('User déjà in array', isInEtat );
-					res.status(500).send('Mission déjà terminée pour ce participant');
+					return res.status(500).send('Mission déjà terminée pour ce participant');
 
 				} else  if (isInEtat === 'NON_DEMARREE') {
 					const missionEnCoursPourUser = await service.startMission(missionId, userId);
 					if (missionEnCoursPourUser)
-					{res.status(200).send(missionEnCoursPourUser);}
+					{return res.status(200).send(missionEnCoursPourUser);}
 				}
-				else res.status(500).send('Le participant n a jamais été inscrit à la mission');
+				else return res.status(500).send('Le participant n a jamais été inscrit à la mission');
 			}
 		}
 	} catch (error) {
 		console.error(error);
-		res.status(500).send('Internal Server Error');
+		return res.status(500).send('Internal Server Error');
 	}
 });
 
@@ -2274,33 +2274,33 @@ MissionController.route('/:missionId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/')
 			const mission = await service.find(missionId);
 			console.log('userid',user);
 			if (user === null)
-				{res.status(404).send('Le participant est introuvable');}
+				{return res.status(404).send('Le participant est introuvable');}
 			else {
 				if (mission === null)
-					{res.status(404).send('La mission est introuvable');}
+					{return res.status(404).send('La mission est introuvable');}
 				else {
 				// S assurer que le userId n est pas déjà dans les etats
 				const isInEtat = await service.etatByUser(missionId, userId);
 				console.log('Isinetat',isInEtat);
 				if (isInEtat === 'NON_DEMARREE') {
 					console.log('Le participant n a pas commencé la mission.');
-					res.status(500).send('Mission jamais commencée pour ce participant');
+					return res.status(500).send('Mission jamais commencée pour ce participant');
 
 				} else  if (isInEtat === 'TERMINEE'){
 					console.log('User déjà in array', isInEtat );
-					res.status(500).send('Mission déjà terminée pour ce participant');
+					return res.status(500).send('Mission déjà terminée pour ce participant');
 
 				} else  if (isInEtat === 'EN_COURS') {
 					const missionTermineePourUser = await service.endMission(missionId, userId);
 					if (missionTermineePourUser)
-					{res.status(200).send(missionTermineePourUser);}
+					{return res.status(200).send(missionTermineePourUser);}
 				}
-				else res.status(500).send('Le participant n a jamais été inscrit à la mission');
+				else return res.status(500).send('Le participant n a jamais été inscrit à la mission');
 				}
 			}
 			} catch (error) {
 			console.error(error);
-			res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
 		}
 	});
 

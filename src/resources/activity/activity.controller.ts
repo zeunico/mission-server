@@ -1604,7 +1604,7 @@ ActivityController.route('/consulter')
 		try {
 			const activityConsulter = await ActivityConsulterService.createConsulter(req.body);
 		
-			res.status(201).send(activityConsulter);
+			return res.status(201).send(activityConsulter);
 		} catch (err) {
 			next(err);
 		}
@@ -1613,7 +1613,7 @@ ActivityController.route('/consulter')
 	.get(async (req, res, next) => {
 		try {
 			const activityConsulterList = await ActivityConsulterService.findAll();
-			res.status(200).send(activityConsulterList);
+			return res.status(200).send(activityConsulterList);
 		} catch (err) {
 			next(err);
 		}
@@ -1624,15 +1624,15 @@ ActivityController.route('/produire')
 		try {
 			const activityProduire = await ActivityProduireService.createProduire(req.body);
 		
-			res.status(201).send(activityProduire);
+			return res.status(201).send(activityProduire);
 		} catch (error) {
-			res.status(400).send(error);
+			return res.status(400).send(error);
 		}
 	})
 	.get(async (req, res, next) => {
 		try {
 			const activityProduireList = await ActivityProduireService.findAll();
-			res.json(activityProduireList);
+			return res.json(activityProduireList);
 		} catch (err) {
 			next(err);
 		}
@@ -1689,10 +1689,10 @@ ActivityController.route('/:idActivity([a-z0-9]{24})/:idUser([a-z0-9]{24})')
 					const user = await userService.find(userId);	
 					// Fonction pour obtenir l'état de l'utilisateur
 					if (user === null)
-						{res.status(404).send('Le participant est introuvable');}
+						{return res.status(404).send('Le participant est introuvable');}
 					else {
 						if (activity === null)
-							{res.status(404).send('L activité est introuvable');}
+							{return res.status(404).send('L activité est introuvable');}
 						else {
 				
 						const userState = await service.etatByUser(activityId, userId);
@@ -1735,10 +1735,10 @@ ActivityController.route('/listetat/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24
 					const user = await userService.find(userId);	
 					// Fonction pour obtenir l'état de l'utilisateur
 					if (user === null)
-						{res.status(404).send('Le participant est introuvable');}
+						{return res.status(404).send('Le participant est introuvable');}
 					else {
 						if (mission === null)
-							{res.status(404).send('La mission est introuvable');}
+							{return res.status(404).send('La mission est introuvable');}
 						else {
 
 							// On retrouve les activités de la mission
@@ -1965,17 +1965,17 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-visible')
             console.log('status visible', statusVisible);
             const titre = await service.findTitreById(new Types.ObjectId(id));
             if (statusVisible === true) {
-                res.status(200).json('Activité :  ' + titre + ' est déjà visible');
+                return res.status(200).json('Activité :  ' + titre + ' est déjà visible');
             } else {
                 if (activity) {
                     activity.visible = true;
                     await activity.save();
-                    res.status(201).json('Activité :  ' + titre + ' est désormais visible');
+                    return res.status(201).json('Activité :  ' + titre + ' est désormais visible');
                 }
             }
         } catch (error) {
             console.error(error);
-            res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
         }
     });
 
@@ -1996,17 +1996,17 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-not-visible')
             const titre = await service.findTitreById(new Types.ObjectId(id));
             console.log('statut visible', statusVisible);
             if (!statusVisible) {
-                res.status(200).json('Activité :  ' + titre + ' est déjà non visible');
+                return res.status(200).json('Activité :  ' + titre + ' est déjà non visible');
             } else {
 			if (activity) {
 				activity.visible = false;
 				await activity.save();
-				res.status(201).json('Activité :  ' + titre + ' est désormais non visible');
+				return res.status(201).json('Activité :  ' + titre + ' est désormais non visible');
 			}
             }
         } catch (error) {
             console.error(error);
-            res.status(500).send('Internal Server Error');
+            return res.status(500).send('Internal Server Error');
         }
     });
 // ROUTE STATUT ACTIVE
@@ -2041,18 +2041,18 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-active')
             const titre = await service.findTitreById(new Types.ObjectId(id));
             console.log('statut visible', statusActive);
             if (statusActive === true) {
-                res.status(200).json('Activité :  ' + titre + ' est déjà active');
+                return res.status(200).json('Activité :  ' + titre + ' est déjà active');
             } else {           
                 if (activity) {
                     activity.visible = true;
                     await activity.save();
-                    res.status(201).json('Activité :  ' + titre + ' est désormais active');
+                    return res.status(201).json('Activité :  ' + titre + ' est désormais active');
                 }
                 
             }
         } catch (error) {
             console.error(error);
-            res.status(500).send('Internal Server Error');
+            return res.status(500).send('Internal Server Error');
         }
     });
 // ROUTE CHANGE TO NOT ACTIVE
@@ -2072,17 +2072,17 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-not-active')
             const titre = await service.findTitreById(new Types.ObjectId(id));
             console.log('statut visible', statusActive);
             if (!statusActive) {
-                res.status(200).json('Activité :  ' + titre + ' est déjà non active');
+                return res.status(200).json('Activité :  ' + titre + ' est déjà non active');
             } else {
                 if (activity) {
                     activity.active = false;
                     await activity.save();
-                    res.status(201).json('Activité :  ' + titre + ' est désormais non active');
+                    return res.status(201).json('Activité :  ' + titre + ' est désormais non active');
                 }
             }
         } catch (error) {
             console.error(error);
-            res.status(500).send('Internal Server Error');
+            return res.status(500).send('Internal Server Error');
         }
     });
 
@@ -2118,19 +2118,19 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-guidee')
 			const titre = await service.findTitreById(new Types.ObjectId(id));
 			console.log('statut visible', statusGuidee);
 			if (statusGuidee === true) {
-				res.status(200).json('Activité :  ' + titre + ' est déjà guidée');
+				return res.status(200).json('Activité :  ' + titre + ' est déjà guidée');
 			} else {
 				
 				if (activity) {
 					activity.guidee = true;
 					await activity.save();
-					res.status(201).json('Activité :  ' + titre + ' est désormais guidée');
+					return res.status(201).json('Activité :  ' + titre + ' est désormais guidée');
 				}
 				
 			}
 		} catch (error) {
 			console.error(error);
-			res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
 		}
 	});
 // ROUTE CHANGE TO NOT GUIDEE
@@ -2150,17 +2150,17 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-not-guidee')
 			const titre = await service.findTitreById(new Types.ObjectId(id));
 			console.log('statut guidee', statusGuidee);
 			if (!statusGuidee) {
-				res.status(200).json('Activité :  ' + titre + ' est déjà non guidée');
+				return res.status(200).json('Activité :  ' + titre + ' est déjà non guidée');
 			} else {
 				if (activity) {
 					activity.guidee = false;
 					await activity.save();
-					res.status(201).json('Activité :  ' + titre + ' est désormais non guidée');
+					return res.status(201).json('Activité :  ' + titre + ' est désormais non guidée');
 				}
 			}
 		} catch (error) {
 			console.error(error);
-			res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
 		}
 	});
 
@@ -2176,18 +2176,18 @@ ActivityController.route('/:activityId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/
 			const activity =  await service.find(activityId);
 			console.log('userid',user);
 			if (user === null)
-				{res.status(404).send('Le participant est introuvable');}
+				{return res.status(404).send('Le participant est introuvable');}
 			else {
 				{
 					if (activity === null)
-						{res.status(404).send('L activité est introuvable');}
+						{return res.status(404).send('L activité est introuvable');}
 					else {
 
 						const etatByUser = await service.etatByUser(activityId, userId);
 						if (Object.values(EEtat).includes(etatByUser)) {
-							res.status(200).send(etatByUser);
+							return res.status(200).send(etatByUser);
 						} else {
-							res.status(200).send(etatByUser);
+							return res.status(200).send(etatByUser);
 						}
 					}
 				}
@@ -2195,7 +2195,7 @@ ActivityController.route('/:activityId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/
 	
 		} catch (error) {
 			console.error(error);
-			res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
 		}
 	});
 
@@ -2209,29 +2209,29 @@ ActivityController.route('/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{2
 			const activity =  await service.find(activityId);
 			console.log('userid',user);
 			if (user === null)
-				{res.status(404).send('Le participant n existe pas en bdd');}
+				{return res.status(404).send('Le participant n existe pas en bdd');}
 			else {
 				{
 					if (activity === null)
-						{res.status(404).send('L activité est introuvable');}
+						{return res.status(404).send('L activité est introuvable');}
 					else {
 				// S assurer que le userId n est pas déjà dans les etats
 				const isInEtat = await service.etatByUser(activityId, userId);
 				if (isInEtat === 'NON_DEMARREE' || isInEtat === 'EN_COURS' || isInEtat === 'TERMINEE') {
 					console.log('User déjà in array', isInEtat );
-					res.status(500).send(`Ce participant est déjà inscrit à cette activité. État d'avancement: ${isInEtat}`);
+					return res.status(500).send(`Ce participant est déjà inscrit à cette activité. État d'avancement: ${isInEtat}`);
 
 				} else {
 					const actvityEtatNonDem = await service.inscriptionActivity(activityId, userId);
 					if (actvityEtatNonDem)
-					{res.status(200).send(actvityEtatNonDem);}
+					{return res.status(200).send(actvityEtatNonDem);}
 				}
 			}
 		}
 	}
 		} catch (error) {
 			console.error(error);
-			res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
 		}
 	});
 
@@ -2272,10 +2272,10 @@ ActivityController.route('/:activityId([a-z0-9]{24})/inscrireRoom/')
                 }
             }
 
-            res.status(200).json(results);
+            return res.status(200).json(results);
         } catch (error) {
             console.error(error);
-            res.status(500).send('Internal Server Error');
+            return res.status(500).send('Internal Server Error');
         }
     });
 // ROUTE ACTIVITE EN COURS POUR UN USER ====== START =====
@@ -2339,7 +2339,7 @@ ActivityController.route('/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/'
 			const userId = new Types.ObjectId(req.params.userId);
 			const user = await userService.find(userId);
 			if (user === null)
-				{res.status(404).send('Le participant est introuvable');}
+				{return res.status(404).send('Le participant est introuvable');}
 			else {
 				// S assurer que le userId n est pas déjà dans les etats
 				const isInEtat = await service.etatByUser(activityId, userId);
@@ -2357,21 +2357,23 @@ ActivityController.route('/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/'
 					if (actvityTermineePourUser)
 					{	// On vérifie si toutes les autres activités de la mission sont aussi terminees, si oui on termine la mission pour cet user
 						const mission =  await missionService.findMissionByActivity(activityId);
+						if (mission === null)
+							{return res.status(404).send('Mission introuvable');}
 						const activityIdList = mission?.activites;
+
 						const result =[];
+
 						for (const activityId of activityIdList)
 							{
 								const etatUser = await service.etatByUser(activityId, userId);
 								result.push(etatUser);
 							}
-							console.log('result', result);
 						const allTerminee = result.every(etat => etat === "TERMINEE");
-						console.log('allterminee', allTerminee);
+
 						if (allTerminee) {
 							console.log("Toutes les activités de la mission sont 'terminee'");
 							// On passe l etat de l user à TERMINEE pour la mission
 							await missionService.endMission(mission?._id, userId);
-
 
 						} else {
 							console.log("Des activités ne sont pas 'terminee'");

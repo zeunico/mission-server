@@ -278,7 +278,7 @@ MoodleController.route('/userDatas/:instance([a-zA-Z0-9]+.mobiteach.net)')
 			});
 		}
 
-		res.status(200).json(userDataList);
+		return res.status(200).json(userDataList);
 	});
 
 export default MoodleController;
