@@ -2606,7 +2606,7 @@ MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next
     if (error.name === "ValidationError") {
       const messages = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({
-        message: `Mission validation failed: ${messages.join(", ")}`
+        message: `Echec\xE0 la validation de la mission  : ${messages.join(", ")}`
       });
     }
     next(error);

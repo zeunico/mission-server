@@ -1490,7 +1490,7 @@ MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
                 // Extracting the validation error messages
                 const messages = Object.values(error.errors).map(err => err.message);
                 // Responding with a user-friendly message
-                return res.status(400).json({ message: `Echecà la validation de la mission  : ${messages.join(', ')}` });
+                return res.status(400).json({ message: `Echec à la validation de la mission  : ${messages.join(', ')}` });
             }
 
             next(error); // Passes the error to the next middleware (could be an error handling middleware)
