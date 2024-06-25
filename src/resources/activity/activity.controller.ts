@@ -1216,6 +1216,103 @@ const activityService = new ActivityService();
  *         schema:
  *           type: string
  *           example: EN_COURS
+ * /activity/listetat/{idMission}/{idUser}:
+ *  get:
+ *   summary: Récupère la liste des activités avec l'état de l'utilisateur pour une mission spécifique
+ *   tags: [Activity]
+ *   parameters:
+ *    - in: path
+ *      name: idMission
+ *      required: true
+ *      schema:
+ *        type: string
+ *        pattern: "^[a-z0-9]{24}$"
+ *      description: L'ID de la mission
+ *    - in: path
+ *      name: idUser
+ *      required: true
+ *      schema:
+ *       type: string
+ *       pattern: "^[a-z0-9]{24}$"
+ *      description: L'ID de l'utilisateur
+ *   responses:
+ *     200:
+ *       description: La liste des activités avec l'état de l'utilisateur
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 _id:
+ *                   type: string
+ *                   description: L'ID de l'activité
+ *                   example: "667296bc1d9a23a22c9254f8"
+ *                 titre:
+ *                   type: string
+ *                   description: Le titre de l'activité
+ *                   example: "Mercredi"
+ *                 description:
+ *                   type: string
+ *                   description: La description de l'activité
+ *                   example: "Ceci est une description"
+ *                 description_detaillee_produire:
+ *                   type: string
+ *                   description: La description détaillée pour produire
+ *                   example: "Détails de l'activité production"
+ *                 description_detaillee_consulter:
+ *                   type: string
+ *                   description: La description détaillée pour consulter
+ *                   example: "Détails de l'activité consultation"
+ *                 type:
+ *                   type: string
+ *                   description: Le type de l'activité
+ *                   example: "Cours"
+ *                 types:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   description: Les fichiers media acceptés dans les réponses de l'activité
+ *                   example: ["audio", "video"]
+ *                 etat:
+ *                   type: string
+ *                   description: L'état de l'utilisateur dans l'activité
+ *                   example: "NON_DEMARREE"
+ *                 visible:
+ *                   type: boolean
+ *                   description: Visibilité de l'activité
+ *                   example: false
+ *                 active:
+ *                   type: boolean
+ *                   description: Si l'activité est active
+ *                   example: false
+ *                 guidee:
+ *                   type: boolean
+ *                   description: Si l'activité est guidée
+ *                   example: false
+ *                 __t:
+ *                   type: string
+ *                   description: Type discriminant
+ *                   example: "Activity"
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                   description: Date de création de l'activité
+ *                   example: "2024-06-19T08:28:44.719Z"
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *                   description: Date de mise à jour de l'activité
+ *                   example: "2024-06-19T08:30:09.859Z"
+ *                 __v:
+ *                   type: integer
+ *                   description: Version du document
+ *                   example: 0
+ *     404:
+ *      description: Participant ou mission introuvable
+ *     500:
+ *      description: Erreur interne du serveur
  * /activity/{idActivity}/inscrire/{idUser}:
  *  post:
  *   summary: Inscription d'un participant à une activité, etat = non_demarree
@@ -2143,14 +2240,11 @@ ActivityController.route('/:activityId([a-z0-9]{24})/inscrireRoom/')
 	.post(async (req, res) => {
         try {
             const activityId = new Types.ObjectId(req.params.activityId);
-			console.log(' act I', activityId);
 			// Dans quelle mission est l'activité ?
 			const mission =  await missionService.findMissionByActivity(activityId);
-			console.log(' mission ob', mission);
 
 			// Dans quelle salle est la mission ?
 			const roomId = new Types.ObjectId(mission?.roomId);
-			console.log(' room', roomId);
             //  La liste des participants dans la salle
             const room = await roomService.findById(roomId);
 			if (!room) {
@@ -2193,43 +2287,43 @@ ActivityController.route('/:activityId([a-z0-9]{24})/start/:userId([a-z0-9]{24})
 			const userId = new Types.ObjectId(req.params.userId);
 			const user = await userService.find(userId);
 			const activity =  await service.find(activityId);
-			console.log('userid',user);
+
 			if (user === null)
-				{res.status(404).send('Le participant est introuvable');}
+				{return res.status(404).send('Le participant est introuvable');}
 			
 		
 			if (activity === null)
-				{res.status(404).send('L activité est introuvable');}
+				{return res.status(404).send('L activité est introuvable');}
 		
 				// S assurer que le userId n est pas déjà dans les etats
 				const isInEtat = await service.etatByUser(activityId, userId);
 				console.log('Isinetat',isInEtat);
 				if (isInEtat === 'EN_COURS') {
 					console.log('User déjà in array', isInEtat );
-					res.status(500).send('Activité déjà en cours pour ce participant');
+					return res.status(500).send('Activité déjà en cours pour ce participant');
 
 				} else  if (isInEtat === 'TERMINEE'){
-					console.log('User déjà in array', isInEtat );
-					res.status(500).send('Activité déjà terminée pour ce participant');
+					return res.status(500).send('Activité déjà terminée pour ce participant');
 
 				} else  if (isInEtat === 'NON_DEMARREE') {
 					const actvityDemPourUser = await service.startActivity(activityId, userId);
 					if (actvityDemPourUser)
 						{
-							res.status(200).send(actvityDemPourUser);
 							// On vérifie si l'état de la mission où se trouve l'activité est déjà à EN_COURS pour cet user  sinon on la passe à en cours
 							const mission =  await missionService.findMissionByActivity(activityId);
 							const userStateMission = await missionService.etatByUser(mission._id, userId);
 							if (userStateMission === 'NON_DEMARREE') {
 								await missionService.startMission(mission._id, userId);
 							}
+							return res.status(200).send(actvityDemPourUser);
+
 						}
 					}
             }
             
         catch (error) {
             console.error(error);
-            res.status(500).send('Internal Server Error');
+            return res.status(500).send('Internal Server Error');
         }
     });
 // ROUTE ACTIVITE TERMINEE POUR UN USER  ====== END  =====
@@ -2238,50 +2332,58 @@ ActivityController.route('/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/'
 	.post(async (req, res) => {
 		try {
 			const activityId = new Types.ObjectId(req.params.activityId);
+			const activity =  await service.find(activityId);		
+			if (activity === null)
+				{return res.status(404).send('L activité est introuvable');}
+		
 			const userId = new Types.ObjectId(req.params.userId);
 			const user = await userService.find(userId);
-			console.log('userid',user);
 			if (user === null)
 				{res.status(404).send('Le participant est introuvable');}
 			else {
-			// S assurer que le userId n est pas déjà dans les etats
-			const isInEtat = await service.etatByUser(activityId, userId);
-			console.log('Isinetat',isInEtat);
-			if (isInEtat === 'NON_DEMARREE') {
-				console.log('User n a pas commencé l activité', isInEtat );
-				res.status(500).send('Le participant est inscrit mais n a jamais démarré l activité, nous ne pouvons pas changer l état à terminée.');
+				// S assurer que le userId n est pas déjà dans les etats
+				const isInEtat = await service.etatByUser(activityId, userId);
+				console.log('Isinetat',isInEtat);
+				if (isInEtat === 'NON_DEMARREE') {
+					console.log('User n a pas commencé l activité', isInEtat );
+					return res.status(500).send('Le participant est inscrit mais n a jamais démarré l activité, nous ne pouvons pas changer l état à terminée.');
 
-			} else  if (isInEtat === 'TERMINEE'){
-				console.log('User déjà in array', isInEtat );
-				res.status(500).send('Activité déjà terminée pour cet User');
+				} else  if (isInEtat === 'TERMINEE'){
+					console.log('User déjà in array', isInEtat );
+					return res.status(500).send('Activité déjà terminée pour cet User');
 
-			} else  if (isInEtat === 'EN_COURS') {
-				const actvityTermineePourUser = await service.endActivity(activityId, userId);
-				if (actvityTermineePourUser)
-				{				// On vérifie si toutes les autres activités de la mission sont aussi terminee, si oui on termine la mission pour cet user
-					const mission =  await missionService.findMissionByActivity(activityId);
-					const activityIdList = mission?.activites;
-					const result =[];
-					for (const activityId of  activityIdList)
-						{
-							const etatUser = await service.etatByUser(activityId, userId);
-							result.push(etatUser);
+				} else  if (isInEtat === 'EN_COURS') {
+					const actvityTermineePourUser = await service.endActivity(activityId, userId);
+					if (actvityTermineePourUser)
+					{	// On vérifie si toutes les autres activités de la mission sont aussi terminees, si oui on termine la mission pour cet user
+						const mission =  await missionService.findMissionByActivity(activityId);
+						const activityIdList = mission?.activites;
+						const result =[];
+						for (const activityId of activityIdList)
+							{
+								const etatUser = await service.etatByUser(activityId, userId);
+								result.push(etatUser);
+							}
+							console.log('result', result);
+						const allTerminee = result.every(etat => etat === "TERMINEE");
+						console.log('allterminee', allTerminee);
+						if (allTerminee) {
+							console.log("Toutes les activités de la mission sont 'terminee'");
+							// On passe l etat de l user à TERMINEE pour la mission
+							await missionService.endMission(mission?._id, userId);
+
+
+						} else {
+							console.log("Des activités ne sont pas 'terminee'");
 						}
-						console.log('result', result);
-					const allTerminee = result.every(etat => etat === "terminee");
-					if (allTerminee) {
-						console.log("Toutes les activités de la mission sont 'terminee'");
-					} else {
-						console.log("Des activités ne sont pas 'terminee'");
-					}
 										
-					res.status(200).send(actvityTermineePourUser);}
+						return res.status(200).send(actvityTermineePourUser);}
 			}
-			else res.status(500).send('Le user na pas été inscrit à l activité, il nest pas présent dan les etats de celle ci');
+			else return res.status(500).send('Le user n a pas été inscrit à l activité, il n est pas présent dans les etats de celle ci');
 		}
 		} catch (error) {
 			console.error(error);
-			res.status(500).send('Internal Server Error');
+			return res.status(500).send('Internal Server Error');
 		}
 	});
 

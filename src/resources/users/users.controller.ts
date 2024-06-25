@@ -916,11 +916,7 @@ UsersController.route('/:idUser([a-z0-9]{24})/ismoderator/:idRoom([a-z0-9]{24})'
 			const roomId = new Types.ObjectId(req.params.idRoom);
 		
 			const user = await service.find(userId);
-			const room = await roomService.findById(roomId);
-			console.log('room', room);
-			 
-
-			console.log('user id', user);
+			const room = await roomService.findById(roomId);			 
 
             if (!user) {
                 throw new NotFoundException('Utilisateur introuvable');

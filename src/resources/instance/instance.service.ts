@@ -1,6 +1,7 @@
 import  Instance  from '~/db/instance.model';
 import { Types } from 'mongoose';
 import { IInstance } from '~~/types/instance.interface';
+import { NOMEM } from 'dns';
 
 export class InstanceService {
 
@@ -70,17 +71,17 @@ export class InstanceService {
 			// Add the room ID to the instance's rooms array if it's not already there
 			if (!instance.rooms.includes(roomId)) {
 			  instance.rooms.push(roomId);
-			  console.log('Room ID added to instance rooms array:', roomId);
+			  console.log('Room ID ',roomId, ' ajouté à l array rooms de l instance', instanceName);
 			  
 			  // Update the instance with the new rooms array
 			  const updatedInstance = await InstanceService.update({ rooms: instance.rooms }, instance._id);
 			  console.log('Updated instance:', updatedInstance);
 			  return updatedInstance;
 			} else {
-			  console.log('Room ID already exists in the instance rooms array:', roomId);
+			  console.log('Room ID existe déjà dans l array rooms des instnecs:', roomId);
 			}
 		  } else {
-			console.log('No instance found with the given name:', instanceName);
+			console.log('Pas d instance trouvee avec ce NOMEM.', instanceName);
 		  }
 		} catch (error) {
 		  console.error('Error updating instance:', error);

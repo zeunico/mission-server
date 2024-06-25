@@ -68,7 +68,6 @@ export class MissionService {
 	async findMissionByActivity(activityId: Types.ObjectId): Promise<IMission | null> {
 		try {
 			const mission = await Mission.findOne({ activites: activityId });
-			console.log('mision inserv ', mission);
 			return mission;
 		} catch (error) {
 			console.error('Erreur mission par activity ID:', error);
@@ -219,22 +218,25 @@ export class MissionService {
 	async startMission(missionId: Types.ObjectId, userId: Types.ObjectId): Promise<IMission | null> {
 		const mission = await Mission.findById(missionId);
 		if (mission) {
-			// Ajout du userId a l' array EN_COURS
+			// Ajout du userId a l' état EN_COURS
 			mission.etat.set("EN_COURS", mission.etat.get("EN_COURS").concat(userId));   
+			// Suppression du userId de l 'état NON_DEMAREE
 			mission.etat.set("NON_DEMARREE", mission.etat.get("NON_DEMARREE").filter((id: Types.ObjectId) => !id.equals(userId)));
+			
 			mission.save();
 			return mission;}
 		else return null;
 	}
 
-	// PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
+	// PASSAGE DE l'USERID DE EN_COURS A TERMINEE DANS LES ETATS DE L ACTIVITE
 	async endMission(missionId: Types.ObjectId, userId: Types.ObjectId): Promise<IMission | null> {
 		const mission = await Mission.findById(missionId);
 		if (mission) {
-			console.log('activiteyy',mission);
-			// Ajout du userId a l' array EN_COURS
+			// Ajout du userId a l' array TERMINEE
 			mission.etat.set("TERMINEE", mission.etat.get("TERMINEE").concat(userId));   
+			// Suppression du userId de l 'état En_COURS
 			mission.etat.set("EN_COURS", mission.etat.get("EN_COURS").filter((id: Types.ObjectId) => !id.equals(userId)));
+		
 			mission.save();
 			return mission;}
 		else return null;

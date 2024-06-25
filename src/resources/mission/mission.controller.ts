@@ -1467,10 +1467,8 @@ MissionController.route('/')
 MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
 	.post(async (req, res, next) => {
 		try {
-			console.log('rooomC', req.params.roomCode);
 			const roomCode = req.params.roomCode;
 			const room = await roomService.findByCode(roomCode);
-			console.log('room', room);
 			
 			if (room) {
 				const roomId = room._id;
@@ -1538,16 +1536,13 @@ MissionController.route('/:id([a-z0-9]{24})/')
 		try {
 				await service.delete(id);
 				const room = await roomService.findById(mission.roomId);
-				console.log('room', room);
 				if (room) {
 					room.mission = room.mission.filter(id => !id.equals(mission._id));
-
-
 					await room.save();
 				}
 				return res.status(200).json(mission);
 			} catch (error) {
-				console.error('Error in DELETE /missions/id:', error);
+				console.error('Erreur dans DELETE /missions/id:', error);
 				return res.status(500).json({ message: 'Erreur du serveur' });
 			}
 		}

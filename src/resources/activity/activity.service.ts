@@ -30,7 +30,6 @@ export class ActivityService {
 		const consulterActivities = await ActivityConsulter.Activity.find();
 		const produireActivities = await ActivityProduire.Activity.find();
 		const allActivities = consulterActivities.concat(produireActivities);
-		console.log('allAct in Act Service', allActivities);
 		return allActivities;
 	}
 
@@ -80,7 +79,6 @@ export class ActivityService {
 					// Check if userId exists in the array associated with the current key
 						if (value.includes(userId)) {
 							foundKey = key; 
-							console.log('key', key);	
 						}
 					}
 					if (foundKey !== null) {

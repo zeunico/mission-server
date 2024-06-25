@@ -17,7 +17,6 @@ export class UsersService {
 	// trouve un utilisateur en particulier
 	async find(_id: Types.ObjectId): Promise<IUser | null> {
 		const researchedUser = await User.findById(_id);
-		console.log('researchedser in service user find', researchedUser);
 		return researchedUser;
 	}
 	// Nouvelle méthode pour trouver les prénoms et noms des utilisateurs connectés à une salle, en excluant le modérateur

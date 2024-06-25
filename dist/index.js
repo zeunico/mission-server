@@ -977,17 +977,17 @@ var InstanceService = class {
       if (instance) {
         if (!instance.rooms.includes(roomId)) {
           instance.rooms.push(roomId);
-          console.log("Room ID added to instance rooms array:", roomId);
+          console.log("Room ID ", roomId, " ajout\xE9 \xE0 l array rooms de l instance", instanceName);
           const updatedInstance = await InstanceService.update({
             rooms: instance.rooms
           }, instance._id);
           console.log("Updated instance:", updatedInstance);
           return updatedInstance;
         } else {
-          console.log("Room ID already exists in the instance rooms array:", roomId);
+          console.log("Room ID existe d\xE9j\xE0 dans l array rooms des instnecs:", roomId);
         }
       } else {
-        console.log("No instance found with the given name:", instanceName);
+        console.log("Pas d instance trouvee avec ce NOMEM.", instanceName);
       }
     } catch (error) {
       console.error("Error updating instance:", error);
@@ -1321,8 +1321,6 @@ UsersController.route("/:idUser([a-z0-9]{24})/ismoderator/:idRoom([a-z0-9]{24})"
     const roomId = new import_mongoose10.Types.ObjectId(req.params.idRoom);
     const user = await service.find(userId);
     const room = await roomService.findById(roomId);
-    console.log("room", room);
-    console.log("user id", user);
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
     }
@@ -1547,12 +1545,9 @@ var ActivityProduireSchema = extendSchema(ActivitySchema, {
 });
 ActivitySchema.pre("save", function(next) {
   const etatKeys = Object.values(etat_enum_default);
-  console.log("etat keys", etatKeys);
   const enumKeys = Array.from(this.etat.keys());
-  console.log("enumkeys", enumKeys);
   for (const key of etatKeys) {
     if (!enumKeys.includes(key)) {
-      console.log("key", key);
       const error = new Error(`Invalid key in etat`);
       return next(error);
     }
@@ -1679,7 +1674,6 @@ var MissionService = class {
       const mission = await mission_model_default.findOne({
         activites: activityId
       });
-      console.log("mision inserv ", mission);
       return mission;
     } catch (error) {
       console.error("Erreur mission par activity ID:", error);
@@ -1818,11 +1812,10 @@ var MissionService = class {
     } else
       return null;
   }
-  // PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
+  // PASSAGE DE l'USERID DE EN_COURS A TERMINEE DANS LES ETATS DE L ACTIVITE
   async endMission(missionId, userId) {
     const mission = await mission_model_default.findById(missionId);
     if (mission) {
-      console.log("activiteyy", mission);
       mission.etat.set("TERMINEE", mission.etat.get("TERMINEE").concat(userId));
       mission.etat.set("EN_COURS", mission.etat.get("EN_COURS").filter((id) => !id.equals(userId)));
       mission.save();
@@ -1858,7 +1851,6 @@ var ActivityService = class {
     const consulterActivities = await activity_model_default.Activity.find();
     const produireActivities = await activity_model_default.Activity.find();
     const allActivities = consulterActivities.concat(produireActivities);
-    console.log("allAct in Act Service", allActivities);
     return allActivities;
   }
   // Trouve une activite par son ID
@@ -1900,7 +1892,6 @@ var ActivityService = class {
     for (const [key, value] of activity.etat.entries()) {
       if (value.includes(userId)) {
         foundKey = key;
-        console.log("key", key);
       }
     }
     if (foundKey !== null) {
@@ -2598,10 +2589,8 @@ MissionController.route("/").get(async (req, res) => {
 });
 MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next) => {
   try {
-    console.log("rooomC", req.params.roomCode);
     const roomCode = req.params.roomCode;
     const room = await roomService3.findByCode(roomCode);
-    console.log("room", room);
     if (room) {
       const roomId = room._id;
       const mission = await service2.createMissionByCode(req.body, roomId);
@@ -2654,14 +2643,13 @@ MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
   try {
     await service2.delete(id);
     const room = await roomService3.findById(mission.roomId);
-    console.log("room", room);
     if (room) {
       room.mission = room.mission.filter((id2) => !id2.equals(mission._id));
       await room.save();
     }
     return res.status(200).json(mission);
   } catch (error) {
-    console.error("Error in DELETE /missions/id:", error);
+    console.error("Erreur dans DELETE /missions/id:", error);
     return res.status(500).json({
       message: "Erreur du serveur"
     });
@@ -4026,11 +4014,8 @@ ActivityController.route("/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{2
 ActivityController.route("/:activityId([a-z0-9]{24})/inscrireRoom/").post(async (req, res) => {
   try {
     const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
-    console.log(" act I", activityId);
     const mission = await missionService2.findMissionByActivity(activityId);
-    console.log(" mission ob", mission);
     const roomId = new import_mongoose18.Types.ObjectId(mission == null ? void 0 : mission.roomId);
-    console.log(" room", roomId);
     const room = await roomService4.findById(roomId);
     if (!room) {
       return res.status(404).send("Room non trouv\xE9e.");
@@ -4072,43 +4057,44 @@ ActivityController.route("/:activityId([a-z0-9]{24})/start/:userId([a-z0-9]{24})
     const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
     const user = await userService6.find(userId);
     const activity = await service4.find(activityId);
-    console.log("userid", user);
     if (user === null) {
-      res.status(404).send("Le participant est introuvable");
+      return res.status(404).send("Le participant est introuvable");
     }
     if (activity === null) {
-      res.status(404).send("L activit\xE9 est introuvable");
+      return res.status(404).send("L activit\xE9 est introuvable");
     }
     const isInEtat = await service4.etatByUser(activityId, userId);
     console.log("Isinetat", isInEtat);
     if (isInEtat === "EN_COURS") {
       console.log("User d\xE9j\xE0 in array", isInEtat);
-      res.status(500).send("Activit\xE9 d\xE9j\xE0 en cours pour ce participant");
+      return res.status(500).send("Activit\xE9 d\xE9j\xE0 en cours pour ce participant");
     } else if (isInEtat === "TERMINEE") {
-      console.log("User d\xE9j\xE0 in array", isInEtat);
-      res.status(500).send("Activit\xE9 d\xE9j\xE0 termin\xE9e pour ce participant");
+      return res.status(500).send("Activit\xE9 d\xE9j\xE0 termin\xE9e pour ce participant");
     } else if (isInEtat === "NON_DEMARREE") {
       const actvityDemPourUser = await service4.startActivity(activityId, userId);
       if (actvityDemPourUser) {
-        res.status(200).send(actvityDemPourUser);
         const mission = await missionService2.findMissionByActivity(activityId);
         const userStateMission = await missionService2.etatByUser(mission._id, userId);
         if (userStateMission === "NON_DEMARREE") {
           await missionService2.startMission(mission._id, userId);
         }
+        return res.status(200).send(actvityDemPourUser);
       }
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/").post(async (req, res) => {
   try {
     const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
+    const activity = await service4.find(activityId);
+    if (activity === null) {
+      return res.status(404).send("L activit\xE9 est introuvable");
+    }
     const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
     const user = await userService6.find(userId);
-    console.log("userid", user);
     if (user === null) {
       res.status(404).send("Le participant est introuvable");
     } else {
@@ -4116,10 +4102,10 @@ ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/"
       console.log("Isinetat", isInEtat);
       if (isInEtat === "NON_DEMARREE") {
         console.log("User n a pas commenc\xE9 l activit\xE9", isInEtat);
-        res.status(500).send("Le participant est inscrit mais n a jamais d\xE9marr\xE9 l activit\xE9, nous ne pouvons pas changer l \xE9tat \xE0 termin\xE9e.");
+        return res.status(500).send("Le participant est inscrit mais n a jamais d\xE9marr\xE9 l activit\xE9, nous ne pouvons pas changer l \xE9tat \xE0 termin\xE9e.");
       } else if (isInEtat === "TERMINEE") {
         console.log("User d\xE9j\xE0 in array", isInEtat);
-        res.status(500).send("Activit\xE9 d\xE9j\xE0 termin\xE9e pour cet User");
+        return res.status(500).send("Activit\xE9 d\xE9j\xE0 termin\xE9e pour cet User");
       } else if (isInEtat === "EN_COURS") {
         const actvityTermineePourUser = await service4.endActivity(activityId, userId);
         if (actvityTermineePourUser) {
@@ -4131,20 +4117,22 @@ ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/"
             result.push(etatUser);
           }
           console.log("result", result);
-          const allTerminee = result.every((etat) => etat === "terminee");
+          const allTerminee = result.every((etat) => etat === "TERMINEE");
+          console.log("allterminee", allTerminee);
           if (allTerminee) {
             console.log("Toutes les activit\xE9s de la mission sont 'terminee'");
+            await missionService2.endMission(mission == null ? void 0 : mission._id, userId);
           } else {
             console.log("Des activit\xE9s ne sont pas 'terminee'");
           }
-          res.status(200).send(actvityTermineePourUser);
+          return res.status(200).send(actvityTermineePourUser);
         }
       } else
-        res.status(500).send("Le user na pas \xE9t\xE9 inscrit \xE0 l activit\xE9, il nest pas pr\xE9sent dan les etats de celle ci");
+        return res.status(500).send("Le user n a pas \xE9t\xE9 inscrit \xE0 l activit\xE9, il n est pas pr\xE9sent dans les etats de celle ci");
     }
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    return res.status(500).send("Internal Server Error");
   }
 });
 var activity_controller_default = ActivityController;
