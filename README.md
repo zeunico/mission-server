@@ -22,4 +22,3 @@ To deploy the app, you will need a to install a process manager. You can use [pm
 To install it use `npm i -g pm2` or `yarn global add pm2`.
 
 To start the app in background using pm2 use : `pm2 start dist/index.js --name mission-server`
-test

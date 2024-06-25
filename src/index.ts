@@ -24,6 +24,7 @@ import { UsersService } from './resources/users/users.service';
 import { RoomService } from './resources/room/room.service';
 
 
+
 // new MisionService pour routine inscription 
 const missionService = new MissionService();
 
@@ -116,9 +117,10 @@ const axios = require('axios');
 
 
 // Routine pour ajouter les users connectés aux missions de leur(s) room(s)
+
 const addConnectedUsersToMission = async () => {
     try {
-        //console.log('Routine inscription');
+        //console.log('Routine inscription Mission');
 		//liste all rooms
 		const rooms = await RoomService.findAll();
 		for (const room of rooms) {
@@ -126,8 +128,8 @@ const addConnectedUsersToMission = async () => {
 			const missions = await missionService.findByRoomId(room._id);
 			for (const mission of missions) {
 				const missionId = mission._id;
-				const response = await axios.post(`${config.BASE_URL}/mission/${missionId}/inscrireRoom/`);
-			//	console.log('Inscriptions :', response.data);
+
+				await axios.post(`${config.BASE_URL}/mission/${missionId}/inscrireRoom/`);
 				}
 			}
     } catch (error) {
@@ -139,6 +141,32 @@ const addConnectedUsersToMission = async () => {
 setInterval(addConnectedUsersToMission, 5000);
 
 
+// Routine pour ajouter les users connectés aux activités des missions de leur(s) room(s)
+const addConnectedUsersToActivities = async () => {
+    try {
+        //console.log('Routine inscription Activities');
+		//liste all rooms
+		const rooms = await RoomService.findAll();
+		for (const room of rooms) {
+			// list all missions in one room
+			const missions = await missionService.findByRoomId(room._id);
+			for (const mission of missions) {
+
+				const activityList = mission?.activites;
+				for (const activity of activityList)
+					{
+						const activityId = activity._id;
+						await axios.post(`${config.BASE_URL}/activity/${activityId}/inscrireRoom/`);
+					}	 
+				}
+			}
+    } catch (error) {
+        console.error('Error adding users to mission:', error);
+    }
+};
+
+// Set the frequency of the routine in milliseconds (5 seconds in this case)
+setInterval(addConnectedUsersToActivities, 5000);
 
 
 

@@ -1,10 +1,12 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema, SchemaType } from 'mongoose';
 import EEtat from '~~/types/etat.enum';
 import { IActivity, IActivityConsulter, IActivityProduire } from '~~/types/activity.interface';
 import { join } from 'path';
 import { config } from '~/config';
 import EMedia from '~~/types/media.enum';
+import { freemem } from 'os';
 const extendSchema = require('mongoose-extend-schema');
+
 
 
 const ActivitySchema = new mongoose.Schema<IActivity>({
@@ -48,7 +50,6 @@ const ActivitySchema = new mongoose.Schema<IActivity>({
 	},
 }, { timestamps: true });
 
-const Activity = mongoose.model<IActivity>('Activity', ActivitySchema);
 
 // Extend the base schema for activity_consulter
 const ActivityConsulterSchema = extendSchema(ActivitySchema,{
@@ -87,16 +88,9 @@ const ActivityProduireSchema = extendSchema(ActivitySchema,{
 ActivitySchema.pre('save', function (next) {
 	// Liste des états dau type EEtat
 	const etatKeys = Object.values(EEtat) as string[];
-	
-
-	console.log('etat keys', etatKeys);
 	const enumKeys = Array.from(this.etat.keys());
-
-
-	console.log('enumkeys', enumKeys);
 	for (const key of etatKeys) {
 		if (!enumKeys.includes(key)) {
-			console.log('key',key);
 		  const error = new Error(`Invalid key in etat`);
 		  return next(error);
 		}
@@ -105,7 +99,7 @@ ActivitySchema.pre('save', function (next) {
   });
 
 // Create models for the new schemas
-
+const Activity = mongoose.model<IActivity>('Activity', ActivitySchema);
 const ActivityConsulter = Activity.discriminator<IActivityConsulter>('ActivityConsulter', ActivityConsulterSchema);
 const ActivityProduire = Activity.discriminator<IActivityProduire>('ActivityProduire', ActivityProduireSchema);
 

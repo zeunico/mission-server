@@ -1,11 +1,16 @@
 import { Types } from 'mongoose';
 import Activity  from '~/db/activity.model';
+import Mission  from '~/db/mission.model';
 import ActivityConsulter   from '~/db/activity.model';
 import  ActivityProduire from '~/db/activity.model';
 import { IActivity } from '~~/types/activity.interface';
+import { IMission } from '~~/types/mission.interface';
 import { IActivityConsulter } from '~~/types/activity.interface';
 import { IActivityProduire } from '~~/types/activity.interface';
 import { UsersService } from '../users/users.service';
+import { MissionService } from '../mission/mission.service';
+
+const missionService = new MissionService();
 
 
 export class ActivityService {
@@ -63,6 +68,7 @@ export class ActivityService {
 	}
 
 
+
 	// GESTION DES ETATS
 	
 		// ETAT d un USER dans une activité
@@ -78,7 +84,6 @@ export class ActivityService {
 						}
 					}
 					if (foundKey !== null) {
-						console.log(`User   ${userId} dans l etat "${foundKey}" `);
 						return foundKey;
 					}
 					else return 'Cet utilisateur n a pas été inscrit à l activité';
@@ -94,6 +99,7 @@ export class ActivityService {
 			return activity;}
 		else return null;
 	}
+
 
 		// PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
 	async startActivity(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {

@@ -1,26 +1,28 @@
 {
 	"compilerOptions": {
-		"baseUrl": ".",
-		"target": "es2017",
-		"module": "nodenext",
-		"lib": ["esnext"],
-		"moduleResolution": "nodenext",
-		"esModuleInterop": true,
-		"strict": false,
-		"strictNullChecks": true,
-		"resolveJsonModule": true,
-		"skipDefaultLibCheck": true,
-		"emitDecoratorMetadata": true,
-		"experimentalDecorators": true,
-		"outDir": "./dist",
-		"strictPropertyInitialization": false,
-		"sourceMap": true,
-		"paths": {
-			"~/*": ["./src/*"],
-			"~~/*": ["./*"]
-		}
-    },
-    "ts-node": {
-		"require": ["tsconfig-paths/register"]
-    },
-}
+	  "baseUrl": ".",
+	  "target": "es2017",
+	  "module": "nodenext",
+	  "lib": ["esnext"],
+	  "moduleResolution": "nodenext",
+	  "esModuleInterop": true,
+	  "allowSyntheticDefaultImports": true,
+	  "strict": false,
+	  "strictNullChecks": true,
+	  "resolveJsonModule": true,
+	  "skipDefaultLibCheck": true,
+	  "emitDecoratorMetadata": true,
+	  "experimentalDecorators": true,
+	  "outDir": "./dist",
+	  "strictPropertyInitialization": false,
+	  "sourceMap": true,
+	  "paths": {
+		"~/*": ["./src/*"],
+		"~~/*": ["./*"]
+	  }
+	},
+	"ts-node": {
+	  "require": ["tsconfig-paths/register"]
+	}
+  }
+  

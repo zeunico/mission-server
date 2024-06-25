@@ -1,5 +1,9 @@
 import  Mission  from '~/db/mission.model';
+import  Activity  from '~/db/activity.model';
+
 import { IMission } from '~~/types/mission.interface';
+import { IActivity } from '~~/types/activity.interface';
+
 import { IMedia } from '~~/types/media.interface';
 import { Types } from 'mongoose';
 import { config } from '~/config';
@@ -57,6 +61,19 @@ export class MissionService {
 		console.log('missionId', missionId);
 		const deletedMission = await Mission.findByIdAndDelete(missionId);
 		return deletedMission;
+	}
+
+		
+	// Retrouver dans quelle mission est l'activité (par activity ID)
+	async findMissionByActivity(activityId: Types.ObjectId): Promise<IMission | null> {
+		try {
+			const mission = await Mission.findOne({ activites: activityId });
+			console.log('mision inserv ', mission);
+			return mission;
+		} catch (error) {
+			console.error('Erreur mission par activity ID:', error);
+			return null;
+		}
 	}
 
     // Statut Visible de la mission

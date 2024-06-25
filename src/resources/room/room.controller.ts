@@ -187,7 +187,7 @@ const service = new RoomService();
  *         type: string
  *         properties:
  *           type: string
- *           description: Liste des ID des particpants dans la salle 190
+ *           description: Liste des ID des participants dans la salle 190
  *     404:
  *      description: Aucune participant trouvée
  *      content:
@@ -219,7 +219,7 @@ const service = new RoomService();
  *         type: string
  *         properties:
  *           type: string
- *           description: Liste des ID des particpants dans la salle 221
+ *           description: Liste des ID des participants dans la salle 221
  *    404:
  *     description: Aucun participant trouvé
  *     content:

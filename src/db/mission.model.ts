@@ -1,6 +1,8 @@
 import mongoose, { Schema, SchemaType } from 'mongoose';
 import {IMission} from '~~/types/mission.interface';
+import { IActivity, IActivityConsulter, IActivityProduire } from '~~/types/activity.interface';
 import EEtat from '~~/types/etat.enum';
+import Activity from  '~/db/activity.model';
 
 const MissionSchema = new mongoose.Schema<IMission>({
 	'titre': {
@@ -18,7 +20,7 @@ const MissionSchema = new mongoose.Schema<IMission>({
 
 	'activites': [{
 		type: Schema.Types.ObjectId,
-		ref: 'mission',
+		ref: 'activity',
 		required: true,
 		default: []
 	}],

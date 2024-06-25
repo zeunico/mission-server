@@ -1191,7 +1191,7 @@ const activityService = new ActivityService();
  *               example: Erreur interne du serveur
  * /activity/{idActivity}/etat/{idUser}:
  *  get:
- *   summary: L'état d'avancement d'un particpant dans une activité
+ *   summary: L'état d'avancement d'un participant dans une activité
  *   tags: [Activity]
  *   parameters:
  *    - name: idActivity
@@ -1237,7 +1237,7 @@ const activityService = new ActivityService();
  *        pattern: "^[a-z0-9]{24}$"
  *   responses:
  *    201:
- *     description: Activité avec ajout du particpant à l'état NON_DEMARREE
+ *     description: Activité avec ajout du participant à l'état NON_DEMARREE
  *     content:
  *      application/json:
  *       schema:
@@ -1301,7 +1301,7 @@ const activityService = new ActivityService();
  *        pattern: "^[a-z0-9]{24}$"
  *   responses:
  *    201:
- *     description: Activité avec ajout des particpants (non déjà présent dans l'activité) à l'état NON_DEMARREE
+ *     description: Activité avec ajout des participants (non déjà présent dans l'activité) à l'état NON_DEMARREE
  *     content:
  *      application/json:
  *       schema:
@@ -1365,7 +1365,7 @@ const activityService = new ActivityService();
  *        pattern: "^[a-z0-9]{24}$"
  *   responses:
  *    201:
- *     description: Activité avec ajout du particpant à l'état EN_COURS
+ *     description: Activité avec ajout du participant à l'état EN_COURS
  *     content:
  *      application/json:
  *       schema:
@@ -1429,7 +1429,7 @@ const activityService = new ActivityService();
  *        pattern: "^[a-z0-9]{24}$"
  *   responses:
  *    201:
- *     description: Activité avec ajout du particpant à l'état TERMINEE
+ *     description: Activité avec ajout du participant à l'état TERMINEE
  *     content:
  *      application/json:
  *       schema:
@@ -1580,7 +1580,7 @@ ActivityController.route('/:id([a-z0-9]{24})/')
 
 
 
-// ROUTE MISSION Id + ETAT USER Id
+// ROUTE ACTIVITY Id + ETAT USER Id Renvoie activité avec etat utilisateur userId comme etat
 
 ActivityController.route('/:idActivity([a-z0-9]{24})/:idUser([a-z0-9]{24})')
 	.get(async (req, res, next) => {
@@ -1595,42 +1595,99 @@ ActivityController.route('/:idActivity([a-z0-9]{24})/:idUser([a-z0-9]{24})')
 						{res.status(404).send('Le participant est introuvable');}
 					else {
 						if (activity === null)
-							{res.status(404).send('La mission est introuvable');}
+							{res.status(404).send('L activité est introuvable');}
 						else {
 				
 						const userState = await service.etatByUser(activityId, userId);
-
-					
-
-				// Construire la nouvelle réponse
-				const newResponse = {
-					_id: activity._id,
-					titre: activity.titre,
-					description: activity.description,
-					description_detaillee_produire: activity.description_detaillee_produire,
-					description_detaillee_consulter: activity.description_detaillee_consulter,
-					type: activity.type,
-					types: activity.types,
-					etat: userState,  // Affecte l'état directement ici
-					visible: activity.visible,
-					active: activity.active,
-					guidee: activity.guidee,
-					__t: activity.__t,
-					createdAt : activity.createdAt,
-					updatedat: activity.updatedAt,
-					__v: activity.__v
-					
-				  };
-			
-				  return res.status(200).json(newResponse);
-			}
-		}
-
+						// Construire la nouvelle réponse
+						const newResponse = {
+							_id: activity._id,
+							titre: activity.titre,
+							description: activity.description,
+							description_detaillee_produire: activity.description_detaillee_produire,
+							description_detaillee_consulter: activity.description_detaillee_consulter,
+							type: activity.type,
+							types: activity.types,
+							etat: userState,  // Affecte l'état directement ici
+							visible: activity.visible,
+							active: activity.active,
+							guidee: activity.guidee,
+							__t: activity.__t,
+							createdAt : activity.createdAt,
+							updatedat: activity.updatedAt,
+							__v: activity.__v
+						};
+						return res.status(200).json(newResponse);
+					}
+				}
 				} catch (err) {
 					console.error('Error in get /missions/idmission/iduser:');
 					next(err);
 				}
 			});
+
+
+// ROUTE ACTIVITY Id + ETAT USER Id Renvoie liste des activités avec etat utilisateur userId comme etat
+ActivityController.route('/listetat/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})')
+	.get(async (req, res, next) => {
+		try {
+					const missionId = new Types.ObjectId(req.params.idMission);
+					const mission = await missionService.find(missionId);	
+
+					const userId = new Types.ObjectId(req.params.idUser);
+					const user = await userService.find(userId);	
+					// Fonction pour obtenir l'état de l'utilisateur
+					if (user === null)
+						{res.status(404).send('Le participant est introuvable');}
+					else {
+						if (mission === null)
+							{res.status(404).send('La mission est introuvable');}
+						else {
+
+							// On retrouve les activités de la mission
+							const activityIdList = mission.activites;
+							if (!activityIdList || activityIdList.length === 0) {
+								return res.status(404).send('Aucune mission trouvée pour cette salle');
+							}
+							// Tableau pour stocker les résultats
+							const responses = [];
+	
+							for (const activityId of activityIdList)
+							{	
+								const userState = await service.etatByUser(activityId, userId);
+								const activity = await service.findById(activityId);
+
+								// Construire la nouvelle réponse
+								const newResponse = {
+									_id: activity._id,
+									titre: activity.titre,
+									description: activity.description,
+									description_detaillee_produire: activity.description_detaillee_produire,
+									description_detaillee_consulter: activity.description_detaillee_consulter,
+									type: activity.type,
+									types: activity.types,
+									etat: userState,  // Affecte l'état directement ici
+									visible: activity.visible,
+									active: activity.active,
+									guidee: activity.guidee,
+									__t: activity.__t,
+									createdAt : activity.createdAt,
+									updatedat: activity.updatedAt,
+									__v: activity.__v
+								};
+								// Ajouter la réponse à la liste
+								responses.push(newResponse)
+							}
+							return res.status(200).json(responses);
+
+							}
+						}
+				} catch (err) {
+					console.error('Error in get /missions/idmission/iduser:');
+					next(err);
+				}
+			});
+
 
 
 
@@ -2082,20 +2139,25 @@ ActivityController.route('/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{2
 	});
 
 // ROUTE INSCRIRE  POUR TOUS LES PARTICIPANTS D UNE SALLE ======= INSCRIPTION SALLE ENTIERE ==============
-ActivityController.route('/:activityId([a-z0-9]{24})/inscrireRoom/:roomId([a-z0-9]{24})/') 
+ActivityController.route('/:activityId([a-z0-9]{24})/inscrireRoom/') 
 	.post(async (req, res) => {
         try {
             const activityId = new Types.ObjectId(req.params.activityId);
-            const roomId = new Types.ObjectId(req.params.roomId);
+			console.log(' act I', activityId);
+			// Dans quelle mission est l'activité ?
+			const mission =  await missionService.findMissionByActivity(activityId);
+			console.log(' mission ob', mission);
 
-
-            // Fetch the room object to get the list of participants
+			// Dans quelle salle est la mission ?
+			const roomId = new Types.ObjectId(mission?.roomId);
+			console.log(' room', roomId);
+            //  La liste des participants dans la salle
             const room = await roomService.findById(roomId);
-            if (!room) {
+			if (!room) {
                 return res.status(404).send('Room non trouvée.');
             }
-
             const participants = room.participants || [];
+
             const results = [];
 
             for (const userId of participants) {
@@ -2134,36 +2196,42 @@ ActivityController.route('/:activityId([a-z0-9]{24})/start/:userId([a-z0-9]{24})
 			console.log('userid',user);
 			if (user === null)
 				{res.status(404).send('Le participant est introuvable');}
-			else {
-				{
-					if (activity === null)
-						{res.status(404).send('L activité est introuvable');}
-					else {
-						// S assurer que le userId n est pas déjà dans les etats
-						const isInEtat = await service.etatByUser(activityId, userId);
-						console.log('Isinetat',isInEtat);
-						if (isInEtat === 'EN_COURS') {
-							console.log('User déjà in array', isInEtat );
-							res.status(500).send('Activité déjà en cours pour ce participant');
+			
+		
+			if (activity === null)
+				{res.status(404).send('L activité est introuvable');}
+		
+				// S assurer que le userId n est pas déjà dans les etats
+				const isInEtat = await service.etatByUser(activityId, userId);
+				console.log('Isinetat',isInEtat);
+				if (isInEtat === 'EN_COURS') {
+					console.log('User déjà in array', isInEtat );
+					res.status(500).send('Activité déjà en cours pour ce participant');
 
-						} else  if (isInEtat === 'TERMINEE'){
-							console.log('User déjà in array', isInEtat );
-							res.status(500).send('Activité déjà terminée pour ce participant');
+				} else  if (isInEtat === 'TERMINEE'){
+					console.log('User déjà in array', isInEtat );
+					res.status(500).send('Activité déjà terminée pour ce participant');
 
-						} else  if (isInEtat === 'NON_DEMARREE') {
-							const actvityEnCoursPourUser = await service.startActivity(activityId, userId);
-							if (actvityEnCoursPourUser)
-							{res.status(200).send(actvityEnCoursPourUser);}
-						}
-						else res.status(500).send('Le participant n\'a pas été inscrit à cette activité.');
+				} else  if (isInEtat === 'NON_DEMARREE') {
+					const actvityDemPourUser = await service.startActivity(activityId, userId);
+					if (actvityDemPourUser)
+						{
+							res.status(200).send(actvityDemPourUser);
+							// On vérifie si l'état de la mission où se trouve l'activité est déjà à EN_COURS pour cet user  sinon on la passe à en cours
+							const mission =  await missionService.findMissionByActivity(activityId);
+							const userStateMission = await missionService.etatByUser(mission._id, userId);
+							if (userStateMission === 'NON_DEMARREE') {
+								await missionService.startMission(mission._id, userId);
+							}
 						}
 					}
-				}
-		} catch (error) {
-			console.error(error);
-			res.status(500).send('Internal Server Error');
-		}
-	});
+            }
+            
+        catch (error) {
+            console.error(error);
+            res.status(500).send('Internal Server Error');
+        }
+    });
 // ROUTE ACTIVITE TERMINEE POUR UN USER  ====== END  =====
 // Passage de l UserId de  état["EN_COURS": {userId}] à  état["TERMINEE": {userId}] 
 ActivityController.route('/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/')
@@ -2181,7 +2249,7 @@ ActivityController.route('/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/'
 			console.log('Isinetat',isInEtat);
 			if (isInEtat === 'NON_DEMARREE') {
 				console.log('User n a pas commencé l activité', isInEtat );
-				res.status(500).send('Le participant est inscrit. Activité jamais commencé pour ce participant');
+				res.status(500).send('Le participant est inscrit mais n a jamais démarré l activité, nous ne pouvons pas changer l état à terminée.');
 
 			} else  if (isInEtat === 'TERMINEE'){
 				console.log('User déjà in array', isInEtat );
@@ -2190,7 +2258,24 @@ ActivityController.route('/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/'
 			} else  if (isInEtat === 'EN_COURS') {
 				const actvityTermineePourUser = await service.endActivity(activityId, userId);
 				if (actvityTermineePourUser)
-				{res.status(200).send(actvityTermineePourUser);}
+				{				// On vérifie si toutes les autres activités de la mission sont aussi terminee, si oui on termine la mission pour cet user
+					const mission =  await missionService.findMissionByActivity(activityId);
+					const activityIdList = mission?.activites;
+					const result =[];
+					for (const activityId of  activityIdList)
+						{
+							const etatUser = await service.etatByUser(activityId, userId);
+							result.push(etatUser);
+						}
+						console.log('result', result);
+					const allTerminee = result.every(etat => etat === "terminee");
+					if (allTerminee) {
+						console.log("Toutes les activités de la mission sont 'terminee'");
+					} else {
+						console.log("Des activités ne sont pas 'terminee'");
+					}
+										
+					res.status(200).send(actvityTermineePourUser);}
 			}
 			else res.status(500).send('Le user na pas été inscrit à l activité, il nest pas présent dan les etats de celle ci');
 		}

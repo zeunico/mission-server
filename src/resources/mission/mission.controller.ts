@@ -22,7 +22,7 @@ const MissionController: Router = Router();
 
 const service = new MissionService();
 const roomService = new RoomService();
-const missionService = new MissionService();
+
 const mediaService = new MediaService();
 const activityService = new ActivityService();
 const userService = new UsersService();
@@ -1041,7 +1041,7 @@ const userService = new UsersService();
  *        pattern: "^[a-z0-9]{24}$"
  *   responses:
  *    201:
- *     description: Mission avec ajout du particpant à l'état NON_DEMARREE
+ *     description: Mission avec ajout du participant à l'état NON_DEMARREE
  *     content:
  *      application/json:
  *       schema:
@@ -1098,7 +1098,7 @@ const userService = new UsersService();
  *        pattern: "^[a-z0-9]{24}$"
  *   responses:
  *    201:
- *     description: Mission avec ajout des particpants (non déjà présent dans l'activité) à l'état NON_DEMARREE
+ *     description: Mission avec ajout des participants (non déjà présent dans l'activité) à l'état NON_DEMARREE
  *     content:
  *      application/json:
  *       schema:
@@ -1162,7 +1162,7 @@ const userService = new UsersService();
  *        pattern: "^[a-z0-9]{24}$"
  *   responses:
  *    201:
- *     description: Mission avec ajout du particpant à l'état EN_COURS
+ *     description: Mission avec ajout du participant à l'état EN_COURS
 *     content:
  *      application/json:
  *       schema:
@@ -1475,7 +1475,7 @@ MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
 			if (room) {
 				const roomId = room._id;
 
-				const mission = await missionService.createMissionByCode(req.body, roomId);
+				const mission = await service.createMissionByCode(req.body, roomId);
 
 				room?.mission.push(mission._id);	
 				await RoomService.update(room, roomId);				
@@ -1572,29 +1572,26 @@ MissionController.route('/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})')
 						else {
 				
 						const userState = await service.etatByUser(missionId, userId);
-
+						// Construire la nouvelle réponse
+						const newResponse = {
+							_id: mission._id,
+							titre: mission.titre,
+							roomId: mission.roomId,
+							activites: mission.activites,
+							nb_activites: mission.nb_activites,
+							etat: userState,  // Affecte l'état directement ici
+							visible: mission.visible,
+							active: mission.active,
+							guidee: mission.guidee,
+							visuel: mission.visuel,
+							createdAt : mission.createdAt,
+							updatedat: mission.updatedAt,
+							__v: mission.__v
+						};
 					
-
-				// Construire la nouvelle réponse
-				const newResponse = {
-					_id: mission._id,
-					titre: mission.titre,
-					roomId: mission.roomId,
-					activites: mission.activites,
-					nb_activites: mission.nb_activites,
-					etat: userState,  // Affecte l'état directement ici
-					visible: mission.visible,
-					active: mission.active,
-					guidee: mission.guidee,
-					visuel: mission.visuel,
-					createdAt : mission.createdAt,
-					updatedat: mission.updatedAt,
-					__v: mission.__v
-				  };
-			
-				  return res.status(200).json(newResponse);
-			}
-		}
+						return res.status(200).json(newResponse);
+					}
+				}
 
 				} catch (err) {
 					console.error('Error in get /missions/idmission/iduser:');
@@ -1602,7 +1599,7 @@ MissionController.route('/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})')
 				}
 			});
 
-// LISTE DES MISSIONS (DANS UNE ROOM) FULL OBJECT BUT ETAT POUR UN USER
+// LISTE DES MISSIONS (DANS UNE ROOM) FULL OBJECT AVEC ETAT POUR UN USERID COMME ETAT
 MissionController.route('/listetat/:roomId([a-z0-9]{24})/:userId([a-z0-9]{24})')
 	.get(async (req, res, next) => {
 		try {
@@ -1626,8 +1623,6 @@ MissionController.route('/listetat/:roomId([a-z0-9]{24})/:userId([a-z0-9]{24})')
 			for (const mission of missions) {
 			
 					const userState = await service.etatByUser(mission._id, user._id);
-					console.log('userstatttts', userState);
-
 					// Construire newResponse pour chaque utilisateur
 					const newResponse = {
 						_id: mission._id,
@@ -1874,7 +1869,7 @@ MissionController.route('/:id([a-z0-9]{24})/change-to-not-guidee/')
 		}
 	});
 
-// TOUTES LES ID DES ACTIVITES DANS LA MISSION
+// TOUTES LES ACTIVITES (ID) DANS LA MISSION
 MissionController.route('/:id([a-z0-9]{24})/activitesID')
     .get(async (req, res) => {
         const id = req.params.id;
@@ -1898,7 +1893,7 @@ MissionController.route('/:id([a-z0-9]{24})/activitesID')
         }
     });
 
-// TOUTES LES ACTIVITES OBJETS DANS LA MISSION
+// TOUTES LES ACTIVITES (OBJETS) DANS LA MISSION
 MissionController.route('/:id([a-z0-9]{24})/activites')
     .get(async (req, res) => {
         const id = req.params.id;
@@ -1907,7 +1902,7 @@ MissionController.route('/:id([a-z0-9]{24})/activites')
             return res.status(400).send('Le champ ID est manquant.');
         }
         try {
-            const mission = await missionService.find(new Types.ObjectId(id));
+            const mission = await service.find(new Types.ObjectId(id));
             if (!mission) {
                 return res.status(404).json({ error: 'Mission non trouvée.' });
             }
@@ -1934,7 +1929,7 @@ MissionController.route('/:id([a-z0-9]{24})/activitesVisibles')
         }
 
         try {
-            const mission = await missionService.find(new Types.ObjectId(id));
+            const mission = await service.find(new Types.ObjectId(id));
             if (!mission) {
                 return res.status(404).json({ error: 'Mission non trouvée.' });
             }
@@ -1963,7 +1958,7 @@ MissionController.route('/:id([a-z0-9]{24})/activitesActives')
 		}
 
 		try {
-			const mission = await missionService.find(new Types.ObjectId(id));
+			const mission = await service.find(new Types.ObjectId(id));
 			if (!mission) {
 				return res.status(404).json({ error: 'Mission non trouvée.' });
 			}
@@ -1992,7 +1987,7 @@ MissionController.route('/:id([a-z0-9]{24})/activitesGuidees')
 		}
 	
 		try {
-			const mission = await missionService.find(new Types.ObjectId(id));
+			const mission = await service.find(new Types.ObjectId(id));
 			if (!mission) {
 				return res.status(404).json({ error: 'Mission non trouvée.' });
 			}
@@ -2087,7 +2082,7 @@ MissionController.route('/:idMission([a-z0-9]{24})/change-visuel')
 	.post(fileUpload.single('file'), async (req, res, next) => {
 		try {
 			const missionId = new Types.ObjectId(req.params.idMission);
-			const mission = await missionService.find(missionId);
+			const mission = await service.find(missionId);
 	
 			if (!mission) {
 				return res.status(404).send('Mission not found');
@@ -2209,12 +2204,12 @@ MissionController.route('/:missionId([a-z0-9]{24})/inscrireRoom/')
                 const userObjectId = new Types.ObjectId(userId);
                 
                 // Ensure the user is not already in the states
-                const isInEtat = await missionService.etatByUser(missionId, userObjectId);
+                const isInEtat = await service.etatByUser(missionId, userObjectId);
 				if (Object.values(EEtat).includes(isInEtat)) {
 
                     results.push({ userId, message: `Ce participant est déjà inscrit à cette mission. État d'avancement: ${isInEtat}` });
                 } else {
-                    const inscription = await missionService.inscriptionMission(missionId, userObjectId);
+                    const inscription = await service.inscriptionMission(missionId, userObjectId);
                     if (inscription) {
                         results.push({ userId, message: 'Inscription réussie' });
                     } else {
@@ -2294,11 +2289,11 @@ MissionController.route('/:missionId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/')
 				console.log('Isinetat',isInEtat);
 				if (isInEtat === 'NON_DEMARREE') {
 					console.log('Le participant n a pas commencé la mission.');
-					res.status(500).send('Mission jamais commencée pour cet User');
+					res.status(500).send('Mission jamais commencée pour ce participant');
 
 				} else  if (isInEtat === 'TERMINEE'){
 					console.log('User déjà in array', isInEtat );
-					res.status(500).send('Mission déjà terminée pour cet User');
+					res.status(500).send('Mission déjà terminée pour ce participant');
 
 				} else  if (isInEtat === 'EN_COURS') {
 					const missionTermineePourUser = await service.endMission(missionId, userId);

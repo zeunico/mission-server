@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@swc/core": "^1.5.25",
-    "axios": "^1.4.0",
+    "axios": "^1.7.2",
     "body-parser": "^1.20.2",
     "child_process": "^1.0.2",
     "cors": "^2.8.5",
@@ -37,6 +37,7 @@
     "mongoose-extend-schema": "^1.0.0",
     "multer": "1.4.5-lts.1",
     "node-cron": "^3.0.3",
+    "p-limit": "^5.0.0",
     "serve-favicon": "^2.5.0",
     "swagger-autogen": "^2.23.7",
     "swagger-jsdoc": "^6.2.8",
