@@ -15,6 +15,8 @@ export const getFileTypeByExtension = (extension: string): EMedia => {
 	case '.PNG':
 	case '.jpeg':
 	case '.JPEG':
+	case '.svg':
+	case '.SVG':
 		return EMedia.IMAGE;
 	case '.mp4':
 	case '.MP4':
@@ -47,6 +49,8 @@ export const getPathByExtension = (extension: string, id: string): string => {
 	case '.PNG':
 	case '.jpeg':
 	case '.JPEG':
+	case '.svg':
+	case '.SVG':
 		return join(config.ATTACHEMENT_SRC, id, 'images');
 	case '.mp4':
 	case '.MP4':

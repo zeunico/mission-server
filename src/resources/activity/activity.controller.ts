@@ -1353,13 +1353,13 @@ const activityService = new ActivityService();
  *          type: array
  *          description: Etats d'avancement de l'activité pour chacun des participants
  *         visible:
- *          type: array
+ *          type: boolean
  *          description: Statut de visibilité de l'activité
  *         active:
- *          type: string
+ *          type: boolean
  *          description: Statut Actif de l'activité
  *         guidée:
- *          type: string
+ *          type: boolean
  *          description: Statut Guidée de l'activité
  *         description_detaillee_consulter:
  *          type: string
@@ -1628,15 +1628,14 @@ ActivityController.route('/consulter')
             }
             next(error);
        
-            next(error);
         }
     })
-	.get(async (res, next) => {
+	.get(async (req, res, next) => {
 		try {
 			const activityConsulterList = await ActivityConsulterService.findAll();
 			return res.status(200).send(activityConsulterList);
-		} catch (err) {
-			next(err);
+		} catch (error) {
+			next(error);
 		}
 	});
 
@@ -1659,7 +1658,7 @@ ActivityController.route('/produire')
             next(error);
         }
     })
-	.get(async (res, next) => {
+	.get(async (req, res, next) => {
 		try {
 			const activityProduireList = await ActivityProduireService.findAll();
 			return res.json(activityProduireList);
@@ -2418,5 +2417,47 @@ ActivityController.route('/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/'
 			return res.status(500).send('Internal Server Error');
 		}
 	});
+
+	ActivityController.route('/ressource-consulter/:activityId([a-z0-9]{24})')
+	.get(async (req, res, next) => {
+		try {
+			const activityId = new Types.ObjectId(req.params.activityId);
+			
+			// Trouver toutes la mission 
+			const mission = await missionService.findMissionByActivity(activityId);
+			const roomId = new Types.ObjectId(mission?.roomId);
+			const room  = await roomService.findById(roomId);
+
+
+			const axios = require('axios');
+			
+				// Moderateur 
+			const userId = new Types.ObjectId(room?.moderatorId);
+
+			const response = await axios.get(`${config.BASE_URL}/datas/${activityId}/${userId}`);
+			console.log('response', response);
+
+			// Assuming you want the first item in the array
+			const data = response.data[0];
+
+			const newResponse = {
+				_id: data._id,
+				description: data.description,
+				mediaId: data.mediaId,
+				type: data.type
+			};
+
+			// Retourner la liste des réponses
+			res.json(newResponse);
+			} catch (err) {
+			console.error('Error in get /ressource-consulter/:activityId', err);
+			next(err);
+			}
+		});
+
+
+
+
+
 
 export default ActivityController;

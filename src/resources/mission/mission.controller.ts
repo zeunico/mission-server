@@ -39,7 +39,7 @@ const userService = new UsersService();
  *   tags: [Mission]
  *   responses:
  *    200:
- *     description: Liste des missions
+ *     description: Liste de toutes les missions
  *     content:
  *      application/json:
  *       schema:
@@ -49,28 +49,37 @@ const userService = new UsersService();
  *         properties:
  *          _id:
  *           type: string
- *           description: Code identifiant (ID) de la mission
+ *           description: ID de la mission
  *          titre:
  *           type: string
  *           description: Titre de la mission
+ *          description:
+ *           type: string
+ *           description: Description de la mission
+ *          activites:
+ *           type: array
+ *           description: Toutes les activités dans la mission
  *          nb_activites:
  *           type: number
- *           description: Nombre d activites dans cette mission
+ *           description: Nombre d'activités de la mission
  *          etat:
  *           type: string
- *           description: Etat de la mission (non_demarree, en_cours ou terminee)
- *          visible :
- *           type: boolean
- *           description: Visibilité de la mission
- *          active :
- *           type: boolean
- *           description: Activité de la mission
- *          guidee :
- *           type: boolean
- *           description: Mission Guidee
- *          visuel :
+ *           description: Etats d'avancement de l'activité pour chacun des participants dans la mission
+ *          visible:
+ *           type: array
+ *           description: Statut de visibilité de la mission
+ *          active:
  *           type: string
- *           description: Visuel
+ *           description: Statut Actif de la mission
+ *          guidée:
+ *           type: string
+ *           description: Statut Guidée de la mission
+ *          description_detaillee_consulter:
+ *           type: string
+ *           description: Description détaillée de la mission
+ *          type:
+ *           type: string
+ *           description: Type de fichier acceptés dans la mission
  *    404:
  *     description: Aucune mission trouvée
  *     content:
@@ -97,6 +106,9 @@ const userService = new UsersService();
  *        roomId:
  *         type: string
  *         description: ID de la salle 
+ *        activites:
+ *         type: array
+ *         description: Toutes les activités dans la mission
  *        nb_activites:
  *         type: number
  *         description: Nombre d'activités de la mission
@@ -115,6 +127,17 @@ const userService = new UsersService();
  *        visuel: 
  *         type: String,
  *         description: Visuel accompagnant la mission.
+ *        createdAt:
+ *         type: string
+ *         format: date-time
+ *         example: "2021-06-25T15:20:49.000Z"
+ *        updatedAt:
+ *         type: string
+ *         format: date-time
+ *         example: "2021-06-25T15:20:49.000Z"
+ *        __v:
+ *         type: number
+ *         example: 0
  *   responses:
  *    201:
  *     description: Mission créée
@@ -132,6 +155,9 @@ const userService = new UsersService();
  *         roomId:
  *          type: string
  *          description: ID de la salle 
+ *         activites:
+ *          type: array
+ *          description: Toutes les activités dans la mission
  *         nb_activites:
  *          type: number
  *          description: Nombre d'activités de la mission
@@ -150,6 +176,17 @@ const userService = new UsersService();
  *         visuel: 
  *          type: String,
  *          description: Visuel accompagnant la mission.
+ *         createdAt:
+ *          type: string
+ *          format: date-time
+ *          example: "2021-06-25T15:20:49.000Z"
+ *         updatedAt:
+ *          type: string
+ *          format: date-time
+ *          example: "2021-06-25T15:20:49.000Z"
+ *         __v:
+ *          type: number
+ *          example: 0
  *    500:
  *     description: Erreur serveur
  *     content:
@@ -174,6 +211,9 @@ const userService = new UsersService();
  *        titre:
  *         type: string
  *         description: Titre de la mission
+ *        activites:
+ *         type: array
+ *         description: Toutes les activités dans la mission
  *        nb_activites:
  *         type: number
  *         description: Nombre d'activités de la mission
@@ -192,6 +232,17 @@ const userService = new UsersService();
  *        visuel: 
  *         type: String,
  *         description: Visuel accompagnant la mission.
+ *        createdAt:
+ *         type: string
+ *         format: date-time
+ *         example: "2021-06-25T15:20:49.000Z"
+ *        updatedAt:
+ *         type: string
+ *         format: date-time
+ *         example: "2021-06-25T15:20:49.000Z"
+ *        __v:
+ *         type: number
+ *         example: 0
  *   responses:
  *    201:
  *     description: Mission créée
@@ -209,6 +260,9 @@ const userService = new UsersService();
  *         roomId:
  *          type: string
  *          description: ID de la salle 
+ *         activites:
+ *          type: array
+ *          description: Toutes les activités dans la mission
  *         nb_activites:
  *          type: number
  *          description: Nombre d'activités de la mission
@@ -227,6 +281,17 @@ const userService = new UsersService();
  *         visuel: 
  *          type: String,
  *          description: Visuel accompagnant la mission.
+ *         createdAt:
+ *          type: string
+ *          format: date-time
+ *          example: "2021-06-25T15:20:49.000Z"
+ *         updatedAt:
+ *          type: string
+ *          format: date-time
+ *          example: "2021-06-25T15:20:49.000Z"
+ *         __v:
+ *          type: number
+ *          example: 0
  *  get:
  *   summary: Récupérer une liste de missions par code de salle
  *   tags: [Mission]
@@ -247,15 +312,51 @@ const userService = new UsersService();
  *        items:
  *         type: object
  *         properties:
- *          _id:
- *           type: string
- *           description: L'ID de la mission
- *          name:
- *           type: string
- *           description: Le nom de la mission
- *          description:
- *           type: string
- *           description: La description de la mission
+ *         _id:
+ *          type: string
+ *          description: Code identifiant (ID) de la mission généré par la base de données
+ *          example: "60d5ec49e0d2b524789a1c4b"
+ *         titre:
+ *          type: string
+ *          description: Titre de la mission
+ *          example: "Mission de nettoyage"
+ *         activites:
+ *          type: array
+ *          description: Toutes les activités dans la mission
+ *         nb_activites:
+ *          type: number
+ *          description: Nombre d'activités de la mission
+ *          example: 2
+ *         etat:
+ *          type: string
+ *          description: Etats d'avancement de la mission pour chacun des participants
+ *          example: {"EN_COURS": [], "NON_DEMARREE": ["6228b3b4d558d809023a8db8"],"TERMINEE": []}
+ *         visible :
+ *          type: boolean
+ *          description: Visibilité de la mission
+ *          example: true 
+ *         active :
+ *          type: boolean
+ *          description: Statut actif de la mission
+ *          example: true 
+ *         guidee :
+ *          type: boolean
+ *          description: Mission Guidee
+ *         visuel :
+ *          type: string
+ *          description: Visuel
+ *          example: true 
+ *         createdAt:
+ *          type: string
+ *          format: date-time
+ *          example: "2021-06-25T15:20:49.000Z"
+ *         updatedAt:
+ *          type: string
+ *          format: date-time
+ *          example: "2021-06-25T15:20:49.000Z"
+ *         __v:
+ *          type: number
+ *          example: 0
  *     404:
  *       description: Salle non trouvée
  *       content:
@@ -297,27 +398,48 @@ const userService = new UsersService();
  *         _id:
  *          type: string
  *          description: Code identifiant (ID) de la mission généré par la base de données
+ *          example: "60d5ec49e0d2b524789a1c4b"
  *         titre:
  *          type: string
  *          description: Titre de la mission
+ *          example: "Mission de nettoyage"
+ *         activites:
+ *          type: array
+ *          description: Toutes les activités dans la mission
  *         nb_activites:
  *          type: number
- *          description: Nombre d activites dans cette mission
+ *          description: Nombre d'activités de la mission
+ *          example: 2
  *         etat:
  *          type: string
- *          description: Etat de la mission (non_demarree, en_cours ou terminee)
+ *          description: Etats d'avancement de la mission pour chacun des participants
+ *          example: {"EN_COURS": [], "NON_DEMARREE": ["6228b3b4d558d809023a8db8"],"TERMINEE": []}
  *         visible :
  *          type: boolean
  *          description: Visibilité de la mission
+ *          example: true 
  *         active :
  *          type: boolean
- *          description: Stutut actif de la mission
+ *          description: Statut actif de la mission
+ *          example: true 
  *         guidee :
  *          type: boolean
  *          description: Mission Guidee
  *         visuel :
  *          type: string
  *          description: Visuel
+ *          example: true 
+ *         createdAt:
+ *          type: string
+ *          format: date-time
+ *          example: "2021-06-25T15:20:49.000Z"
+ *         updatedAt:
+ *          type: string
+ *          format: date-time
+ *          example: "2021-06-25T15:20:49.000Z"
+ *         __v:
+ *          type: number
+ *          example: 0
  *    404:
  *     description: La mission n'a pas été trouvée en base de données.
  *     content:
@@ -351,9 +473,12 @@ const userService = new UsersService();
  *         titre:
  *          type: string
  *          description: Titre de la mission
+ *         activites:
+ *          type: array
+ *          description: Toutes les activités dans la mission
  *         nb_activites:
  *          type: number
- *          description: Nombre d activites dans cette mission
+ *          description: Nombre d'activités de la mission
  *         etat:
  *          type: string
  *          description: Etat de la mission (non_demarree, en_cours ou terminee)
@@ -369,6 +494,17 @@ const userService = new UsersService();
  *         visuel :
  *          type: string
  *          description: Visuel
+ *         createdAt:
+ *          type: string
+ *          format: date-time
+ *          example: "2021-06-25T15:20:49.000Z"
+ *         updatedAt:
+ *          type: string
+ *          format: date-time
+ *          example: "2021-06-25T15:20:49.000Z"
+ *         __v:
+ *          type: number
+ *          example: 0
  * /mission/{id}/isVisible:
  *  get:
  *   summary: Vérifie si une mission est visible.
@@ -1056,9 +1192,16 @@ const userService = new UsersService();
  *         description:
  *          type: string
  *          description: Description de la mission
+ *         activites:
+ *          type: array
+ *          description: Toutes les activités dans la mission
+ *         nb_activites:
+ *          type: number
+ *          description: Nombre d'activités de la mission
  *         etat:
  *          type: array
  *          description: Etats d'avancement de l'activité pour chacun des participants dans la mission
+ *          example: {"EN_COURS": [], "NON_DEMARREE": ["6228b3b4d558d809023a8db8"],"TERMINEE": []}
  *         visible:
  *          type: array
  *          description: Statut de visibilité de la mission
@@ -1113,9 +1256,16 @@ const userService = new UsersService();
  *         description:
  *          type: string
  *          description: Description de la mission
+ *         activites:
+ *          type: array
+ *          description: Toutes les activités dans la mission
+ *         nb_activites:
+ *          type: number
+ *          description: Nombre d'activités de la mission
  *         etat:
  *          type: array
  *          description: Etats d'avancement de la missionpour chacun des participants
+ *          example: {"EN_COURS": [], "NON_DEMARREE": ["6228b3b4d558d809023a8db8"],"TERMINEE": []}
  *         visible:
  *          type: array
  *          description: Statut de visibilité de la mission
@@ -1177,9 +1327,16 @@ const userService = new UsersService();
  *         description:
  *          type: string
  *          description: Description de la mission
+ *         activites:
+ *          type: array
+ *          description: Toutes les activités dans la mission
+ *         nb_activites:
+ *          type: number
+ *          description: Nombre d'activités de la mission
  *         etat:
  *          type: array
- *          description: Etats d'avancement de la missionpour chacun des participants
+ *          description: Etats d'avancement de la mission pour chacun des participants
+ *          example: {"EN_COURS": [], "NON_DEMARREE": ["6228b3b4d558d809023a8db8"],"TERMINEE": []}
  *         visible:
  *          type: array
  *          description: Statut de visibilité de la mission
@@ -1241,9 +1398,16 @@ const userService = new UsersService();
  *         description:
  *          type: string
  *          description: Description de la mission
+ *         activites:
+ *          type: array
+ *          description: Toutes les activités dans la mission
+ *         nb_activites:
+ *          type: number
+ *          description: Nombre d'activités de la mission
  *         etat:
  *          type: array
  *          description: Etats d'avancement de la missionpour chacun des participants
+ *          example: {"EN_COURS": [], "NON_DEMARREE": ["6228b3b4d558d809023a8db8"],"TERMINEE": []}
  *         visible:
  *          type: array
  *          description: Statut de visibilité de la mission
@@ -1385,7 +1549,7 @@ const userService = new UsersService();
  *                     type: array
  *                     items:
  *                       type: string
- *                       example: "60d5ec49e0d2b524789a1c4b"
+ *                       example: ["60d5ec49e0d2b524789a1c4b"]
  *                   nb_activites:
  *                     type: number
  *                     example: 5
@@ -1419,6 +1583,76 @@ const userService = new UsersService();
  *         description: Aucune mission trouvée pour cette salle ou utilisateur introuvable
  *       500:
  *         description: Erreur serveur
+ * /missions/byRoomId/{roomId}:
+ *   get:
+ *     summary: Récupère la liste des missions dans une salle par roomId
+ *     tags: [Mission]
+ *     parameters:
+ *       - in: path
+ *         name: roomId
+ *         schema:
+ *           type: string
+ *           pattern: "^[a-z0-9]{24}$"
+ *         required: true
+ *         description: ID de la salle
+ *     responses:
+ *       200:
+ *         description: Liste des missions trouvées
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                     example: "60d5ec49e0d2b524789a1c4b"
+ *                   titre:
+ *                     type: string
+ *                     example: "Mission Title"
+ *                   roomId:
+ *                     type: string
+ *                     example: "60d5ec49e0d2b524789a1c4b"
+ *                   activites:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                       example: ["60d5ec49e0d2b524789a1c4b","60d5ec49e0d2b524789a1c52","60d5ec49e0d2b524789a1c45"]
+ *                   nb_activites:
+ *                     type: number
+ *                     example: 5
+ *                   etat:
+ *                     type: string
+ *                     description: Etats d'avancement de la missionpour chacun des participants
+ *                     example: {"EN_COURS": [], "NON_DEMARREE": ["6228b3b4d558d809023a8db8"],"TERMINEE": []}
+ *                   visible:
+ *                     type: boolean
+ *                     example: true
+ *                   active:
+ *                     type: boolean
+ *                     example: true
+ *                   guidee:
+ *                     type: boolean
+ *                     example: true
+ *                   visuel:
+ *                     type: string
+ *                     example: "60d5ec49e0d2b524789a1c4b"
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2021-06-25T15:20:49.000Z"
+ *                   updatedAt:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2021-06-25T15:20:49.000Z"
+ *                   __v:
+ *                     type: number
+ *                     example: 0
+ *       404:
+ *         description: Aucune mission trouvée pour cette salle
+ *       500:
+ *         description: Erreur interne du serveur
  */
 // ROUTE RACINE LISTE TOUTES LES MISSIONS ET ROUTE POST PAR ROOM ID
 MissionController.route('/')

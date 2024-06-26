@@ -219,7 +219,7 @@ export class MissionService {
         }
     }
 
-	async registerParticipantsToMission(missionId: Types.ObjectId, roomId: Types.ObjectId): Promise<String[]> {
+	async inscrireParticipantsToMission(missionId: Types.ObjectId, roomId: Types.ObjectId): Promise<String[]> {
         const room = await roomService.findById(roomId);
         if (!room) {
             throw new Error('Room not found');
@@ -250,7 +250,7 @@ export class MissionService {
         const missions = await this.findByRoomId(roomId);
 
         for (const mission of missions) {
-            await this.registerParticipantsToMission(mission._id, roomId);
+            await this.inscrireParticipantsToMission(mission._id, roomId);
         }
     }
 

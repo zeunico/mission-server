@@ -115,33 +115,35 @@ app.use((req, res, next) => {
 	next();
 });
 
-
-const axios = require('axios');
-
 // LES ROUTINES D INSCRIPTION AUX MISSIONS ET ACTIVITES
+// Shutdown signal object to communicate shutdown status
+const shutdownSignal = { received: false };
 
-const addConnectedUsersToMission = async () => {
+const addConnectedUsersToMission = async (shutdownSignal) => {
     try {
         const rooms = await RoomService.findAll();
         for (const room of rooms) {
+			// Gestion de la fermeture du server 
+			if (shutdownSignal.received) return;  
+
             await missionService.processRoomMissions(room._id);
         }
     } catch (error) {
-        console.error('Error adding users to mission:', error);
+        console.error('Erreur lors de l ajout des participants aux missions :', error);
     }
 };
-// Fréquence de l exécution de la routine
-setInterval(addConnectedUsersToMission, 5000);
 
 
 // Routine pour ajouter les users connectés aux activités des missions de leur(s) room(s)
-const addConnectedUsersToActivities = async () => {
+const addConnectedUsersToActivities = async (shutdownSignal) => {
     try {
-        //console.log('Routine inscription Activities');
-		//liste all rooms
+		// Toutes les salles
 		const rooms = await RoomService.findAll();
 		for (const room of rooms) {
-			// list all missions in one room
+			// Gestion de la fermeture du server 
+			if (shutdownSignal.received) return;  
+
+			// Toutes les missions dans la salle
 			const missions = await missionService.findByRoomId(room._id);
 			for (const mission of missions) {
 
@@ -149,23 +151,25 @@ const addConnectedUsersToActivities = async () => {
 				for (const activity of activityList)
 					{
 						const activityId = activity._id;
-						await activityService.registerParticipantsToActivity(activityId, room._id);
+						await activityService.inscrireParticipantsToActivity(activityId, room._id);
 					}	 
 				}
 			}
     } catch (error) {
-        console.error('Error adding users to activities:', error);
+        console.error('Erreur lors de l ajout des participants aux activités :', error);
     }
 };
-// Fréquence de l exécution de la routine
-setInterval(addConnectedUsersToActivities, 5000);
+
+// Fréquence des inscriptions
+const missionIntervalId = setInterval(() => addConnectedUsersToMission(shutdownSignal), 5000);
+const activityIntervalId = setInterval(() => addConnectedUsersToActivities(shutdownSignal), 5000);
 
 
 // On demande à express d'écouter les requetes sur le port défini dans la config
 const start = async () => {
 	try {
 		httpServer.listen(config.API_PORT);
-		console.log('HTTP server is listening on port : ' + config.API_PORT);
+		console.log('MISSION HTTP server à l\'écoute sur : ' + config.API_PORT);
 		mongoose.connect(config.DB_URI);
 
 		httpServer.on('error', (err: Error) => {
@@ -177,6 +181,9 @@ const start = async () => {
 		});
 
 		httpServer.on('close', async () => {
+			// On clear les missionIntervalId et activityIntervalId après le SIGINT pour interrompre les routines d'inscription
+			clearInterval(missionIntervalId);
+			clearInterval(activityIntervalId);
 			await mongoose.disconnect();
 			console.log('Server closed');
 		});
@@ -200,6 +207,8 @@ const start = async () => {
 			});
 
 			httpsServer.on('close', async () => {
+				clearInterval(missionIntervalId);
+				clearInterval(activityIntervalId);
 				httpServer.close();
 			});
 		}

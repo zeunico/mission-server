@@ -66,10 +66,7 @@ export class ActivityService {
 		}	
 	}
 
-
-
-	// GESTION DES ETATS
-	
+// GESTION DES ETATS
 	// ETAT d un USER dans une activité
 	async etatByUser(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<String> {
 				let foundKey = null;
@@ -86,6 +83,7 @@ export class ActivityService {
 					}
 					else return 'Cet utilisateur n a pas été inscrit à l activité';
 	}
+
 	// AJOUT DE l'USERID A L ARRAY NON_DEMARREE DANS LES ETATS DE L ACTIVITE
     async inscriptionActivity(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {
 		const activity = await Activity.Activity.findById(activityId);
@@ -97,7 +95,6 @@ export class ActivityService {
 			return activity;}
 		else return null;
 	}
-
 
 	// PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
 	async startActivity(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {
@@ -125,18 +122,17 @@ export class ActivityService {
 		else return null;
 	}
 
-
-	// INSCRIPTION PAR ROUTINE POUR INSCRIPTION ROOM ENTIERE// Function to register participants to a specific activity
-	async registerParticipantsToActivity(activityId: Types.ObjectId, roomId: Types.ObjectId): Promise<void> {
+	// INSCRIPTION PAR ROUTINE POUR INSCRIPTION ROOM ENTIERE
+	async inscrireParticipantsToActivity(activityId: Types.ObjectId, roomId: Types.ObjectId): Promise<void> {
 		try {
-			// Retrieve mission for the activity
+			// Dans quelle mission est la ctivite
 			const mission = await missionService.findMissionByActivity(activityId);
 			if (!mission) {
 				console.log(`Mission not found for activity ${activityId}`);
 				return;
 			}
 
-			// Retrieve room participants
+			// On retrouve les participants de la salle
 			const room = await roomService.findById(roomId);
 			if (!room) {
 				console.log(`Room not found for activity ${activityId}`);
@@ -149,11 +145,13 @@ export class ActivityService {
 			for (const userId of participants) {
 				const userObjectId = new Types.ObjectId(userId);
 
-				// Ensure the user is not already in the states
+				// On s assure de l etat actuel du participant dans l array etat de l activite
 				const isInEtat = await this.etatByUser(activityId, userObjectId);
+
 				if (Object.values(EEtat).includes(isInEtat)) {
 					results.push({ userId, message: `Ce participant est déjà inscrit à cette activité. État d'avancement: ${isInEtat}` });
 				} else {
+					// Inscription du participant
 					const inscription = await this.inscriptionActivity(activityId, userObjectId);
 					if (inscription) {
 						results.push({ userId, message: 'Inscription réussie' });
@@ -162,14 +160,13 @@ export class ActivityService {
 					}
 				}
 			}
-
-			console.log(`Processed activity ${activityId} for room ${roomId}:`, results);
 		} catch (error) {
-			console.error(`Error registering participants to activity ${activityId} for room ${roomId}:`, error);
+			console.error(`Erreur à l inscription des participants à l activité ${activityId} pour la salle ${roomId}:`, error);
 			throw error; // Optionally re-throw the error to propagate it upwards
 		}
 	};
 
+// GESTION DES STATUTS
 
 	// Statut Activité de l'activité
 	async findActiveStatus(activityId: Types.ObjectId): Promise<boolean> {

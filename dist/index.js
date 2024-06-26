@@ -139,6 +139,8 @@ var getFileTypeByExtension = /* @__PURE__ */ __name((extension) => {
     case ".PNG":
     case ".jpeg":
     case ".JPEG":
+    case ".svg":
+    case ".SVG":
       return media_enum_default.IMAGE;
     case ".mp4":
     case ".MP4":
@@ -1726,7 +1728,7 @@ var MissionService = class {
       throw error;
     }
   }
-  async registerParticipantsToMission(missionId, roomId) {
+  async inscrireParticipantsToMission(missionId, roomId) {
     const room = await roomService2.findById(roomId);
     if (!room) {
       throw new Error("Room not found");
@@ -1754,7 +1756,7 @@ var MissionService = class {
   async processRoomMissions(roomId) {
     const missions = await this.findByRoomId(roomId);
     for (const mission of missions) {
-      await this.registerParticipantsToMission(mission._id, roomId);
+      await this.inscrireParticipantsToMission(mission._id, roomId);
     }
   }
   //  LE VISUEL DE LA MISSION 	
@@ -1980,8 +1982,8 @@ var ActivityService = class {
     } else
       return null;
   }
-  // INSCRIPTION PAR ROUTINE POUR INSCRIPTION ROOM ENTIERE// Function to register participants to a specific activity
-  async registerParticipantsToActivity(activityId, roomId) {
+  // INSCRIPTION PAR ROUTINE POUR INSCRIPTION ROOM ENTIERE
+  async inscrireParticipantsToActivity(activityId, roomId) {
     try {
       const mission = await missionService.findMissionByActivity(activityId);
       if (!mission) {
@@ -2018,12 +2020,12 @@ var ActivityService = class {
           }
         }
       }
-      console.log(`Processed activity ${activityId} for room ${roomId}:`, results);
     } catch (error) {
-      console.error(`Error registering participants to activity ${activityId} for room ${roomId}:`, error);
+      console.error(`Erreur \xE0 l inscription des participants \xE0 l activit\xE9 ${activityId} pour la salle ${roomId}:`, error);
       throw error;
     }
   }
+  // GESTION DES STATUTS
   // Statut Activité de l'activité
   async findActiveStatus(activityId) {
     try {
@@ -3647,14 +3649,13 @@ ActivityController.route("/consulter").post(async (req, res, next) => {
       });
     }
     next(error);
-    next(error);
   }
-}).get(async (res, next) => {
+}).get(async (req, res, next) => {
   try {
     const activityConsulterList = await ActivityConsulterService.findAll();
     return res.status(200).send(activityConsulterList);
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 });
 ActivityController.route("/produire").post(async (req, res, next) => {
@@ -3676,7 +3677,7 @@ ActivityController.route("/produire").post(async (req, res, next) => {
     }
     next(error);
   }
-}).get(async (res, next) => {
+}).get(async (req, res, next) => {
   try {
     const activityProduireList = await ActivityProduireService.findAll();
     return res.json(activityProduireList);
@@ -4326,6 +4327,29 @@ ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/"
     return res.status(500).send("Internal Server Error");
   }
 });
+ActivityController.route("/ressource-consulter/:activityId([a-z0-9]{24})").get(async (req, res, next) => {
+  try {
+    const activityId = new import_mongoose20.Types.ObjectId(req.params.activityId);
+    const mission = await missionService3.findMissionByActivity(activityId);
+    const roomId = new import_mongoose20.Types.ObjectId(mission == null ? void 0 : mission.roomId);
+    const room = await roomService6.findById(roomId);
+    const axios4 = require("axios");
+    const userId = new import_mongoose20.Types.ObjectId(room == null ? void 0 : room.moderatorId);
+    const response = await axios4.get(`${config2.BASE_URL}/datas/${activityId}/${userId}`);
+    console.log("response", response);
+    const data = response.data[0];
+    const newResponse = {
+      _id: data._id,
+      description: data.description,
+      mediaId: data.mediaId,
+      type: data.type
+    };
+    res.json(newResponse);
+  } catch (err) {
+    console.error("Error in get /ressource-consulter/:activityId", err);
+    next(err);
+  }
+});
 var activity_controller_default = ActivityController;
 
 // src/index.ts
@@ -4387,40 +4411,46 @@ app.use((req, res, next) => {
   res.charset = "utf-8";
   next();
 });
-var axios4 = require("axios");
-var addConnectedUsersToMission = /* @__PURE__ */ __name(async () => {
+var shutdownSignal = {
+  received: false
+};
+var addConnectedUsersToMission = /* @__PURE__ */ __name(async (shutdownSignal2) => {
   try {
     const rooms = await RoomService.findAll();
     for (const room of rooms) {
+      if (shutdownSignal2.received)
+        return;
       await missionService4.processRoomMissions(room._id);
     }
   } catch (error) {
-    console.error("Error adding users to mission:", error);
+    console.error("Erreur lors de l ajout des participants aux missions :", error);
   }
 }, "addConnectedUsersToMission");
-setInterval(addConnectedUsersToMission, 5e3);
-var addConnectedUsersToActivities = /* @__PURE__ */ __name(async () => {
+var addConnectedUsersToActivities = /* @__PURE__ */ __name(async (shutdownSignal2) => {
   try {
     const rooms = await RoomService.findAll();
     for (const room of rooms) {
+      if (shutdownSignal2.received)
+        return;
       const missions = await missionService4.findByRoomId(room._id);
       for (const mission of missions) {
         const activityList = mission == null ? void 0 : mission.activites;
         for (const activity2 of activityList) {
           const activityId = activity2._id;
-          await activityService4.registerParticipantsToActivity(activityId, room._id);
+          await activityService4.inscrireParticipantsToActivity(activityId, room._id);
         }
       }
     }
   } catch (error) {
-    console.error("Error adding users to activities:", error);
+    console.error("Erreur lors de l ajout des participants aux activit\xE9s :", error);
   }
 }, "addConnectedUsersToActivities");
-setInterval(addConnectedUsersToActivities, 5e3);
+var missionIntervalId = setInterval(() => addConnectedUsersToMission(shutdownSignal), 5e3);
+var activityIntervalId = setInterval(() => addConnectedUsersToActivities(shutdownSignal), 5e3);
 var start = /* @__PURE__ */ __name(async () => {
   try {
     httpServer.listen(config2.API_PORT);
-    console.log("HTTP server is listening on port : " + config2.API_PORT);
+    console.log("MISSION HTTP server \xE0 l'\xE9coute sur : " + config2.API_PORT);
     import_mongoose21.default.connect(config2.DB_URI);
     httpServer.on("error", (err) => {
       throw err;
@@ -4429,6 +4459,8 @@ var start = /* @__PURE__ */ __name(async () => {
       httpServer.close();
     });
     httpServer.on("close", async () => {
+      clearInterval(missionIntervalId);
+      clearInterval(activityIntervalId);
       await import_mongoose21.default.disconnect();
       console.log("Server closed");
     });
@@ -4447,6 +4479,8 @@ var start = /* @__PURE__ */ __name(async () => {
         httpsServer.close();
       });
       httpsServer.on("close", async () => {
+        clearInterval(missionIntervalId);
+        clearInterval(activityIntervalId);
         httpServer.close();
       });
     }
