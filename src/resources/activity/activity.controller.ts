@@ -1613,12 +1613,20 @@ ActivityController.route('/')
 ActivityController.route('/consulter')
 	.post(async (req, res, next) => {
 		try {
+			if (!req.body.description_detaillee_consulter) {
+				return res.status(400).json({ message: 'Le champ description_detaillee_consulter est requis.'      });
+
+			}
 			const activityConsulter = await ActivityConsulterService.createConsulter(req.body);
 			return res.status(201).send(activityConsulter);
         } catch (error) {
             console.error('Error in POST /activity/consulter');
                    
-                return res.status(400).json({ message: `Echec à la validation de l activité consulter: ${messages.join(', ')}` });
+			if (error.name === 'ValidationError') {                
+                const messages = Object.values(error.errors).map(err => err.message);         
+                return res.status(400).json({ message: `Echec à la validation de l activité produire: ${messages.join(', ')}` });
+            }
+            next(error);
        
             next(error);
         }
@@ -1635,6 +1643,11 @@ ActivityController.route('/consulter')
 ActivityController.route('/produire')
 	.post(async (req, res, next) => {
 		try {
+			if (!req.body.description_detaillee_produire) {
+				return res.status(400).json({
+                    message: 'Le champ description_detaillee_produire est requis.'
+                });
+			}
 			const activityProduire = await ActivityProduireService.createProduire(req.body);
 			return res.status(201).send(activityProduire);
         } catch (error) {

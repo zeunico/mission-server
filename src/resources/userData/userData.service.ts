@@ -16,6 +16,7 @@ export class UserDataService {
 	 * @returns 
 	 */
 	async createUserData(user: IUser, activityId: Types.ObjectId, mediaId: Types.ObjectId | undefined, thumbId: Types.ObjectId | undefined, datas: IUserData): Promise<IUserData> {
+
 		const newUserData: IUserData = {
 			...datas,
 			activityId: activityId,

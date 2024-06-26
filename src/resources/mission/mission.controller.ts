@@ -2205,43 +2205,44 @@ MissionController.route('/:missionId([a-z0-9]{24})/inscrireRoom/')
         try {
             const missionId = new Types.ObjectId(req.params.missionId);
 			const mission = await service.findById(missionId);
+			if (!mission) {
+				return res.status(404).send('Mission introuvable.');
+			}
 			const roomId = mission?.roomId;
 
-            if (roomId) {const room = await roomService.findById(roomId);
+            if (roomId) {
+				const room = await roomService.findById(roomId);
 				if (!room) {
 					return res.status(404).send('Room non trouvée.');
 				}
 			
-            const participants = room.participants || [];
-            const results = [];
+				const participants = room.participants || [];
+				const results = [];
 
-            for (const userId of participants) {
-                const userObjectId = new Types.ObjectId(userId);
-                
-                // S assurer que le participant n est pas déjà inscrit à la mission (ie est présent dans larray etat)
-                const isInEtat = await service.etatByUser(missionId, userObjectId);
-				if (Object.values(EEtat).includes(isInEtat)) {
-
-                    results.push({ userId, message: `Ce participant est déjà inscrit à cette mission. État d'avancement: ${isInEtat}` });
-                } else {
-                    const inscription = await service.inscriptionMission(missionId, userObjectId);
-                    if (inscription) {
-                        results.push({ userId, message: 'Inscription réussie' });
-                    } else {
-						console.log('AAA');
-                        results.push({ userId, message: 'Erreur lors de l\'inscription' });
-                    }
-                }
-				
-            }
-			return res.status(200).json(results);
-		}
-        
-        } catch (error) {
-            console.error(error);
-            return res.status(500).send('Internal Server Error');
-        }
-    });
+				for (const userId of participants) {
+						const userObjectId = new Types.ObjectId(userId);
+						
+						// S assurer que le participant n est pas déjà inscrit à la mission (ie est présent dans larray etat)
+						const isInEtat = await service.etatByUser(missionId, userObjectId);
+					if (Object.values(EEtat).includes(isInEtat)) {
+						results.push({ userId, message: `Ce participant est déjà inscrit à cette mission. État d'avancement: ${isInEtat}` });
+						} else {
+							const inscription = await service.inscriptionMission(missionId, userObjectId);
+							if (inscription) {
+								results.push({ userId, message: 'Inscription réussie' });
+							} else {
+								console.log('AAA');
+								results.push({ userId, message: 'Erreur lors de l\'inscription' });
+							}
+						}
+					}
+					return res.status(200).json(results);
+				}
+			} catch (error) {
+				console.error(error);
+				return res.status(500).send('Internal Server Error');
+			}
+		});
 
 	// ROUTE MISSION EN COURS POUR UN USER ====== START =====
 // Passage de l UserId de  état["NON_DEMARREE": {userId}] à  état["EN_COURS": {userId}] 

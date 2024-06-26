@@ -333,15 +333,20 @@ UserDataController.route('/')
 			if (!activity) {
 				throw new NotFoundException('Activité introuvable');
 			}
-			console.log('activity', activity);
+
+			 
+			let room;
+            if (!req.body.room) {
+                console.log('yep pas de romCode dans la requête');
+                const mission = await missionService.findMissionByActivity(req.body.activityId);
+                const roomId = mission.roomId;
+                room = await roomService.findCodeById(roomId);
+            } else {
+                room = req.body.room;
+            }
 
 
-			const room = await roomService.findByCode(req.body.room);
-			console.log('room', room);
-			if (!room) {
-				throw new NotFoundException('Salle introuvable');
-			}
-			
+			// Traitment du media de la requête
 			let media: IMedia | undefined = undefined;
 			console.log('ok');
 			let thumb: IThumb | undefined = undefined;	
@@ -421,7 +426,10 @@ UserDataController.route('/')
 					}
 			}
 
-			const newUserData = await service.createUserData(user, activity._id, media?._id, thumb?._id, req.body);
+			// const newUserData = await service.createUserData(user, activity._id, media?._id, thumb?._id, req.body, room);
+			const newUserData = await service.createUserData(user, activity._id, media?._id, thumb?._id, { ...req.body, room });
+
+
 			console.log('newuserdata', newUserData);
 
         	// Connexion Axios à Mobiteach

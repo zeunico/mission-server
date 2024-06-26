@@ -115,9 +115,9 @@ app.use((req, res, next) => {
 
 const axios = require('axios');
 
+// LES ROUTINES D INSCRIPTION AUX MISSIONS ET ACTIVITES
 
 // Routine pour ajouter les users connectés aux missions de leur(s) room(s)
-
 const addConnectedUsersToMission = async () => {
     try {
         //console.log('Routine inscription Mission');
@@ -137,7 +137,7 @@ const addConnectedUsersToMission = async () => {
     }
 };
 
-// fréquence de l routine en ms
+// fréquence de la routine en ms
 setInterval(addConnectedUsersToMission, 5000);
 
 
@@ -167,9 +167,6 @@ const addConnectedUsersToActivities = async () => {
 
 // Set the frequency of the routine in milliseconds (5 seconds in this case)
 setInterval(addConnectedUsersToActivities, 5000);
-
-
-
 
 
 // On demande à express d'écouter les requetes sur le port défini dans la config

@@ -2117,11 +2117,14 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
     if (!activity1) {
       throw new NotFoundException("Activit\xE9 introuvable");
     }
-    console.log("activity", activity1);
-    const room = await roomService2.findByCode(req.body.room);
-    console.log("room", room);
-    if (!room) {
-      throw new NotFoundException("Salle introuvable");
+    let room;
+    if (!req.body.room) {
+      console.log("yep pas de romCode dans la requ\xEAte");
+      const mission = await missionService2.findMissionByActivity(req.body.activityId);
+      const roomId = mission.roomId;
+      room = await roomService2.findCodeById(roomId);
+    } else {
+      room = req.body.room;
     }
     let media = void 0;
     console.log("ok");
@@ -2181,7 +2184,9 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
         });
       }
     }
-    const newUserData = await service2.createUserData(user, activity1._id, media == null ? void 0 : media._id, thumb == null ? void 0 : thumb._id, req.body);
+    const newUserData = await service2.createUserData(user, activity1._id, media == null ? void 0 : media._id, thumb == null ? void 0 : thumb._id, __spreadProps(__spreadValues({}, req.body), {
+      room
+    }));
     console.log("newuserdata", newUserData);
     import_axios3.default.post("https://" + user.instance + "/html/mobiApp/data", {
       "roomCode": newUserData.room,
@@ -2649,9 +2654,9 @@ MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next
   } catch (error) {
     console.error("Error in POST /missions/:roomCode:");
     if (error.name === "ValidationError") {
-      const messages2 = Object.values(error.errors).map((err) => err.message);
+      const messages = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({
-        message: `Echec \xE0 la validation de la mission  : ${messages2.join(", ")}`
+        message: `Echec \xE0 la validation de la mission  : ${messages.join(", ")}`
       });
     }
     next(error);
@@ -3236,6 +3241,9 @@ MissionController.route("/:missionId([a-z0-9]{24})/inscrireRoom/").post(async (r
   try {
     const missionId = new import_mongoose16.Types.ObjectId(req.params.missionId);
     const mission = await service3.findById(missionId);
+    if (!mission) {
+      return res.status(404).send("Mission introuvable.");
+    }
     const roomId = mission == null ? void 0 : mission.roomId;
     if (roomId) {
       const room = await roomService3.findById(roomId);
@@ -3534,9 +3542,9 @@ ActivityController.route("/").get(async (req, res, next) => {
   } catch (error) {
     console.error("Error in POST /activity/");
     if (error.name === "ValidationError") {
-      const messages1 = Object.values(error.errors).map((err) => err.message);
+      const messages = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({
-        message: `Echec \xE0 la validation de l activit\xE9 : ${messages1.join(", ")}`
+        message: `Echec \xE0 la validation de l activit\xE9 : ${messages.join(", ")}`
       });
     }
     next(error);
@@ -3544,13 +3552,22 @@ ActivityController.route("/").get(async (req, res, next) => {
 });
 ActivityController.route("/consulter").post(async (req, res, next) => {
   try {
+    if (!req.body.description_detaillee_consulter) {
+      return res.status(400).json({
+        message: "Le champ description_detaillee_consulter est requis."
+      });
+    }
     const activityConsulter = await ActivityConsulterService.createConsulter(req.body);
     return res.status(201).send(activityConsulter);
   } catch (error) {
     console.error("Error in POST /activity/consulter");
-    return res.status(400).json({
-      message: `Echec \xE0 la validation de l activit\xE9 consulter: ${messages.join(", ")}`
-    });
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({
+        message: `Echec \xE0 la validation de l activit\xE9 produire: ${messages.join(", ")}`
+      });
+    }
+    next(error);
     next(error);
   }
 }).get(async (res, next) => {
@@ -3563,14 +3580,19 @@ ActivityController.route("/consulter").post(async (req, res, next) => {
 });
 ActivityController.route("/produire").post(async (req, res, next) => {
   try {
+    if (!req.body.description_detaillee_produire) {
+      return res.status(400).json({
+        message: "Le champ description_detaillee_produire est requis."
+      });
+    }
     const activityProduire = await ActivityProduireService.createProduire(req.body);
     return res.status(201).send(activityProduire);
   } catch (error) {
     console.error("Error in POST /activity/produire");
     if (error.name === "ValidationError") {
-      const messages1 = Object.values(error.errors).map((err) => err.message);
+      const messages = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({
-        message: `Echec \xE0 la validation de l activit\xE9 produire: ${messages1.join(", ")}`
+        message: `Echec \xE0 la validation de l activit\xE9 produire: ${messages.join(", ")}`
       });
     }
     next(error);
