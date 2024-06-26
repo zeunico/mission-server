@@ -2289,6 +2289,7 @@ ActivityController.route('/:activityId([a-z0-9]{24})/inscrireRoom/')
                 // Ensure the user is not already in the states
                 const isInEtat = await activityService.etatByUser(activityId, userObjectId);
 				if (Object.values(EEtat).includes(isInEtat)) {
+					console.log('ouipipi');
 
                     results.push({ userId, message: `Ce participant est déjà inscrit à cette activité. État d'avancement: ${isInEtat}` });
                 } else {

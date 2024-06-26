@@ -81,7 +81,7 @@ var config2 = {
 // src/index.ts
 var import_cors = __toESM(require("cors"));
 var import_express10 = __toESM(require("express"));
-var import_mongoose19 = __toESM(require("mongoose"));
+var import_mongoose21 = __toESM(require("mongoose"));
 
 // src/resources/media/media.controller.ts
 var import_multer = __toESM(require("multer"));
@@ -830,6 +830,9 @@ var thumb_controller_default = ThumbController;
 // src/resources/users/users.controller.ts
 var import_express3 = require("express");
 var import_mongoose10 = require("mongoose");
+var import_path8 = require("path");
+var import_fs4 = __toESM(require("fs"));
+var import_promises2 = require("fs/promises");
 
 // src/db/room.model.ts
 var import_mongoose7 = __toESM(require("mongoose"));
@@ -1003,11 +1006,6 @@ var InstanceService = class {
   }
 };
 __name(InstanceService, "InstanceService");
-
-// src/resources/users/users.controller.ts
-var import_path8 = require("path");
-var import_fs4 = __toESM(require("fs"));
-var import_promises2 = require("fs/promises");
 
 // src/middlewares/token.handler.ts
 var import_crypto = __toESM(require("crypto"));
@@ -1465,7 +1463,7 @@ var users_controller_default = UsersController;
 // src/resources/userData/userData.controller.ts
 var import_multer3 = __toESM(require("multer"));
 var import_express4 = require("express");
-var import_mongoose13 = require("mongoose");
+var import_mongoose15 = require("mongoose");
 
 // src/db/mission.model.ts
 var import_mongoose11 = __toESM(require("mongoose"));
@@ -1535,7 +1533,20 @@ var Mission = import_mongoose11.default.model("Mission", MissionSchema);
 var mission_model_default = Mission;
 
 // src/resources/mission/mission.service.ts
+var import_mongoose12 = require("mongoose");
+
+// types/etat.enum.ts
+var EEtat;
+(function(EEtat2) {
+  EEtat2["NON_DEMARREE"] = "NON_DEMARREE";
+  EEtat2["EN_COURS"] = "EN_COURS";
+  EEtat2["TERMINEE"] = "TERMINEE";
+})(EEtat || (EEtat = {}));
+var etat_enum_default = EEtat;
+
+// src/resources/mission/mission.service.ts
 var mediaService3 = new MediaService();
+var roomService2 = new RoomService();
 var MissionService = class {
   // Creation d une nouvelle mission
   async createMission(datas) {
@@ -1655,30 +1666,6 @@ var MissionService = class {
       throw error;
     }
   }
-  //  LE VISUEL DE LA MISSION 	
-  async visuel(missionId) {
-    try {
-      const mission = await mission_model_default.findById(missionId);
-      if (!mission) {
-        throw new Error("Mission introuvable");
-      } else if (mission) {
-        console.log("mission", mission);
-        const mediaId = mission.visuel;
-        if (mediaId) {
-          console.log("mediaId", mediaId);
-          const media = await mediaService3.find(mediaId);
-          if (media) {
-            return media;
-          }
-        } else {
-          return null;
-        }
-      }
-    } catch (error) {
-      console.error("Erreur lors de la recherche de la mission:", error);
-      throw error;
-    }
-  }
   // ETAT d un USER dans une mission
   async etatByUser(missionId, userId) {
     let foundKey = null;
@@ -1739,6 +1726,61 @@ var MissionService = class {
       throw error;
     }
   }
+  async registerParticipantsToMission(missionId, roomId) {
+    const room = await roomService2.findById(roomId);
+    if (!room) {
+      throw new Error("Room not found");
+    }
+    const participants = room.participants || [];
+    const results = [];
+    for (const userId of participants) {
+      const userObjectId = new import_mongoose12.Types.ObjectId(userId);
+      const isInEtat = await this.etatByUser(missionId, userObjectId);
+      if (Object.values(etat_enum_default).includes(isInEtat)) {
+        results.push({
+          userId,
+          message: `Ce participant est d\xE9j\xE0 inscrit \xE0 cette mission. \xC9tat d'avancement: ${isInEtat}`
+        });
+      } else {
+        const inscription = await this.inscriptionMission(missionId, userObjectId);
+        results.push({
+          userId,
+          message: inscription ? "Inscription r\xE9ussie" : "Erreur lors de l'inscription"
+        });
+      }
+    }
+    return results;
+  }
+  async processRoomMissions(roomId) {
+    const missions = await this.findByRoomId(roomId);
+    for (const mission of missions) {
+      await this.registerParticipantsToMission(mission._id, roomId);
+    }
+  }
+  //  LE VISUEL DE LA MISSION 	
+  async visuel(missionId) {
+    try {
+      const mission = await mission_model_default.findById(missionId);
+      if (!mission) {
+        throw new Error("Mission introuvable");
+      } else if (mission) {
+        console.log("mission", mission);
+        const mediaId = mission.visuel;
+        if (mediaId) {
+          console.log("mediaId", mediaId);
+          const media = await mediaService3.find(mediaId);
+          if (media) {
+            return media;
+          }
+        } else {
+          return null;
+        }
+      }
+    } catch (error) {
+      console.error("Erreur lors de la recherche de la mission:", error);
+      throw error;
+    }
+  }
 };
 __name(MissionService, "MissionService");
 
@@ -1747,21 +1789,13 @@ var import_path10 = require("path");
 var import_fs5 = __toESM(require("fs"));
 var import_axios3 = __toESM(require("axios"));
 
-// src/db/activity.model.ts
-var import_mongoose12 = __toESM(require("mongoose"));
-
-// types/etat.enum.ts
-var EEtat;
-(function(EEtat2) {
-  EEtat2["NON_DEMARREE"] = "NON_DEMARREE";
-  EEtat2["EN_COURS"] = "EN_COURS";
-  EEtat2["TERMINEE"] = "TERMINEE";
-})(EEtat || (EEtat = {}));
-var etat_enum_default = EEtat;
+// src/resources/activity/activity.service.ts
+var import_mongoose14 = require("mongoose");
 
 // src/db/activity.model.ts
+var import_mongoose13 = __toESM(require("mongoose"));
 var extendSchema = require("mongoose-extend-schema");
-var ActivitySchema = new import_mongoose12.default.Schema({
+var ActivitySchema = new import_mongoose13.default.Schema({
   "titre": {
     type: String,
     required: true
@@ -1773,7 +1807,7 @@ var ActivitySchema = new import_mongoose12.default.Schema({
   "etat": {
     type: Map,
     of: [
-      import_mongoose12.Schema.Types.ObjectId
+      import_mongoose13.Schema.Types.ObjectId
     ],
     required: true,
     default: {
@@ -1839,7 +1873,7 @@ ActivitySchema.pre("save", function(next) {
   }
   next();
 });
-var Activity = import_mongoose12.default.model("Activity", ActivitySchema);
+var Activity = import_mongoose13.default.model("Activity", ActivitySchema);
 var ActivityConsulter = Activity.discriminator("ActivityConsulter", ActivityConsulterSchema);
 var ActivityProduire = Activity.discriminator("ActivityProduire", ActivityProduireSchema);
 var activity_model_default = {
@@ -1850,6 +1884,7 @@ var activity_model_default = {
 
 // src/resources/activity/activity.service.ts
 var missionService = new MissionService();
+var roomService3 = new RoomService();
 var ActivityService = class {
   // Création d une activité !!! HORS CLASS PRODUIRE OU CONSULTER // PAS DE CHAMP TYPE OU decription_detailleee_.....
   async create(data) {
@@ -1944,6 +1979,50 @@ var ActivityService = class {
       return activity2;
     } else
       return null;
+  }
+  // INSCRIPTION PAR ROUTINE POUR INSCRIPTION ROOM ENTIERE// Function to register participants to a specific activity
+  async registerParticipantsToActivity(activityId, roomId) {
+    try {
+      const mission = await missionService.findMissionByActivity(activityId);
+      if (!mission) {
+        console.log(`Mission not found for activity ${activityId}`);
+        return;
+      }
+      const room = await roomService3.findById(roomId);
+      if (!room) {
+        console.log(`Room not found for activity ${activityId}`);
+        return;
+      }
+      const participants = room.participants || [];
+      const results = [];
+      for (const userId of participants) {
+        const userObjectId = new import_mongoose14.Types.ObjectId(userId);
+        const isInEtat = await this.etatByUser(activityId, userObjectId);
+        if (Object.values(etat_enum_default).includes(isInEtat)) {
+          results.push({
+            userId,
+            message: `Ce participant est d\xE9j\xE0 inscrit \xE0 cette activit\xE9. \xC9tat d'avancement: ${isInEtat}`
+          });
+        } else {
+          const inscription = await this.inscriptionActivity(activityId, userObjectId);
+          if (inscription) {
+            results.push({
+              userId,
+              message: "Inscription r\xE9ussie"
+            });
+          } else {
+            results.push({
+              userId,
+              message: "Erreur lors de l'inscription"
+            });
+          }
+        }
+      }
+      console.log(`Processed activity ${activityId} for room ${roomId}:`, results);
+    } catch (error) {
+      console.error(`Error registering participants to activity ${activityId} for room ${roomId}:`, error);
+      throw error;
+    }
   }
   // Statut Activité de l'activité
   async findActiveStatus(activityId) {
@@ -2060,7 +2139,7 @@ var mediaService4 = new MediaService();
 var userService3 = new UsersService();
 var thumbService2 = new ThumbService();
 var activityService = new ActivityService();
-var roomService2 = new RoomService();
+var roomService4 = new RoomService();
 var missionService2 = new MissionService();
 var fileStorage3 = import_multer3.default.diskStorage({
   // définit le dossier de destination à partir de l'ID de l'utilisateur
@@ -2099,7 +2178,7 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
   var _a9, _b2, _c2;
   try {
     console.log("rea.body", req.body);
-    const userId = new import_mongoose13.Types.ObjectId(req.body.userId);
+    const userId = new import_mongoose15.Types.ObjectId(req.body.userId);
     if (!req.body.userId) {
       throw new NotFoundException("ID Utilisateur manquant");
     }
@@ -2108,7 +2187,7 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
     }
-    const activityId = new import_mongoose13.Types.ObjectId(req.body.activityId);
+    const activityId = new import_mongoose15.Types.ObjectId(req.body.activityId);
     if (!req.body.activityId) {
       throw new NotFoundException("ID activit\xE9 manquante");
     }
@@ -2122,7 +2201,7 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
       console.log("yep pas de romCode dans la requ\xEAte");
       const mission = await missionService2.findMissionByActivity(req.body.activityId);
       const roomId = mission.roomId;
-      room = await roomService2.findCodeById(roomId);
+      room = await roomService4.findCodeById(roomId);
     } else {
       room = req.body.room;
     }
@@ -2218,7 +2297,7 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
 });
 UserDataController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const userDataId = new import_mongoose13.Types.ObjectId(req.params.id);
+    const userDataId = new import_mongoose15.Types.ObjectId(req.params.id);
     const userData = await service2.find(userDataId);
     if (!userData) {
       throw new NotFoundException("R\xE9ponse introuvable");
@@ -2229,7 +2308,7 @@ UserDataController.route("/:id([a-z0-9]{24})").get(async (req, res, next) => {
   }
 }).delete(async (req, res, next) => {
   try {
-    const userDataId = new import_mongoose13.Types.ObjectId(req.params.id);
+    const userDataId = new import_mongoose15.Types.ObjectId(req.params.id);
     const userData = await service2.find(userDataId);
     if (!userData) {
       throw new NotFoundException("R\xE9ponse introuvable");
@@ -2306,7 +2385,7 @@ UserDataController.route("/:room([a-z0-9]{6})/:userId([a-z0-9]{24})").get(async 
     if (req.params.room !== req.params.room.toUpperCase()) {
       throw new NotFoundException("Room code invalide");
     }
-    const userId = new import_mongoose13.Types.ObjectId(req.params.userId);
+    const userId = new import_mongoose15.Types.ObjectId(req.params.userId);
     console.log("userId", userId);
     console.log("req.params.room", req.params.room);
     const user = await userService3.find(userId);
@@ -2326,9 +2405,9 @@ UserDataController.route("/:room([a-z0-9]{6})/:userId([a-z0-9]{24})/:activityId(
     if (req.params.room !== req.params.room.toUpperCase()) {
       throw new NotFoundException("Room code invalide");
     }
-    const userId = new import_mongoose13.Types.ObjectId(req.params.userId);
+    const userId = new import_mongoose15.Types.ObjectId(req.params.userId);
     const user = await userService3.find(userId);
-    const activityId = new import_mongoose13.Types.ObjectId(req.params.activityId);
+    const activityId = new import_mongoose15.Types.ObjectId(req.params.activityId);
     console.log("activityId", activityId);
     console.log("activity._id", activity == null ? void 0 : activity._id);
     if (!user) {
@@ -2343,12 +2422,12 @@ UserDataController.route("/:room([a-z0-9]{6})/:userId([a-z0-9]{24})/:activityId(
 });
 UserDataController.route("/:activityId([a-z0-9]{24})/:userId([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const userId = new import_mongoose13.Types.ObjectId(req.params.userId);
+    const userId = new import_mongoose15.Types.ObjectId(req.params.userId);
     const user = await userService3.find(userId);
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
     }
-    const activityId = new import_mongoose13.Types.ObjectId(req.params.activityId);
+    const activityId = new import_mongoose15.Types.ObjectId(req.params.activityId);
     const activity1 = await activityService.find(activityId);
     if (!activity1) {
       throw new NotFoundException("Activit\xE9 introuvable");
@@ -2360,9 +2439,9 @@ UserDataController.route("/:activityId([a-z0-9]{24})/:userId([a-z0-9]{24})").get
     if (!mission) {
       throw new NotFoundException("L activit\xE9 n est dans aucune mission");
     }
-    const roomId = new import_mongoose13.Types.ObjectId(mission[0].roomId);
+    const roomId = new import_mongoose15.Types.ObjectId(mission[0].roomId);
     console.log("roomId", roomId);
-    const roomCode = await roomService2.findCodeById(roomId);
+    const roomCode = await roomService4.findCodeById(roomId);
     console.log("roomId", roomCode);
     const dataList = await service2.findByUserIdAndActivityId(user, roomCode, activityId);
     console.log("dataList", dataList);
@@ -2377,8 +2456,8 @@ var userData_controller_default = UserDataController;
 var import_express5 = require("express");
 
 // src/db/instruction.model.ts
-var import_mongoose14 = __toESM(require("mongoose"));
-var InstructionSchema = new import_mongoose14.default.Schema({
+var import_mongoose16 = __toESM(require("mongoose"));
+var InstructionSchema = new import_mongoose16.default.Schema({
   "consigne": {
     type: String,
     required: true
@@ -2388,14 +2467,14 @@ var InstructionSchema = new import_mongoose14.default.Schema({
     required: true
   },
   "userTarget": {
-    type: import_mongoose14.Schema.Types.ObjectId,
+    type: import_mongoose16.Schema.Types.ObjectId,
     ref: "User",
     required: true
   }
 }, {
   timestamps: true
 });
-var MInstruction = import_mongoose14.default.model("Instruction", InstructionSchema);
+var MInstruction = import_mongoose16.default.model("Instruction", InstructionSchema);
 var instruction_model_default = MInstruction;
 
 // src/resources/instruction/instruction.service.ts
@@ -2442,7 +2521,7 @@ var InstructionService = class {
 __name(InstructionService, "InstructionService");
 
 // src/resources/instruction/instruction.controller.ts
-var import_mongoose15 = require("mongoose");
+var import_mongoose17 = require("mongoose");
 var InstructionController = (0, import_express5.Router)();
 var instructionService = new InstructionService();
 var usersService = new UsersService();
@@ -2477,7 +2556,7 @@ InstructionController.route("/").post(async (req, res, next) => {
 });
 InstructionController.route("/:InstructionId([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const instructionId = new import_mongoose15.Types.ObjectId(req.params.InstructionId);
+    const instructionId = new import_mongoose17.Types.ObjectId(req.params.InstructionId);
     const instruction = await instructionService.find(instructionId);
     if (!instruction) {
       throw new NotFoundException("Instruction introuvable");
@@ -2502,7 +2581,7 @@ InstructionController.route("/:room([a-z0-9]{6})").get(async (req, res, next) =>
 InstructionController.route("/:room([a-z0-9]{6})/:userTarget([a-z0-9]{24})").get(async (req, res, next) => {
   try {
     const room = req.params.room;
-    const userTarget = new import_mongoose15.Types.ObjectId(req.params.userTarget);
+    const userTarget = new import_mongoose17.Types.ObjectId(req.params.userTarget);
     if (room !== room.toUpperCase()) {
       throw new NotFoundException("Room code invalide");
     }
@@ -2584,13 +2663,13 @@ var moodle_controller_default = MoodleController;
 
 // src/resources/mission/mission.controller.ts
 var import_express7 = require("express");
-var import_mongoose16 = require("mongoose");
+var import_mongoose18 = require("mongoose");
 var import_path11 = require("path");
 var import_fs6 = __toESM(require("fs"));
 var import_multer4 = __toESM(require("multer"));
 var MissionController = (0, import_express7.Router)();
 var service3 = new MissionService();
-var roomService3 = new RoomService();
+var roomService5 = new RoomService();
 var mediaService6 = new MediaService();
 var activityService2 = new ActivityService();
 var userService5 = new UsersService();
@@ -2619,9 +2698,9 @@ MissionController.route("/").get(async (req, res) => {
       });
     } else {
       const mission = await service3.createMission(req.body);
-      const room = await roomService3.findById(req.body.roomId);
+      const room = await roomService5.findById(req.body.roomId);
       if (room) {
-        const roomId = new import_mongoose16.Types.ObjectId(req.body.roomId);
+        const roomId = new import_mongoose18.Types.ObjectId(req.body.roomId);
         room.mission.push(mission._id);
         await RoomService.update(room, roomId);
       } else {
@@ -2639,7 +2718,7 @@ MissionController.route("/").get(async (req, res) => {
 MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next) => {
   try {
     const roomCode = req.params.roomCode;
-    const room = await roomService3.findByCode(roomCode);
+    const room = await roomService5.findByCode(roomCode);
     if (room) {
       const roomId = room._id;
       const mission = await service3.createMissionByCode(req.body, roomId);
@@ -2663,7 +2742,7 @@ MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next
   }
 }).get(async (req, res, next) => {
   try {
-    const room = await roomService3.findByCode(req.params.roomCode);
+    const room = await roomService5.findByCode(req.params.roomCode);
     if (room) {
       const missionList = room.mission;
       console.log("missionList", missionList);
@@ -2684,7 +2763,7 @@ MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next
 });
 MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
   try {
-    const id = new import_mongoose16.Types.ObjectId(req.params.id);
+    const id = new import_mongoose18.Types.ObjectId(req.params.id);
     const mission = await service3.find(id);
     return res.status(200).json(mission);
   } catch (err) {
@@ -2692,7 +2771,7 @@ MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
     next(err);
   }
 }).delete(async (req, res, next) => {
-  const id = new import_mongoose16.Types.ObjectId(req.params.id);
+  const id = new import_mongoose18.Types.ObjectId(req.params.id);
   const mission = await service3.find(id);
   if (!mission) {
     return res.status(404).json({
@@ -2701,7 +2780,7 @@ MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
   }
   try {
     await service3.delete(id);
-    const room = await roomService3.findById(mission.roomId);
+    const room = await roomService5.findById(mission.roomId);
     if (room) {
       room.mission = room.mission.filter((id2) => !id2.equals(mission._id));
       await room.save();
@@ -2716,9 +2795,9 @@ MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
 });
 MissionController.route("/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const missionId = new import_mongoose16.Types.ObjectId(req.params.idMission);
+    const missionId = new import_mongoose18.Types.ObjectId(req.params.idMission);
     const mission = await service3.find(missionId);
-    const userId = new import_mongoose16.Types.ObjectId(req.params.idUser);
+    const userId = new import_mongoose18.Types.ObjectId(req.params.idUser);
     const user = await userService5.find(userId);
     if (user === null) {
       return res.status(404).send("Le participant est introuvable");
@@ -2752,9 +2831,9 @@ MissionController.route("/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})").get(a
 });
 MissionController.route("/byRoomId/:roomId([a-z0-9]{24})/").get(async (req, res, next) => {
   try {
-    const roomId = new import_mongoose16.Types.ObjectId(req.params.roomId);
+    const roomId = new import_mongoose18.Types.ObjectId(req.params.roomId);
     const missions = await service3.findByRoomId(roomId);
-    const userId = new import_mongoose16.Types.ObjectId(req.params.userId);
+    const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
     const user = await userService5.find(userId);
     console.log("ussser", user);
     if (!missions || missions.length === 0) {
@@ -2768,9 +2847,9 @@ MissionController.route("/byRoomId/:roomId([a-z0-9]{24})/").get(async (req, res,
 });
 MissionController.route("/listetat/:roomId([a-z0-9]{24})/:userId([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const roomId = new import_mongoose16.Types.ObjectId(req.params.roomId);
+    const roomId = new import_mongoose18.Types.ObjectId(req.params.roomId);
     const missions = await service3.findByRoomId(roomId);
-    const userId = new import_mongoose16.Types.ObjectId(req.params.userId);
+    const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
     const user = await userService5.find(userId);
     console.log("ussser", user);
     if (!missions || missions.length === 0) {
@@ -2804,8 +2883,8 @@ MissionController.route("/listetat/:roomId([a-z0-9]{24})/:userId([a-z0-9]{24})")
 });
 MissionController.route("/:id([a-z0-9]{24})/isVisible/").get(async (req, res) => {
   try {
-    const id = new import_mongoose16.Types.ObjectId(req.params.id);
-    const statusVisible = await service3.findVisibilityStatus(new import_mongoose16.Types.ObjectId(id));
+    const id = new import_mongoose18.Types.ObjectId(req.params.id);
+    const statusVisible = await service3.findVisibilityStatus(new import_mongoose18.Types.ObjectId(id));
     return res.status(200).json(statusVisible);
   } catch (error) {
     console.error("Error in GET /missions/{id}/isVisible:", error);
@@ -2816,14 +2895,14 @@ MissionController.route("/:id([a-z0-9]{24})/isVisible/").get(async (req, res) =>
 });
 MissionController.route("/:id([a-z0-9]{24})/change-to-visible/").post(async (req, res) => {
   const id = req.params.id;
-  const mission = await service3.find(new import_mongoose16.Types.ObjectId(id));
+  const mission = await service3.find(new import_mongoose18.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
   try {
-    const statusVisible = await service3.findVisibilityStatus(new import_mongoose16.Types.ObjectId(id));
+    const statusVisible = await service3.findVisibilityStatus(new import_mongoose18.Types.ObjectId(id));
     console.log("status visible", statusVisible);
-    const titre = await service3.findTitreByid(new import_mongoose16.Types.ObjectId(id));
+    const titre = await service3.findTitreByid(new import_mongoose18.Types.ObjectId(id));
     if (statusVisible === true) {
       return res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 visible");
     } else {
@@ -2840,13 +2919,13 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-visible/").post(async (req
 });
 MissionController.route("/:id([a-z0-9]{24})/change-to-not-visible/").post(async (req, res) => {
   const id = req.params.id;
-  const mission = await service3.find(new import_mongoose16.Types.ObjectId(id));
+  const mission = await service3.find(new import_mongoose18.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
   try {
-    const statusVisible = await service3.findVisibilityStatus(new import_mongoose16.Types.ObjectId(id));
-    const titre = await service3.findTitreByid(new import_mongoose16.Types.ObjectId(id));
+    const statusVisible = await service3.findVisibilityStatus(new import_mongoose18.Types.ObjectId(id));
+    const titre = await service3.findTitreByid(new import_mongoose18.Types.ObjectId(id));
     console.log("statut visible", statusVisible);
     if (!statusVisible) {
       return res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 non visible");
@@ -2864,7 +2943,7 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-not-visible/").post(async 
 });
 MissionController.route("/:id([a-z0-9]{24})/isActive/").get(async (req, res) => {
   try {
-    const id = new import_mongoose16.Types.ObjectId(req.params.id);
+    const id = new import_mongoose18.Types.ObjectId(req.params.id);
     const isActiveStatus = await service3.findActiveStatus(id);
     return res.status(200).json(isActiveStatus);
   } catch (error) {
@@ -2876,14 +2955,14 @@ MissionController.route("/:id([a-z0-9]{24})/isActive/").get(async (req, res) => 
 });
 MissionController.route("/:id([a-z0-9]{24})/change-to-active/").post(async (req, res) => {
   const id = req.params.id;
-  const mission = await service3.find(new import_mongoose16.Types.ObjectId(id));
+  const mission = await service3.find(new import_mongoose18.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
   try {
-    const statusActive = await service3.findActiveStatus(new import_mongoose16.Types.ObjectId(id));
+    const statusActive = await service3.findActiveStatus(new import_mongoose18.Types.ObjectId(id));
     console.log("status visible", statusActive);
-    const titre = await service3.findTitreByid(new import_mongoose16.Types.ObjectId(id));
+    const titre = await service3.findTitreByid(new import_mongoose18.Types.ObjectId(id));
     if (statusActive === true) {
       return res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 active");
     } else {
@@ -2900,13 +2979,13 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-active/").post(async (req,
 });
 MissionController.route("/:id([a-z0-9]{24})/change-to-not-active/").post(async (req, res) => {
   const id = req.params.id;
-  const mission = await service3.find(new import_mongoose16.Types.ObjectId(id));
+  const mission = await service3.find(new import_mongoose18.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
   try {
-    const statusActive = await service3.findActiveStatus(new import_mongoose16.Types.ObjectId(id));
-    const titre = await service3.findTitreByid(new import_mongoose16.Types.ObjectId(id));
+    const statusActive = await service3.findActiveStatus(new import_mongoose18.Types.ObjectId(id));
+    const titre = await service3.findTitreByid(new import_mongoose18.Types.ObjectId(id));
     console.log("statut visible", statusActive);
     if (!statusActive) {
       return res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 non active");
@@ -2924,7 +3003,7 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-not-active/").post(async (
 });
 MissionController.route("/:id([a-z0-9]{24})/isGuidee/").get(async (req, res) => {
   try {
-    const id = new import_mongoose16.Types.ObjectId(req.params.id);
+    const id = new import_mongoose18.Types.ObjectId(req.params.id);
     const isGuideeStatus = await service3.findGuideeStatus(id);
     return res.status(200).json(isGuideeStatus);
   } catch (error) {
@@ -2936,14 +3015,14 @@ MissionController.route("/:id([a-z0-9]{24})/isGuidee/").get(async (req, res) => 
 });
 MissionController.route("/:id([a-z0-9]{24})/change-to-guidee/").post(async (req, res) => {
   const id = req.params.id;
-  const mission = await service3.find(new import_mongoose16.Types.ObjectId(id));
+  const mission = await service3.find(new import_mongoose18.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
   try {
-    const statusGuidee = await service3.findGuideeStatus(new import_mongoose16.Types.ObjectId(id));
+    const statusGuidee = await service3.findGuideeStatus(new import_mongoose18.Types.ObjectId(id));
     console.log("status visible", statusGuidee);
-    const titre = await service3.findTitreByid(new import_mongoose16.Types.ObjectId(id));
+    const titre = await service3.findTitreByid(new import_mongoose18.Types.ObjectId(id));
     if (statusGuidee === true) {
       return res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 guid\xE9e");
     } else {
@@ -2960,13 +3039,13 @@ MissionController.route("/:id([a-z0-9]{24})/change-to-guidee/").post(async (req,
 });
 MissionController.route("/:id([a-z0-9]{24})/change-to-not-guidee/").post(async (req, res) => {
   const id = req.params.id;
-  const mission = await service3.find(new import_mongoose16.Types.ObjectId(id));
+  const mission = await service3.find(new import_mongoose18.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
   try {
-    const statusActive = await service3.findGuideeStatus(new import_mongoose16.Types.ObjectId(id));
-    const titre = await service3.findTitreByid(new import_mongoose16.Types.ObjectId(id));
+    const statusActive = await service3.findGuideeStatus(new import_mongoose18.Types.ObjectId(id));
+    const titre = await service3.findTitreByid(new import_mongoose18.Types.ObjectId(id));
     console.log("statut visible", statusActive);
     if (!statusActive) {
       return res.status(200).json("Mission :  " + titre + " est d\xE9j\xE0 non guid\xE9e");
@@ -2988,7 +3067,7 @@ MissionController.route("/:id([a-z0-9]{24})/activitesID").get(async (req, res) =
     return res.status(400).send("Le champ ID est manquant.");
   }
   try {
-    const mission = await service3.find(new import_mongoose16.Types.ObjectId(id));
+    const mission = await service3.find(new import_mongoose18.Types.ObjectId(id));
     const activityList = mission == null ? void 0 : mission.activites;
     if (mission) {
       return res.status(200).json(activityList);
@@ -3006,14 +3085,14 @@ MissionController.route("/:id([a-z0-9]{24})/activites").get(async (req, res) => 
     return res.status(400).send("Le champ ID est manquant.");
   }
   try {
-    const mission = await service3.find(new import_mongoose16.Types.ObjectId(id));
+    const mission = await service3.find(new import_mongoose18.Types.ObjectId(id));
     if (!mission) {
       return res.status(404).json({
         error: "Mission non trouv\xE9e."
       });
     }
     const activityIds = mission.activites || [];
-    const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose16.Types.ObjectId(activityId))));
+    const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose18.Types.ObjectId(activityId))));
     return res.status(200).json(activities);
   } catch (error) {
     console.error("Erreur lors de la r\xE9cup\xE9ration des activit\xE9s de la mission.", error);
@@ -3028,14 +3107,14 @@ MissionController.route("/:id([a-z0-9]{24})/activitesVisibles").get(async (req, 
     return res.status(400).send("Le champ ID est manquant.");
   }
   try {
-    const mission = await service3.find(new import_mongoose16.Types.ObjectId(id));
+    const mission = await service3.find(new import_mongoose18.Types.ObjectId(id));
     if (!mission) {
       return res.status(404).json({
         error: "Mission non trouv\xE9e."
       });
     }
     const activityIds = mission.activites || [];
-    const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose16.Types.ObjectId(activityId))));
+    const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose18.Types.ObjectId(activityId))));
     const visibleActivities = activities.filter((activity2) => activity2.visible === true);
     return res.status(200).json(visibleActivities);
   } catch (error) {
@@ -3051,14 +3130,14 @@ MissionController.route("/:id([a-z0-9]{24})/activitesActives").get(async (req, r
     return res.status(400).send("Le champ ID est manquant.");
   }
   try {
-    const mission = await service3.find(new import_mongoose16.Types.ObjectId(id));
+    const mission = await service3.find(new import_mongoose18.Types.ObjectId(id));
     if (!mission) {
       return res.status(404).json({
         error: "Mission non trouv\xE9e."
       });
     }
     const activityIds = mission.activites || [];
-    const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose16.Types.ObjectId(activityId))));
+    const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose18.Types.ObjectId(activityId))));
     const activeActivities = activities.filter((activity2) => activity2.active === true);
     return res.status(200).json(activeActivities);
   } catch (error) {
@@ -3074,14 +3153,14 @@ MissionController.route("/:id([a-z0-9]{24})/activitesGuidees").get(async (req, r
     return res.status(400).send("Le champ ID est manquant.");
   }
   try {
-    const mission = await service3.find(new import_mongoose16.Types.ObjectId(id));
+    const mission = await service3.find(new import_mongoose18.Types.ObjectId(id));
     if (!mission) {
       return res.status(404).json({
         error: "Mission non trouv\xE9e."
       });
     }
     const activityIds = mission.activites || [];
-    const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose16.Types.ObjectId(activityId))));
+    const activities = await Promise.all(activityIds.map((activityId) => activityService2.find(new import_mongoose18.Types.ObjectId(activityId))));
     const guideeActivities = activities.filter((activity2) => (activity2 == null ? void 0 : activity2.guidee) === true);
     return res.status(200).json(guideeActivities);
   } catch (error) {
@@ -3093,7 +3172,7 @@ MissionController.route("/:id([a-z0-9]{24})/activitesGuidees").get(async (req, r
 });
 MissionController.route("/:id([a-z0-9]{24})/visuel").get(async (req, res) => {
   const missionId = req.params.id;
-  const mission = await service3.find(new import_mongoose16.Types.ObjectId(missionId));
+  const mission = await service3.find(new import_mongoose18.Types.ObjectId(missionId));
   try {
     if (!mission) {
       return res.status(404).json({
@@ -3152,7 +3231,7 @@ var fileUpload3 = (0, import_multer4.default)({
 });
 MissionController.route("/:idMission([a-z0-9]{24})/change-visuel").post(fileUpload3.single("file"), async (req, res, next) => {
   try {
-    const missionId = new import_mongoose16.Types.ObjectId(req.params.idMission);
+    const missionId = new import_mongoose18.Types.ObjectId(req.params.idMission);
     const mission = await service3.find(missionId);
     if (!mission) {
       return res.status(404).send("Mission not found");
@@ -3163,7 +3242,7 @@ MissionController.route("/:idMission([a-z0-9]{24})/change-visuel").post(fileUplo
       return res.status(400).send("Room ID not found in mission");
     }
     console.log("rooom", room);
-    const researchedRoom = await roomService3.findById(room);
+    const researchedRoom = await roomService5.findById(room);
     if (!researchedRoom) {
       return res.status(404).send("Room not found");
     }
@@ -3182,8 +3261,8 @@ MissionController.route("/:idMission([a-z0-9]{24})/change-visuel").post(fileUplo
   }
 });
 MissionController.route("/:missionId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/").get(async (req, res) => {
-  const missionId = new import_mongoose16.Types.ObjectId(req.params.missionId);
-  const userId = new import_mongoose16.Types.ObjectId(req.params.userId);
+  const missionId = new import_mongoose18.Types.ObjectId(req.params.missionId);
+  const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
   const user = await userService5.find(userId);
   const mission = await service3.find(missionId);
   console.log("userid", user);
@@ -3209,8 +3288,8 @@ MissionController.route("/:missionId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/")
 });
 MissionController.route("/:missionId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24})/").post(async (req, res) => {
   try {
-    const missionId = new import_mongoose16.Types.ObjectId(req.params.missionId);
-    const userId = new import_mongoose16.Types.ObjectId(req.params.userId);
+    const missionId = new import_mongoose18.Types.ObjectId(req.params.missionId);
+    const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
     const user = await userService5.find(userId);
     const mission = await service3.find(missionId);
     console.log("userid", user);
@@ -3239,21 +3318,21 @@ MissionController.route("/:missionId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24}
 });
 MissionController.route("/:missionId([a-z0-9]{24})/inscrireRoom/").post(async (req, res) => {
   try {
-    const missionId = new import_mongoose16.Types.ObjectId(req.params.missionId);
+    const missionId = new import_mongoose18.Types.ObjectId(req.params.missionId);
     const mission = await service3.findById(missionId);
     if (!mission) {
       return res.status(404).send("Mission introuvable.");
     }
     const roomId = mission == null ? void 0 : mission.roomId;
     if (roomId) {
-      const room = await roomService3.findById(roomId);
+      const room = await roomService5.findById(roomId);
       if (!room) {
         return res.status(404).send("Room non trouv\xE9e.");
       }
       const participants = room.participants || [];
       const results = [];
       for (const userId of participants) {
-        const userObjectId = new import_mongoose16.Types.ObjectId(userId);
+        const userObjectId = new import_mongoose18.Types.ObjectId(userId);
         const isInEtat = await service3.etatByUser(missionId, userObjectId);
         if (Object.values(etat_enum_default).includes(isInEtat)) {
           results.push({
@@ -3285,8 +3364,8 @@ MissionController.route("/:missionId([a-z0-9]{24})/inscrireRoom/").post(async (r
 });
 MissionController.route("/:missionId([a-z0-9]{24})/start/:userId([a-z0-9]{24})/").post(async (req, res) => {
   try {
-    const missionId = new import_mongoose16.Types.ObjectId(req.params.missionId);
-    const userId = new import_mongoose16.Types.ObjectId(req.params.userId);
+    const missionId = new import_mongoose18.Types.ObjectId(req.params.missionId);
+    const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
     const user = await userService5.find(userId);
     const mission = await service3.find(missionId);
     if (user === null) {
@@ -3319,8 +3398,8 @@ MissionController.route("/:missionId([a-z0-9]{24})/start/:userId([a-z0-9]{24})/"
 });
 MissionController.route("/:missionId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/").post(async (req, res) => {
   try {
-    const missionId = new import_mongoose16.Types.ObjectId(req.params.missionId);
-    const userId = new import_mongoose16.Types.ObjectId(req.params.userId);
+    const missionId = new import_mongoose18.Types.ObjectId(req.params.missionId);
+    const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
     const user = await userService5.find(userId);
     const mission = await service3.find(missionId);
     console.log("userid", user);
@@ -3356,7 +3435,7 @@ var mission_controller_default = MissionController;
 
 // src/resources/room/room.controller.ts
 var import_express8 = require("express");
-var import_mongoose17 = require("mongoose");
+var import_mongoose19 = require("mongoose");
 var RoomController = (0, import_express8.Router)();
 var service4 = new RoomService();
 RoomController.route("/").get(async (req, res) => {
@@ -3377,7 +3456,7 @@ RoomController.route("/").get(async (req, res) => {
 });
 RoomController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
   try {
-    const id = new import_mongoose17.Types.ObjectId(req.params.id);
+    const id = new import_mongoose19.Types.ObjectId(req.params.id);
     const room = await service4.findById(id);
     return res.status(200).json(room);
   } catch (err) {
@@ -3386,7 +3465,7 @@ RoomController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
 });
 RoomController.route("/:id([a-z0-9]{24})/moderator").get(async (req, res, next) => {
   try {
-    const id = new import_mongoose17.Types.ObjectId(req.params.id);
+    const id = new import_mongoose19.Types.ObjectId(req.params.id);
     const room = await service4.findById(id);
     const moderator = room == null ? void 0 : room.moderatorId;
     return res.status(200).json(moderator);
@@ -3406,7 +3485,7 @@ RoomController.route("/:roomCode([A-Z0-9]{6})/moderator").get(async (req, res, n
 });
 RoomController.route("/:id([a-z0-9]{24})/participants").get(async (req, res, next) => {
   try {
-    const id = new import_mongoose17.Types.ObjectId(req.params.id);
+    const id = new import_mongoose19.Types.ObjectId(req.params.id);
     const room = await service4.findById(id);
     const participantsList = room == null ? void 0 : room.participants;
     return res.status(200).json(participantsList);
@@ -3426,7 +3505,7 @@ RoomController.route("/:roomCode([A-Z0-9]{6})/participants").get(async (req, res
 });
 RoomController.route("/:id([a-z0-9]{24})/missions").get(async (req, res, next) => {
   try {
-    const id = new import_mongoose17.Types.ObjectId(req.params.id);
+    const id = new import_mongoose19.Types.ObjectId(req.params.id);
     const room = await service4.findById(id);
     const missionsList = room == null ? void 0 : room.mission;
     return res.status(200).json(missionsList);
@@ -3476,14 +3555,14 @@ var import_swagger_ui_express = __toESM(require("swagger-ui-express"));
 
 // src/resources/activity/activity.controller.ts
 var import_express9 = require("express");
-var import_mongoose18 = require("mongoose");
+var import_mongoose20 = require("mongoose");
 var import_path12 = require("path");
 var import_fs7 = __toESM(require("fs"));
 var import_multer5 = __toESM(require("multer"));
 var service5 = new ActivityService();
 var missionService3 = new MissionService();
 var userService6 = new UsersService();
-var roomService4 = new RoomService();
+var roomService6 = new RoomService();
 var fileStorage5 = import_multer5.default.diskStorage({
   // définit le dossier de destination à partir de l'ID de l'utilisateur
   destination: function(req, file, cb) {
@@ -3607,14 +3686,14 @@ ActivityController.route("/produire").post(async (req, res, next) => {
 });
 ActivityController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
   try {
-    const id = new import_mongoose18.Types.ObjectId(req.params.id);
+    const id = new import_mongoose20.Types.ObjectId(req.params.id);
     const activity2 = await service5.findById(id);
     return res.status(200).json(activity2);
   } catch (err) {
     next(err);
   }
 }).delete(async (req, res, next) => {
-  const id = new import_mongoose18.Types.ObjectId(req.params.id);
+  const id = new import_mongoose20.Types.ObjectId(req.params.id);
   const activity2 = await service5.findById(id);
   if (!activity2) {
     return res.status(404).json({
@@ -3643,9 +3722,9 @@ ActivityController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
 });
 ActivityController.route("/:idActivity([a-z0-9]{24})/:idUser([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const activityId = new import_mongoose18.Types.ObjectId(req.params.idActivity);
+    const activityId = new import_mongoose20.Types.ObjectId(req.params.idActivity);
     const activity2 = await service5.find(activityId);
-    const userId = new import_mongoose18.Types.ObjectId(req.params.idUser);
+    const userId = new import_mongoose20.Types.ObjectId(req.params.idUser);
     const user = await userService6.find(userId);
     if (user === null) {
       return res.status(404).send("Le participant est introuvable");
@@ -3681,9 +3760,9 @@ ActivityController.route("/:idActivity([a-z0-9]{24})/:idUser([a-z0-9]{24})").get
 });
 ActivityController.route("/listetat/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const missionId = new import_mongoose18.Types.ObjectId(req.params.idMission);
+    const missionId = new import_mongoose20.Types.ObjectId(req.params.idMission);
     const mission = await missionService3.find(missionId);
-    const userId = new import_mongoose18.Types.ObjectId(req.params.idUser);
+    const userId = new import_mongoose20.Types.ObjectId(req.params.idUser);
     const user = await userService6.find(userId);
     if (user === null) {
       return res.status(404).send("Le participant est introuvable");
@@ -3730,13 +3809,13 @@ ActivityController.route("/addToMission/:idActivity([a-z0-9]{24})/:idMission([a-
   try {
     const idActivity = req.params.idActivity;
     const idMission = req.params.idMission;
-    const activity2 = await service5.findById(new import_mongoose18.Types.ObjectId(idActivity));
+    const activity2 = await service5.findById(new import_mongoose20.Types.ObjectId(idActivity));
     if (!activity2) {
       return res.status(404).json({
         error: `Activit\xE9 avec ID ${idActivity} non trouv\xE9e`
       });
     }
-    const mission = await mission_model_default.findById(new import_mongoose18.Types.ObjectId(idMission));
+    const mission = await mission_model_default.findById(new import_mongoose20.Types.ObjectId(idMission));
     if (!mission) {
       return res.status(404).json({
         error: `Mission avec ID ${idMission} non trouv\xE9e`
@@ -3775,13 +3854,13 @@ ActivityController.route("/addToMission/:idActivity([a-z0-9]{24})/:idMission([a-
   try {
     const idActivity = req.params.idActivity;
     const idMission = req.params.idMission;
-    const activity2 = await service5.findById(new import_mongoose18.Types.ObjectId(idActivity));
+    const activity2 = await service5.findById(new import_mongoose20.Types.ObjectId(idActivity));
     if (!activity2) {
       return res.status(404).json({
         error: `Activit\xE9 avec ID ${idActivity} non trouv\xE9e`
       });
     }
-    const mission = await mission_model_default.findById(new import_mongoose18.Types.ObjectId(idMission));
+    const mission = await mission_model_default.findById(new import_mongoose20.Types.ObjectId(idMission));
     if (!mission) {
       return res.status(404).json({
         error: `Mission avec ID ${idMission} non trouv\xE9e`
@@ -3809,7 +3888,7 @@ ActivityController.route("/duplicate/:idActivity([a-z0-9]{24})").post(async (req
   try {
     const idActivity = req.params.idActivity;
     console.log("idActivity", idActivity);
-    const activitytodup = await service5.findById(new import_mongoose18.Types.ObjectId(idActivity));
+    const activitytodup = await service5.findById(new import_mongoose20.Types.ObjectId(idActivity));
     console.log("activitytodup", activitytodup);
     const isConsulter = activitytodup == null ? void 0 : activitytodup.description_detaillee_consulter;
     const isProduire = activitytodup == null ? void 0 : activitytodup.description_detaillee_produire;
@@ -3824,7 +3903,7 @@ ActivityController.route("/duplicate/:idActivity([a-z0-9]{24})").post(async (req
     }
     if (isConsulter) {
       const activityData = {
-        _id: new import_mongoose18.Types.ObjectId(),
+        _id: new import_mongoose20.Types.ObjectId(),
         titre: activitytodup.titre + "-Copie",
         description: activitytodup.description,
         etat: activitytodup.etat,
@@ -3839,7 +3918,7 @@ ActivityController.route("/duplicate/:idActivity([a-z0-9]{24})").post(async (req
     }
     if (isProduire) {
       const activityData = {
-        _id: new import_mongoose18.Types.ObjectId(),
+        _id: new import_mongoose20.Types.ObjectId(),
         titre: activitytodup.titre + "-Copie",
         description: activitytodup.description,
         etat: activitytodup.etat,
@@ -3861,7 +3940,7 @@ ActivityController.route("/duplicate/:idActivity([a-z0-9]{24})").post(async (req
 });
 ActivityController.route("/:id([a-z0-9]{24})/isVisible").get(async (req, res) => {
   try {
-    const id = new import_mongoose18.Types.ObjectId(req.params.id);
+    const id = new import_mongoose20.Types.ObjectId(req.params.id);
     const activity2 = await service5.findById(id);
     if (!activity2) {
       return res.status(404).json("Activit\xE9 introuvable");
@@ -3877,7 +3956,7 @@ ActivityController.route("/:id([a-z0-9]{24})/isVisible").get(async (req, res) =>
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-visible").post(async (req, res) => {
   const id = req.params.id;
-  const activity2 = await service5.find(new import_mongoose18.Types.ObjectId(id));
+  const activity2 = await service5.find(new import_mongoose20.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
@@ -3885,9 +3964,9 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-visible").post(async (req
     return res.status(404).json("Activit\xE9 introuvable");
   }
   try {
-    const statusVisible = await service5.findVisibilityStatus(new import_mongoose18.Types.ObjectId(id));
+    const statusVisible = await service5.findVisibilityStatus(new import_mongoose20.Types.ObjectId(id));
     console.log("status visible", statusVisible);
-    const titre = await service5.findTitreById(new import_mongoose18.Types.ObjectId(id));
+    const titre = await service5.findTitreById(new import_mongoose20.Types.ObjectId(id));
     if (statusVisible === true) {
       return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 visible");
     } else {
@@ -3904,7 +3983,7 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-visible").post(async (req
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-not-visible").post(async (req, res) => {
   const id = req.params.id;
-  const activity2 = await service5.find(new import_mongoose18.Types.ObjectId(id));
+  const activity2 = await service5.find(new import_mongoose20.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
@@ -3912,8 +3991,8 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-visible").post(async 
     return res.status(404).json("Activit\xE9 introuvable");
   }
   try {
-    const statusVisible = await service5.findVisibilityStatus(new import_mongoose18.Types.ObjectId(id));
-    const titre = await service5.findTitreById(new import_mongoose18.Types.ObjectId(id));
+    const statusVisible = await service5.findVisibilityStatus(new import_mongoose20.Types.ObjectId(id));
+    const titre = await service5.findTitreById(new import_mongoose20.Types.ObjectId(id));
     console.log("statut visible", statusVisible);
     if (!statusVisible) {
       return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non visible");
@@ -3931,7 +4010,7 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-visible").post(async 
 });
 ActivityController.route("/:id([a-z0-9]{24})/isActive").get(async (req, res) => {
   try {
-    const id = new import_mongoose18.Types.ObjectId(req.params.id);
+    const id = new import_mongoose20.Types.ObjectId(req.params.id);
     const isActiveStatus = await service5.findActiveStatus(id);
     return res.status(200).json(isActiveStatus);
   } catch (error) {
@@ -3943,7 +4022,7 @@ ActivityController.route("/:id([a-z0-9]{24})/isActive").get(async (req, res) => 
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-active").post(async (req, res) => {
   const id = req.params.id;
-  const activity2 = await service5.find(new import_mongoose18.Types.ObjectId(id));
+  const activity2 = await service5.find(new import_mongoose20.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
@@ -3951,8 +4030,8 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-active").post(async (req,
     return res.status(404).json("Activit\xE9 introuvable");
   }
   try {
-    const statusActive = await service5.findActiveStatus(new import_mongoose18.Types.ObjectId(id));
-    const titre = await service5.findTitreById(new import_mongoose18.Types.ObjectId(id));
+    const statusActive = await service5.findActiveStatus(new import_mongoose20.Types.ObjectId(id));
+    const titre = await service5.findTitreById(new import_mongoose20.Types.ObjectId(id));
     console.log("statut visible", statusActive);
     if (statusActive === true) {
       return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 active");
@@ -3970,7 +4049,7 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-active").post(async (req,
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-not-active").post(async (req, res) => {
   const id = req.params.id;
-  const activity2 = await service5.find(new import_mongoose18.Types.ObjectId(id));
+  const activity2 = await service5.find(new import_mongoose20.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
@@ -3978,8 +4057,8 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-active").post(async (
     return res.status(404).json("Activit\xE9 introuvable");
   }
   try {
-    const statusActive = await service5.findActiveStatus(new import_mongoose18.Types.ObjectId(id));
-    const titre = await service5.findTitreById(new import_mongoose18.Types.ObjectId(id));
+    const statusActive = await service5.findActiveStatus(new import_mongoose20.Types.ObjectId(id));
+    const titre = await service5.findTitreById(new import_mongoose20.Types.ObjectId(id));
     console.log("statut visible", statusActive);
     if (!statusActive) {
       return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non active");
@@ -3997,7 +4076,7 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-active").post(async (
 });
 ActivityController.route("/:id([a-z0-9]{24})/isGuidee").get(async (req, res) => {
   try {
-    const id = new import_mongoose18.Types.ObjectId(req.params.id);
+    const id = new import_mongoose20.Types.ObjectId(req.params.id);
     const isGuideeStatus = await service5.findGuideeStatus(id);
     return res.status(200).json(isGuideeStatus);
   } catch (error) {
@@ -4009,7 +4088,7 @@ ActivityController.route("/:id([a-z0-9]{24})/isGuidee").get(async (req, res) => 
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-guidee").post(async (req, res) => {
   const id = req.params.id;
-  const activity2 = await service5.find(new import_mongoose18.Types.ObjectId(id));
+  const activity2 = await service5.find(new import_mongoose20.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
@@ -4017,8 +4096,8 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-guidee").post(async (req,
     return res.status(404).json("Activit\xE9 introuvable");
   }
   try {
-    const statusGuidee = await service5.findActiveStatus(new import_mongoose18.Types.ObjectId(id));
-    const titre = await service5.findTitreById(new import_mongoose18.Types.ObjectId(id));
+    const statusGuidee = await service5.findActiveStatus(new import_mongoose20.Types.ObjectId(id));
+    const titre = await service5.findTitreById(new import_mongoose20.Types.ObjectId(id));
     console.log("statut visible", statusGuidee);
     if (statusGuidee === true) {
       return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 guid\xE9e");
@@ -4036,7 +4115,7 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-guidee").post(async (req,
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-not-guidee").post(async (req, res) => {
   const id = req.params.id;
-  const activity2 = await service5.find(new import_mongoose18.Types.ObjectId(id));
+  const activity2 = await service5.find(new import_mongoose20.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
@@ -4044,8 +4123,8 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-guidee").post(async (
     return res.status(404).json("Activit\xE9 introuvable");
   }
   try {
-    const statusGuidee = await service5.findActiveStatus(new import_mongoose18.Types.ObjectId(id));
-    const titre = await service5.findTitreById(new import_mongoose18.Types.ObjectId(id));
+    const statusGuidee = await service5.findActiveStatus(new import_mongoose20.Types.ObjectId(id));
+    const titre = await service5.findTitreById(new import_mongoose20.Types.ObjectId(id));
     console.log("statut guidee", statusGuidee);
     if (!statusGuidee) {
       return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non guid\xE9e");
@@ -4063,8 +4142,8 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-guidee").post(async (
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/").get(async (req, res) => {
   try {
-    const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
-    const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
+    const activityId = new import_mongoose20.Types.ObjectId(req.params.activityId);
+    const userId = new import_mongoose20.Types.ObjectId(req.params.userId);
     const user = await userService6.find(userId);
     const activity2 = await service5.find(activityId);
     console.log("userid", user);
@@ -4091,8 +4170,8 @@ ActivityController.route("/:activityId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24})/").post(async (req, res) => {
   try {
-    const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
-    const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
+    const activityId = new import_mongoose20.Types.ObjectId(req.params.activityId);
+    const userId = new import_mongoose20.Types.ObjectId(req.params.userId);
     const user = await userService6.find(userId);
     const activity2 = await service5.find(activityId);
     console.log("userid", user);
@@ -4123,19 +4202,20 @@ ActivityController.route("/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{2
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/inscrireRoom/").post(async (req, res) => {
   try {
-    const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
+    const activityId = new import_mongoose20.Types.ObjectId(req.params.activityId);
     const mission = await missionService3.findMissionByActivity(activityId);
-    const roomId = new import_mongoose18.Types.ObjectId(mission == null ? void 0 : mission.roomId);
-    const room = await roomService4.findById(roomId);
+    const roomId = new import_mongoose20.Types.ObjectId(mission == null ? void 0 : mission.roomId);
+    const room = await roomService6.findById(roomId);
     if (!room) {
       return res.status(404).send("Room non trouv\xE9e.");
     }
     const participants = room.participants || [];
     const results = [];
     for (const userId of participants) {
-      const userObjectId = new import_mongoose18.Types.ObjectId(userId);
+      const userObjectId = new import_mongoose20.Types.ObjectId(userId);
       const isInEtat = await activityService3.etatByUser(activityId, userObjectId);
       if (Object.values(etat_enum_default).includes(isInEtat)) {
+        console.log("ouipipi");
         results.push({
           userId,
           message: `Ce participant est d\xE9j\xE0 inscrit \xE0 cette activit\xE9. \xC9tat d'avancement: ${isInEtat}`
@@ -4163,8 +4243,8 @@ ActivityController.route("/:activityId([a-z0-9]{24})/inscrireRoom/").post(async 
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/start/:userId([a-z0-9]{24})/").post(async (req, res) => {
   try {
-    const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
-    const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
+    const activityId = new import_mongoose20.Types.ObjectId(req.params.activityId);
+    const userId = new import_mongoose20.Types.ObjectId(req.params.userId);
     const user = await userService6.find(userId);
     const activity2 = await service5.find(activityId);
     if (user === null) {
@@ -4198,12 +4278,12 @@ ActivityController.route("/:activityId([a-z0-9]{24})/start/:userId([a-z0-9]{24})
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/").post(async (req, res) => {
   try {
-    const activityId = new import_mongoose18.Types.ObjectId(req.params.activityId);
+    const activityId = new import_mongoose20.Types.ObjectId(req.params.activityId);
     const activity2 = await service5.find(activityId);
     if (activity2 === null) {
       return res.status(404).send("L activit\xE9 est introuvable");
     }
-    const userId = new import_mongoose18.Types.ObjectId(req.params.userId);
+    const userId = new import_mongoose20.Types.ObjectId(req.params.userId);
     const user = await userService6.find(userId);
     if (user === null) {
       return res.status(404).send("Le participant est introuvable");
@@ -4250,6 +4330,7 @@ var activity_controller_default = ActivityController;
 
 // src/index.ts
 var missionService4 = new MissionService();
+var activityService4 = new ActivityService();
 var app = (0, import_express10.default)();
 var httpServer = import_http.default.createServer(app);
 var swaggerOptions = {
@@ -4311,11 +4392,7 @@ var addConnectedUsersToMission = /* @__PURE__ */ __name(async () => {
   try {
     const rooms = await RoomService.findAll();
     for (const room of rooms) {
-      const missions = await missionService4.findByRoomId(room._id);
-      for (const mission of missions) {
-        const missionId = mission._id;
-        await axios4.post(`${config2.BASE_URL}/mission/${missionId}/inscrireRoom/`);
-      }
+      await missionService4.processRoomMissions(room._id);
     }
   } catch (error) {
     console.error("Error adding users to mission:", error);
@@ -4331,12 +4408,12 @@ var addConnectedUsersToActivities = /* @__PURE__ */ __name(async () => {
         const activityList = mission == null ? void 0 : mission.activites;
         for (const activity2 of activityList) {
           const activityId = activity2._id;
-          await axios4.post(`${config2.BASE_URL}/activity/${activityId}/inscrireRoom/`);
+          await activityService4.registerParticipantsToActivity(activityId, room._id);
         }
       }
     }
   } catch (error) {
-    console.error("Error adding users to mission:", error);
+    console.error("Error adding users to activities:", error);
   }
 }, "addConnectedUsersToActivities");
 setInterval(addConnectedUsersToActivities, 5e3);
@@ -4344,7 +4421,7 @@ var start = /* @__PURE__ */ __name(async () => {
   try {
     httpServer.listen(config2.API_PORT);
     console.log("HTTP server is listening on port : " + config2.API_PORT);
-    import_mongoose19.default.connect(config2.DB_URI);
+    import_mongoose21.default.connect(config2.DB_URI);
     httpServer.on("error", (err) => {
       throw err;
     });
@@ -4352,7 +4429,7 @@ var start = /* @__PURE__ */ __name(async () => {
       httpServer.close();
     });
     httpServer.on("close", async () => {
-      await import_mongoose19.default.disconnect();
+      await import_mongoose21.default.disconnect();
       console.log("Server closed");
     });
     if (config2.SSL_KEY && config2.SSL_CERT) {

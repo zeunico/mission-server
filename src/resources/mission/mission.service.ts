@@ -1,22 +1,17 @@
 import  Mission  from '~/db/mission.model';
-import  Activity  from '~/db/activity.model';
-
 import { IMission } from '~~/types/mission.interface';
-import { IActivity } from '~~/types/activity.interface';
 
 import { IMedia } from '~~/types/media.interface';
 import { Types } from 'mongoose';
-import { config } from '~/config';
-import { join } from 'path';
-import { NotFoundException } from '~/utils/exceptions';
+
 import { RoomService } from '../room/room.service';
 import { MediaService } from '../media/media.service';
-import { IRoom } from '~~/types/room.interface';
-import  Room  from '~/db/room.model';
-import RoomController from '../room/room.controller';
+
+
 import EEtat from '~~/types/etat.enum';
-import { NullLiteral } from '@swc/core';
+
 const mediaService = new MediaService();
+const roomService = new RoomService();
 
 
 export class MissionService {
@@ -155,35 +150,6 @@ export class MissionService {
 		}	
 	}
 
-  	//  LE VISUEL DE LA MISSION 	
-	  async visuel(missionId: Types.ObjectId): Promise<IMedia | null> {
-		try {
-			const mission = await Mission.findById(missionId);
-			
-			if (!mission) {
-				throw new Error('Mission introuvable');
-				} else 
-					if (mission) {
-					console.log('mission', mission);
-					const mediaId = mission.visuel;
-					
-					if (mediaId)
-						{
-						console.log('mediaId', mediaId);
-						const media = await mediaService.find(mediaId);
-						if (media) {
-							return media;
-							}
-						} 
-					else {return null;}
-				}
-			}
-			catch (error) {
-			console.error('Erreur lors de la recherche de la mission:', error);
-			throw error;
-			}	
-		}
-
 	// ETAT d un USER dans une mission
 	async etatByUser(missionId: Types.ObjectId, userId: Types.ObjectId): Promise<String> {
 		let foundKey = null;
@@ -252,4 +218,69 @@ export class MissionService {
             throw error;
         }
     }
+
+	async registerParticipantsToMission(missionId: Types.ObjectId, roomId: Types.ObjectId): Promise<String[]> {
+        const room = await roomService.findById(roomId);
+        if (!room) {
+            throw new Error('Room not found');
+        }
+
+        const participants = room.participants || [];
+        const results = [];
+
+        for (const userId of participants) {
+            const userObjectId = new Types.ObjectId(userId);
+            const isInEtat = await this.etatByUser(missionId, userObjectId);
+
+            if (Object.values(EEtat).includes(isInEtat)) {
+                results.push({ userId, message: `Ce participant est déjà inscrit à cette mission. État d'avancement: ${isInEtat}` });
+            } else {
+                const inscription = await this.inscriptionMission(missionId, userObjectId);
+                results.push({
+                    userId,
+                    message: inscription ? 'Inscription réussie' : 'Erreur lors de l\'inscription'
+                });
+            }
+        }
+
+        return results;
+    }
+
+    async processRoomMissions(roomId: Types.ObjectId): Promise<void> {
+        const missions = await this.findByRoomId(roomId);
+
+        for (const mission of missions) {
+            await this.registerParticipantsToMission(mission._id, roomId);
+        }
+    }
+
+	//  LE VISUEL DE LA MISSION 	
+		async visuel(missionId: Types.ObjectId): Promise<IMedia | null> {
+		try {
+			const mission = await Mission.findById(missionId);
+			
+			if (!mission) {
+				throw new Error('Mission introuvable');
+				} else 
+					if (mission) {
+					console.log('mission', mission);
+					const mediaId = mission.visuel;
+					
+					if (mediaId)
+						{
+						console.log('mediaId', mediaId);
+						const media = await mediaService.find(mediaId);
+						if (media) {
+							return media;
+							}
+						} 
+					else {return null;}
+				}
+			}
+			catch (error) {
+			console.error('Erreur lors de la recherche de la mission:', error);
+			throw error;
+			}	
+		}
+	
 }

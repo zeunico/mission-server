@@ -1,16 +1,17 @@
 import { Types } from 'mongoose';
 import Activity  from '~/db/activity.model';
-import Mission  from '~/db/mission.model';
 import ActivityConsulter   from '~/db/activity.model';
 import  ActivityProduire from '~/db/activity.model';
 import { IActivity } from '~~/types/activity.interface';
-import { IMission } from '~~/types/mission.interface';
 import { IActivityConsulter } from '~~/types/activity.interface';
 import { IActivityProduire } from '~~/types/activity.interface';
-import { UsersService } from '../users/users.service';
 import { MissionService } from '../mission/mission.service';
+import { RoomService } from '../room/room.service';
+import EEtat from '~~/types/etat.enum';
+
 
 const missionService = new MissionService();
+const roomService = new RoomService();
 
 
 export class ActivityService {
@@ -123,6 +124,51 @@ export class ActivityService {
 			return activity;}
 		else return null;
 	}
+
+
+	// INSCRIPTION PAR ROUTINE POUR INSCRIPTION ROOM ENTIERE// Function to register participants to a specific activity
+	async registerParticipantsToActivity(activityId: Types.ObjectId, roomId: Types.ObjectId): Promise<void> {
+		try {
+			// Retrieve mission for the activity
+			const mission = await missionService.findMissionByActivity(activityId);
+			if (!mission) {
+				console.log(`Mission not found for activity ${activityId}`);
+				return;
+			}
+
+			// Retrieve room participants
+			const room = await roomService.findById(roomId);
+			if (!room) {
+				console.log(`Room not found for activity ${activityId}`);
+				return;
+			}
+			const participants = room.participants || [];
+
+			const results = [];
+
+			for (const userId of participants) {
+				const userObjectId = new Types.ObjectId(userId);
+
+				// Ensure the user is not already in the states
+				const isInEtat = await this.etatByUser(activityId, userObjectId);
+				if (Object.values(EEtat).includes(isInEtat)) {
+					results.push({ userId, message: `Ce participant est déjà inscrit à cette activité. État d'avancement: ${isInEtat}` });
+				} else {
+					const inscription = await this.inscriptionActivity(activityId, userObjectId);
+					if (inscription) {
+						results.push({ userId, message: 'Inscription réussie' });
+					} else {
+						results.push({ userId, message: 'Erreur lors de l\'inscription' });
+					}
+				}
+			}
+
+			console.log(`Processed activity ${activityId} for room ${roomId}:`, results);
+		} catch (error) {
+			console.error(`Error registering participants to activity ${activityId} for room ${roomId}:`, error);
+			throw error; // Optionally re-throw the error to propagate it upwards
+		}
+	};
 
 
 	// Statut Activité de l'activité

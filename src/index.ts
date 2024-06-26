@@ -22,11 +22,14 @@ import ActivityController from './resources/activity/activity.controller';
 import { MissionService } from './resources/mission/mission.service';
 import { UsersService } from './resources/users/users.service';
 import { RoomService } from './resources/room/room.service';
+import { ActivityService } from './resources/activity/activity.service';
 
 
 
-// new MisionService pour routine inscription 
+// new MisionService et new ActivityService pour routines inscriptions 
 const missionService = new MissionService();
+const activityService = new ActivityService();
+
 
 // Création d'une nouvelle instance express
 const app = express();
@@ -117,27 +120,17 @@ const axios = require('axios');
 
 // LES ROUTINES D INSCRIPTION AUX MISSIONS ET ACTIVITES
 
-// Routine pour ajouter les users connectés aux missions de leur(s) room(s)
 const addConnectedUsersToMission = async () => {
     try {
-        //console.log('Routine inscription Mission');
-		//liste all rooms
-		const rooms = await RoomService.findAll();
-		for (const room of rooms) {
-			// list all missions in one room
-			const missions = await missionService.findByRoomId(room._id);
-			for (const mission of missions) {
-				const missionId = mission._id;
-
-				await axios.post(`${config.BASE_URL}/mission/${missionId}/inscrireRoom/`);
-				}
-			}
+        const rooms = await RoomService.findAll();
+        for (const room of rooms) {
+            await missionService.processRoomMissions(room._id);
+        }
     } catch (error) {
-        console.error('Error adding users to mission:',  error);
+        console.error('Error adding users to mission:', error);
     }
 };
-
-// fréquence de la routine en ms
+// Fréquence de l exécution de la routine
 setInterval(addConnectedUsersToMission, 5000);
 
 
@@ -156,16 +149,15 @@ const addConnectedUsersToActivities = async () => {
 				for (const activity of activityList)
 					{
 						const activityId = activity._id;
-						await axios.post(`${config.BASE_URL}/activity/${activityId}/inscrireRoom/`);
+						await activityService.registerParticipantsToActivity(activityId, room._id);
 					}	 
 				}
 			}
     } catch (error) {
-        console.error('Error adding users to mission:', error);
+        console.error('Error adding users to activities:', error);
     }
 };
-
-// Set the frequency of the routine in milliseconds (5 seconds in this case)
+// Fréquence de l exécution de la routine
 setInterval(addConnectedUsersToActivities, 5000);
 
 

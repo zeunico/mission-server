@@ -1,7 +1,6 @@
 import  Instance  from '~/db/instance.model';
 import { Types } from 'mongoose';
 import { IInstance } from '~~/types/instance.interface';
-import { NOMEM } from 'dns';
 
 export class InstanceService {
 
