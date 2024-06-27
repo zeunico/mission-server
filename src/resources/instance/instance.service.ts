@@ -4,27 +4,23 @@ import { IInstance } from '~~/types/instance.interface';
 
 export class InstanceService {
 
-
 	// Creation d une nouvelle instance par NOM
-
-	static async createInstanceByName(instanceName) {
+	async createInstanceByName(instanceName) {
 		try {
 		const instanceData: IInstance = {
 		  _id: new Types.ObjectId(),
 		  name: instanceName,
 		  rooms: []
 		};
-		const createdInstance = await InstanceService.create(instanceData);
-		console.log('Created Instance :', createdInstance);
+		const createdInstance = await this.create(instanceData);
+		console.log('Nouvelle Instance Créée :', createdInstance);
 		} catch (error) {
-		  console.error('Error creating room:', error);
+		  console.error('Erreur à la création de l instance', error);
 		}
 	  }
 
-
-    // Creation d une nouvelle instance
-
-	static async create(data: IInstance): Promise<IInstance> {
+    // Création d une nouvelle instance
+	async create(data: IInstance): Promise<IInstance> {
 		const newInstance: IInstance = {
             ...data, 
 		};
@@ -35,35 +31,34 @@ export class InstanceService {
 	}
 	
 	// Met à jour une instance en particulier
-	static async update(instanceData: Partial<IInstance>, _id: Types.ObjectId): Promise<IInstance | null> {
+	async update(instanceData: Partial<IInstance>, _id: Types.ObjectId): Promise<IInstance | null> {
 		const modifiedInstance = await Instance.findByIdAndUpdate(_id, instanceData, { new: true });
 		console.log('insttanec service update');
 		console.log(await Instance.findOne(_id));
 		return modifiedInstance;
 	}
 	
-	static async findByName(instanceName: string): Promise<IInstance | null> {
+	async findByName(instanceName: string): Promise<IInstance | null> {
 		const researchedInstance = await Instance.findOne({ name: instanceName }).exec();
 		return researchedInstance;
 	}
 
-	static async findById(_id: Types.ObjectId): Promise<IInstance | null> {
+	async findById(_id: Types.ObjectId): Promise<IInstance | null> {
 		const researchedInstance = await Instance.findOne({ _id});
 		return researchedInstance;
 	}
 
 	// Trouve tous les salles
-	static async findAll(): Promise<IInstance[]> {
+	async findAll(): Promise<IInstance[]> {
 		const allInstance = await Instance.find();
 		return allInstance;
 	}
 
 	// AJOUT D'UNE SALLE A UNE INSTANCE
-
-	static async addRoomToInstance(instanceName: string, roomId: Types.ObjectId) {
+	async addRoomToInstance(instanceName: string, roomId: Types.ObjectId) {
 		try {
 		  // Find the instance by name
-		  const instance = await InstanceService.findByName(instanceName);
+		  const instance = await this.findByName(instanceName);
 		  console.log('Instance found by name:', instance);
 	
 		  if (instance) {
@@ -73,7 +68,7 @@ export class InstanceService {
 			  console.log('Room ID ',roomId, ' ajouté à l array rooms de l instance', instanceName);
 			  
 			  // Update the instance with the new rooms array
-			  const updatedInstance = await InstanceService.update({ rooms: instance.rooms }, instance._id);
+			  const updatedInstance = await this.update({ rooms: instance.rooms }, instance._id);
 			  console.log('Updated instance:', updatedInstance);
 			  return updatedInstance;
 			} else {
@@ -86,6 +81,8 @@ export class InstanceService {
 		  console.error('Error updating instance:', error);
 		}
 	  }
+
+
 }
 	
 

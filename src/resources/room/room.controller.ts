@@ -67,17 +67,15 @@ const service = new RoomService();
  *     type: string
  *   responses:
  *    200:
- *     description: Liste des salles
+ *     description: La salle récupérée par son ID
  *     content:
  *      application/json:
  *       schema:
- *        type: array
- *        items:
  *         type: object
  *         properties:
  *          _id:
  *           type: string
- *           description: Code identifiant de la salle généré par la base de données
+ *           description: ID de la salle
  *          roomCode:
  *           type: string
  *           description: Nom de code de la salle
@@ -89,7 +87,7 @@ const service = new RoomService();
  *           description: Liste des missions présentes dans la salle
  * 
  *    404:
- *     description: Aucune salle trouvée
+ *     description: Salle introuvable
  *     content:
  *      application/json:
  *       schema:
@@ -301,7 +299,7 @@ RoomController.route('/')
 	.get(async (req, res) => {
 		try {
            
-		const roomList = await RoomService.findAll();
+		const roomList = await roomService.findAll();
 	
 		if (roomList.length === 0) {
 			return res.status(404).json({ message: 'Aucune salle trouvée' });
@@ -344,18 +342,19 @@ RoomController.route('/:id([a-z0-9]{24})/moderator')
 		}
 	});
 
-// ID MODERATOR DE LA SALLE SELON ROOMCODE DE LA SALLE
-RoomController.route('/:roomCode([A-Z0-9]{6})/moderator')
-	.get(async (req, res, next) => {
-		try {
-			const roomCode = req.params.roomCode;
-			const room =  await service.findByCode(roomCode);
-			const moderator = room?.moderatorId;
-			return res.status(200).json(moderator);
-		} catch (err) {
-			next(err);
-		}
-	});
+// ID MODERATOR DE LA SALLE SELON ROOMCODE DE LA SALLE 
+// REMPLACEE PAR /instance/{instanceName}/{roomCode}/moderator
+// RoomController.route('/:roomCode([A-Z0-9]{6})/moderator')
+// 	.get(async (req, res, next) => {
+// 		try {
+// 			const roomCode = req.params.roomCode;
+// 			const room =  await service.findByCode(roomCode);
+// 			const moderator = room?.moderatorId;
+// 			return res.status(200).json(moderator);
+// 		} catch (err) {
+// 			next(err);
+// 		}
+// 	});
 
 // LISTE DES PARTICIPANTS DE LA SALLE SELON ID DE SALLE
 RoomController.route('/:id([a-z0-9]{24})/participants')
@@ -372,6 +371,8 @@ RoomController.route('/:id([a-z0-9]{24})/participants')
 	});
 	
 // LISTE DES PARTICIPANTS DE LA SALLE SELON ROOMCODE DE LA SALLE
+	/// ATTENTION findByCode  NE FCTINNE QUE POUR UNE INSTANCE UNIQUE
+
 RoomController.route('/:roomCode([A-Z0-9]{6})/participants')
 	.get(async (req, res, next) => {
 		try {
@@ -399,6 +400,8 @@ RoomController.route('/:id([a-z0-9]{24})/missions')
 	});
 	
 // LISTE DES MISSIONS DE LA SALLE SELON ROOMCODE DE LA SALLE
+	/// ATTENTION findByCode  NE FCTINNE QUE POUR UNE INSTANCE UNIQUE
+
 RoomController.route('/:roomCode([A-Z0-9]{6})/missions')
 	.get(async (req, res, next) => {
 		try {

@@ -2,6 +2,7 @@ import { config } from '~/config';
 import cors from 'cors';
 import express from 'express';
 import mongoose from 'mongoose';
+
 import MediaController from '~/resources/media/media.controller';
 import ThumbController from '~/resources/thumb/thumb.controller';
 import UsersController from '~/resources/users/users.controller';
@@ -10,6 +11,8 @@ import InstructionController from '~/resources/instruction/instruction.controlle
 import MoodleController from '~/resources/moodle/moodle.controller';
 import MissionController from '~/resources/mission/mission.controller';
 import RoomController from '~/resources/room/room.controller';
+import InstanceController from '~/resources/instance/instance.controller';
+
 import { ExceptionsHandler } from '~/middlewares/exceptions.handler';
 import { UnknownRoutesHandler } from '~/middlewares/unknownRoutes.handler';
 import bodyParser from 'body-parser';
@@ -20,7 +23,6 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import ActivityController from './resources/activity/activity.controller';
 import { MissionService } from './resources/mission/mission.service';
-import { UsersService } from './resources/users/users.service';
 import { RoomService } from './resources/room/room.service';
 import { ActivityService } from './resources/activity/activity.service';
 
@@ -29,6 +31,7 @@ import { ActivityService } from './resources/activity/activity.service';
 // new MisionService et new ActivityService pour routines inscriptions 
 const missionService = new MissionService();
 const activityService = new ActivityService();
+const roomService = new RoomService();
 
 
 // Création d'une nouvelle instance express
@@ -87,11 +90,14 @@ app.use('/instructions', InstructionController);
 // Route CRUD pour l'interface MISSION
 app.use('/mission', MissionController);
 
-// Route CRUD pour l'interface MISSION
+// Route CRUD pour l'interface ACTIVITY
 app.use('/activity', ActivityController);
 
 // Route CRUD pour l'interface ROOM
 app.use('/room', RoomController);
+
+// Route CRUD pour l'interface INSTANCE
+app.use('/instance', InstanceController);
 
 // Route CRUD pour l'interface MOODLE
 app.use('/moodle', MoodleController);
@@ -120,7 +126,7 @@ app.use((req, res, next) => {
 
 const addConnectedUsersToMission = async () => {
     try {
-        const rooms = await RoomService.findAll();
+        const rooms = await roomService.findAll();
         for (const room of rooms) {
 
             await missionService.insrireParticipantsRoomToMissions(room._id);
@@ -135,7 +141,7 @@ const addConnectedUsersToMission = async () => {
 const addConnectedUsersToActivities = async () => {
     try {
 		// Toutes les salles
-		const rooms = await RoomService.findAll();
+		const rooms = await roomService.findAll();
 		for (const room of rooms) {
 
 			// Toutes les missions dans la salle
@@ -163,51 +169,62 @@ const activityIntervalId = setInterval(() => addConnectedUsersToActivities(), 50
 // On demande à express d'écouter les requetes sur le port défini dans la config
 const start = async () => {
 	try {
-		httpServer.listen(config.API_PORT);
-		console.log('MISSION HTTP server à l\'écoute sur : ' + config.API_PORT);
-		mongoose.connect(config.DB_URI);
 
-		httpServer.on('error', (err: Error) => {
-			throw err;
-		});
 
-		process.on('SIGINT', () => {
-			httpServer.close();
-		});
+		// PAS DE SSL KEY et CERT
+		if (!(config.SSL_KEY && config.SSL_CERT)) {
 
-		httpServer.on('close', async () => {
-			// On clear les missionIntervalId et activityIntervalId après le SIGINT pour interrompre les routines d'inscription
-			clearInterval(missionIntervalId);
-			clearInterval(activityIntervalId);
-			// Déconnexion Mongo
-			await mongoose.disconnect();
-			console.log('Server closed');
-		});
+			httpServer.listen(config.API_PORT);
+			console.log('MISSION HTTP server à l\'écoute sur : ' + config.API_PORT);
+			mongoose.connect(config.DB_URI);
 
-		if (config.SSL_KEY && config.SSL_CERT) {
-			const options = {
-				key: readFileSync(config.SSL_KEY),
-				cert: readFileSync(config.SSL_CERT)
-			};
-
-			const httpsServer = https.createServer(options, app);
-			httpsServer.listen(443);
-			console.log('HTTPS server is listening on port : 443');
-
-			httpsServer.on('error', (err: Error) => {
+			httpServer.on('error', (err: Error) => {
 				throw err;
 			});
 
 			process.on('SIGINT', () => {
-				httpsServer.close();
-			});
-
-			httpsServer.on('close', async () => {
-				clearInterval(missionIntervalId);
-				clearInterval(activityIntervalId);
 				httpServer.close();
 			});
+
+			httpServer.on('close', async () => {
+				// On clear les missionIntervalId et activityIntervalId après le SIGINT pour interrompre les routines d'inscription
+				clearInterval(missionIntervalId);
+				clearInterval(activityIntervalId);
+				// Déconnexion Mongo
+				await mongoose.disconnect();
+				console.log('Server closed');
+			});
 		}
+
+
+		// AVEC SSL KEY et CERT // INUTILE ACTUELLEMENT CAR APP DERRIERE PROXY CONFIGURE
+
+		if (config.SSL_KEY && config.SSL_CERT) {
+				const options = {
+					key: readFileSync(config.SSL_KEY),
+					cert: readFileSync(config.SSL_CERT)
+				};
+
+				const httpsServer = https.createServer(options, app);
+				httpsServer.listen(443);
+				console.log('HTTPS (avec key et cert) server is listening on port : 443');
+				
+				mongoose.connect(config.DB_URI);
+
+				httpsServer.on('error', (err: Error) => {
+					throw err;
+				});
+
+				process.on('SIGINT', () => {
+					httpsServer.close();
+				});
+
+				httpsServer.on('close', async () => {
+					clearInterval(missionIntervalId);
+					clearInterval(activityIntervalId);
+					httpsServer.close();
+				});
+			}
 	} catch (error) {
 		console.error(error);
 		process.exit(1);

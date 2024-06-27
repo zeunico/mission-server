@@ -88,10 +88,11 @@ export class ActivityService {
     async inscriptionActivity(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {
 		const activity = await Activity.Activity.findById(activityId);
 		if (activity) {
-			console.log('activite',activity);
 			// Ajout du userId a l' array NON_DEMARREE
 			activity.etat.set("NON_DEMARREE", activity.etat.get("NON_DEMARREE").concat(userId));
 			activity.save();
+			console.log('Inscription réussie à l activité', activityId ,'pour' , userId );
+
 			return activity;}
 		else return null;
 	}
@@ -100,24 +101,24 @@ export class ActivityService {
 	async startActivity(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {
 		const activity = await Activity.Activity.findById(activityId);
 		if (activity) {
-			console.log('activiteyy',activity);
 			// Ajout du userId a l' array EN_COURS
 			activity.etat.set("EN_COURS", activity.etat.get("EN_COURS").concat(userId));   
 			activity.etat.set("NON_DEMARREE", activity.etat.get("NON_DEMARREE").filter((id: Types.ObjectId) => !id.equals(userId)));
 			activity.save();
+			console.log('Démarrage réussie de l activité', activityId ,'pour' , userId );
 			return activity;}
 		else return null;
 	}
 
-	// PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
+	// PASSAGE DE l'USERID DE EN_COURS A TERMINEE DANS LES ETATS DE L ACTIVITE
 	async endActivity(activityId: Types.ObjectId, userId: Types.ObjectId): Promise<IActivity | null> {
 		const activity = await Activity.Activity.findById(activityId);
 		if (activity) {
-			console.log('activiteyy',activity);
 			// Ajout du userId a l' array EN_COURS
 			activity.etat.set("TERMINEE", activity.etat.get("TERMINEE").concat(userId));   
 			activity.etat.set("EN_COURS", activity.etat.get("EN_COURS").filter((id: Types.ObjectId) => !id.equals(userId)));
 			activity.save();
+			console.log('Activité' , activityId ,' terminée avec succès pour' , userId );
 			return activity;}
 		else return null;
 	}

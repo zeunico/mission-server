@@ -13,6 +13,7 @@ import multer from 'multer';
 import { getFileTypeByExtension, getFileNameFormatted } from '~/utils/file.utils';
 import EEtat from '~~/types/etat.enum';
 import { start } from 'repl';
+import Mission from '~/db/mission.model';
 
 
 // Création d'un Router Express
@@ -1653,6 +1654,50 @@ const userService = new UsersService();
  *         description: Aucune mission trouvée pour cette salle
  *       500:
  *         description: Erreur interne du serveur
+ * /{missionId}/visuel:
+ *  delete:
+ *   summary: Suppression du visuel d'une mission
+ *   tags: [Mission]
+ *   parameters:
+ *    - in: path
+ *      name: missionId
+ *      required: true
+ *      schema:
+ *       type: string
+ *       pattern: '^[a-z0-9]{24}$'
+ *      description: ID de la mission (24 caractères alphanumériques)
+ *   responses:
+ *    200:
+ *     description: Visuel de la mission supprimé avec succès
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Confirmation de la suppression du visuel
+ *    404:
+ *     description: Mission ou visuel non trouvé
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         error:
+ *          type: string
+ *          description: Message d'erreur indiquant que la mission ou le visuel est introuvable
+ *    500:
+ *     description: Erreur interne du serveur
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         error:
+ *          type: string
+ *          description: Message d'erreur générique
+
  */
 // ROUTE RACINE LISTE TOUTES LES MISSIONS ET ROUTE POST PAR ROOM ID
 MissionController.route('/')
@@ -1683,7 +1728,7 @@ MissionController.route('/')
 				if (room) {
 					const roomId = new Types.ObjectId(req.body.roomId);
 				    room.mission.push(mission._id);	
-				    await RoomService.update(room, roomId);
+				    await roomService.update(room, roomId);
 				} else {console.log('salle inconnue');}
 
 				return res.status(201).json(mission);
@@ -1695,7 +1740,8 @@ MissionController.route('/')
 		}
 	});
 // ROUTE POST MISSION DANS UNE SALLE IDENTIFIEE PAR SON ROOMCODE &&
-// GET LISTE DES MISSIONS DANS UNE SALLE PAR UN ROOMCODE  
+// GET LISTE DES MISSIONS DANS UNE SALLE PAR UN ROOMCODE 
+// EN COURS DE DEV 
 MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
 	.post(async (req, res, next) => {
 		try {
@@ -1708,7 +1754,7 @@ MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
 				const mission = await service.createMissionByCode(req.body, roomId);
 
 				room?.mission.push(mission._id);	
-				await RoomService.update(room, roomId);				
+				await roomService.update(room, roomId);				
 
 				
 				return res.status(201).json(mission);
@@ -1728,6 +1774,8 @@ MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
     })
 	.get(async (req, res, next) => {
 		try {
+				/// ATTENTION findByCode  NE FCTINNE QUE POUR UNE INSTANCE UNIQUE
+
 			const room = await roomService.findByCode(req.params.roomCode);
 			if (room) {
 				const missionList = room.mission;
@@ -2277,7 +2325,6 @@ MissionController.route('/:id([a-z0-9]{24})/visuel')
 				if (visuel) {
 					return res.sendFile(join(config.ATTACHEMENT_SRC, 'VISUEL-MISSIONS', 'images' , visuel.name));	
 				}
-
 			}
 		}
 		 catch (error) {
@@ -2286,6 +2333,34 @@ MissionController.route('/:id([a-z0-9]{24})/visuel')
 		}
 	});
 
+
+//  DELETE VISUEL MISSION 
+MissionController.route('/:missionId([a-z0-9]{24})/visuel')
+	.delete(async (req, res, next) => {
+		try {
+			const missionId = new Types.ObjectId(req.params.missionId);
+			const mission = await service.find(missionId);
+			if (!mission) {
+				return res.status(404).json({ error: 'Mission non trouvée.' });
+			}
+			const visuel = await service.visuel(missionId);
+			
+			if (!visuel) {
+				return res.status(404).json({ error: 'Visuel non trouvé.' });
+			}
+			
+			fs.unlinkSync(join(config.ATTACHEMENT_SRC, 'VISUEL-MISSIONS', 'images' , visuel.name));
+			await mediaService.delete(visuel._id);
+
+			// On remet mission.visuel à null => au get au a le visuel par defaut dans le server /usr/local/misin-server/media/mission-visuel-default.jpg
+			mission.visuel = null;
+			await mission.save();
+
+			return res.status(200).json();
+		} catch (err) {
+			next(err);
+		}
+	});
 
 // Création d'un objet multer Storage
 const fileStorage = multer.diskStorage({

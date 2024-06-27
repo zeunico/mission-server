@@ -68,9 +68,9 @@ const missionService = new MissionService();
  *         format: binary
  *         description: Fichier à envoyer (photo ou vidéo)
  *         required: false
- *        room: 
+ *        activityId: 
  *         type: string
- *         description: RoomCode de la salle
+ *         description: ID de l'activité
  *   responses:
  *    201:
  *     description: Réponse utilisateur créée
@@ -82,18 +82,27 @@ const missionService = new MissionService();
  *         _id:
  *          type: string
  *          description: ID de la réponse utilisateur
- *         description:
+ *         activityId:
  *          type: string
- *          description: Description de la réponse utilisateur
- *         userId:
- *          type: string
- *          description: ID de l'utilisateur
+ *          description: ID de l'activité
  *         mediaId:
  *          type: string
  *          description: ID du média
+ *         description:
+ *          type: string
+ *          description: Description de la réponse utilisateur
+ *         room:
+ *          type: string
+ *          description: RoomCode de la salle
+ *         userId:
+ *          type: string
+ *          description: ID de l'utilisateur
+ *         instance:
+ *          type: string
+ *          description: Instance de la salle
  *         thumbId:
  *          type: string
- *          description: ID du thumbnail
+ *          description: ID du thumbnail du media si image ou video
  *    404:
  *     description: Utilisateur introuvable
  *     content:
@@ -125,15 +134,27 @@ const missionService = new MissionService();
  *         _id:
  *          type: string
  *          description: ID de la réponse utilisateur
- *         description:
+ *         activityId:
  *          type: string
- *          description: Description de la réponse utilisateur
- *         userId:
- *          type: string
- *          description: ID de l'utilisateur
+ *          description: ID de l'activité
  *         mediaId:
  *          type: string
  *          description: ID du média
+ *         description:
+ *          type: string
+ *          description: Description de la réponse utilisateur
+ *         room:
+ *          type: string
+ *          description: RoomCode de la salle
+ *         userId:
+ *          type: string
+ *          description: ID de l'utilisateur
+ *         instance:
+ *          type: string
+ *          description: Instance de la salle
+ *         thumbId:
+ *          type: string
+ *          description: ID du thumbnail du media si image ou video
  *    404:
  *     description: Réponse utilisateur introuvable
  *     content:
@@ -334,7 +355,6 @@ UserDataController.route('/')
 				throw new NotFoundException('Activité introuvable');
 			}
 
-			 
 			let room;
             if (!req.body.room) {
                 console.log('yep pas de romCode dans la requête');

@@ -12,7 +12,7 @@ import { downloadFile } from '~/utils/file.utils';
 import { MediaService } from '../media/media.service';
 import { UsersService } from '~/resources/users/users.service';
 import { RoomService } from '~/resources/room/room.service';
-import { InstanceService } from '~/resources/instance/instance.service';
+import { InstanceService} from '~/resources/instance/instance.service';
 
 import EMedia from '~~/types/media.enum';
 import { TokenHandler } from '~/middlewares/token.handler';
@@ -28,6 +28,7 @@ const UsersController: Router = Router();
 const service = new UsersService();
 const mediaService = new MediaService();
 const roomService = new RoomService();
+const instanceService =new InstanceService();
 
 /**
  * @swagger
@@ -550,7 +551,7 @@ async function createNewRoom(roomCode) {
 		participants: [],
 		mission: []
 		};
-	const createdRoom = await RoomService.create(roomData);
+	const createdRoom = await roomService.create(roomData);
 	console.log('Created Room:', createdRoom);
 	} catch (error) {
 	  console.error('Error creating room:', error);
@@ -580,11 +581,11 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 				user = await service.findByEmail(email, req.query.instance.toString());
 			} else {
 				user = await service.findByEmail(email);
-			}
-			console.log('user by findByEmail ', user);
-		
+			}		
 
         // CREATION NOUVELLE ROOM SI CET USER PROVIENT D UNE ROOM PAR ENCORE EN BDD 
+			/// ATTENTION findByCode  NE FCTINNE QUE POUR UNE INSTANCE UNIQUE
+
 			const roomCode = req.query.roomCode?.toString();
 			console.log('req params roomcode?????', roomCode);
 			let room: IRoom | null;
@@ -628,15 +629,13 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 											console.log('Cet user est le moderator de la salle ! Il est ajouté dans la salle ');
 											room.moderatorId = user._id;
 										
-											const updatedRoom = await RoomService.update({ moderatorId: user._id }, room._id);
-											console.log('Updated room:', updatedRoom);
+											const updatedRoom = await roomService.update({ moderatorId: user._id }, room._id);
 										} else {
 											// On ajoute le user à la liste des participants dans la salle SEULEMENT SI il n'est pas moderator
 											room.participants.push(user._id);
 										}
 									
-									RoomService.update(room, room._id);
-									const roomCode = room.roomCode;
+										roomService.update(room, room._id);
 
 
 									  /// INSTANCES 
@@ -644,17 +643,16 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 											console.log('instance name', instanceName);
 											
 											if (instanceName) {
-												const instance = await InstanceService.findByName(instanceName);
-												console.log('instance', instance);
+												const instance = await instanceService.findByName(instanceName);
 												const roomId = room._id;
 												if (instance === null) {
 													// CREATION NOUVELLE INSTANCE PAR NOM user.instance
-													await InstanceService.createInstanceByName(instanceName);
-													const instance = await InstanceService.findByName(instanceName);
+													await instanceService.createInstanceByName(instanceName);
+													const instance = await instanceService.findByName(instanceName);
 													if (instance) {
 													const newInstanceName = instance.name;
 													// AJOUT SALLE DANS INSTANCE
-													InstanceService.addRoomToInstance(newInstanceName, new Types.ObjectId(roomId));
+													await instanceService.addRoomToInstance(newInstanceName, new Types.ObjectId(roomId));
 													}
 			
 												} else {
@@ -664,7 +662,7 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 														if (isRoomId) {
 														  console.log('La salle existe déjà dans cette instance');
 														} else {
-																InstanceService.addRoomToInstance(instanceName, roomId);
+															await instanceService.addRoomToInstance(instanceName, roomId);
 																  console.log('La salle a été ajoutée à cette instance');
 																}
 														}
@@ -698,8 +696,6 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 					}
 					else { 
 						// l utilisateur existe déjà mise à jour Nvelle roomId dans user ? Nvelle instance ? Nvelle connexion ? MOderation
-						console.log('user exisrs  avant check', user);
-						console.log('room._id avant check', room._id);
 						// Ajout room à l'array room du participant si elle n est pas déjà
 						if (room && room._id) {
 							
@@ -718,24 +714,23 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 								console.log('roomCode ou RoomId invalide.');
 							}
 
-					  				/// CREATION INSTANCES  ET/OU MAJ ROOM
+					  				// CREATION INSTANCES  
 																  const instanceName = user.instance;
 																  console.log('instance name', instanceName);
 																  
 																  if (instanceName) {
-																	  const instance = await InstanceService.findByName(instanceName);
-																	  console.log('instance', instance);
+																	  const instance = await instanceService.findByName(instanceName);
 																	  const roomId = room._id;
 																	  if (instance === null) {
 																		  // CREATION NOUVELLE INSTANCE PAR NOM user.instance
-																		  await InstanceService.createInstanceByName(instanceName);
-																		  const instance = await InstanceService.findByName(instanceName);
+																		  await instanceService.createInstanceByName(instanceName);
+																		  const instance = await instanceService.findByName(instanceName);
 																		  if (instance) {
 																		  const newInstanceName = instance.name;
 																		  // AJOUT SALLE DANS INSTANCE
-																		  InstanceService.addRoomToInstance(newInstanceName, new Types.ObjectId(roomId));
+																		  await instanceService.addRoomToInstance(newInstanceName, new Types.ObjectId(roomId));
 																		  }
-								  
+								    // MAJ ROOM SI INSTANCE EXISTE PAS LA SALLE
 																	  } else {
 																			  // L'instance existe! On vérifie si la room est déjà dans l'array de l'instance, si non on l'ajoute
 																			  const isRoomId = instance.rooms.includes(roomId);
@@ -743,30 +738,29 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
 																			  if (isRoomId) {
 																				console.log('La salle existe déjà dans cette instance');
 																			  } else {
-																					  InstanceService.addRoomToInstance(instanceName, roomId);
-																						console.log('La salle a été ajoutée à cette instance');
+																					  await instanceService.addRoomToInstance(instanceName, roomId);
+																					  console.log('La salle a été ajoutée à cette instance');
 																					  }
 																			  }
 																  }
 
 
 									/// CREATION OU MAJ MODERATEUR
-									const isModerator = resAxios.data.user.isModerator;
-									console.log('ismodo from axios', isModerator);
-									if (isModerator) {
-										// Le modérateur est ajouté comme modérateur de la salle
-									
-											console.log('Cet user est le moderator de la salle ! Il est ajouté dans la salle ');
-											room.moderatorId = user._id;
+										const isModerator = resAxios.data.user.isModerator;
+										console.log('ismodo from axios', isModerator);
+										if (isModerator) {
+											// Le modérateur est ajouté comme modérateur de la salle
 										
-											const updatedRoom = await RoomService.update({ moderatorId: user._id }, room._id);
-											console.log('Updated room:', updatedRoom);
-										} else {
-											// On ajoute le user à la liste des participants dans la salle SEULEMENT SI il n'est pas moderator
-											room.participants.push(user._id);
-										}
-									
-									// RoomService.update(room, room._id);
+												console.log('Cet user est le moderator de la salle ! Il est ajouté dans la salle ');
+												room.moderatorId = user._id;
+											
+												const updatedRoom = await roomService.update({ moderatorId: user._id }, room._id);
+											} else {
+												// On ajoute le user à la liste des participants dans la salle SEULEMENT SI il n'est pas moderator
+												room.participants.push(user._id);
+											}
+										
+									 roomService.update(room, room._id);
 
 
 									///   update media si disparu de la base

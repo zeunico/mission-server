@@ -80,8 +80,8 @@ var config2 = {
 
 // src/index.ts
 var import_cors = __toESM(require("cors"));
-var import_express10 = __toESM(require("express"));
-var import_mongoose21 = __toESM(require("mongoose"));
+var import_express11 = __toESM(require("express"));
+var import_mongoose22 = __toESM(require("mongoose"));
 
 // src/resources/media/media.controller.ts
 var import_multer = __toESM(require("multer"));
@@ -342,8 +342,6 @@ var UsersService = class {
     const modifiedUser = await user_model_default.findByIdAndUpdate(_id, userData, {
       new: true
     });
-    console.log("yep c ici");
-    console.log(await user_model_default.findOne(_id));
     return modifiedUser;
   }
   // Suppression d'un utilisateur
@@ -866,55 +864,6 @@ var RoomSchema = new import_mongoose7.default.Schema({
 var Room = import_mongoose7.default.model("Room", RoomSchema);
 var room_model_default = Room;
 
-// src/resources/room/room.service.ts
-var RoomService = class {
-  // Creation d une nouvelle salle
-  static async create(data) {
-    const newRoom = __spreadValues({}, data);
-    console.log("room.service : nouvelle salle \xE0 cr\xE9er", newRoom);
-    return await room_model_default.create(newRoom);
-  }
-  // Met à jour une salle en particulier
-  static async update(roomData, _id) {
-    const modifiedRoom = await room_model_default.findByIdAndUpdate(_id, roomData, {
-      new: true
-    });
-    console.log("room service update");
-    console.log(await room_model_default.findOne(_id));
-    return modifiedRoom;
-  }
-  /// ATTENTION findByCode  NE FCTINNE QUE POUR UNE INSTANCE UNIQUE
-  async findByCode(roomCode) {
-    console.log("roomCode in service", roomCode);
-    const researchedRoom = await room_model_default.findOne({
-      roomCode
-    });
-    console.log("researchedromm", researchedRoom);
-    return researchedRoom;
-  }
-  // Find ROOMCODE BY ROOMID
-  async findCodeById(_id) {
-    console.log("roomCode in service", _id);
-    const researchedRoom = await room_model_default.findOne({
-      _id
-    });
-    const reserchedCode = researchedRoom == null ? void 0 : researchedRoom.roomCode;
-    return reserchedCode;
-  }
-  async findById(_id) {
-    const researchedRoom = await room_model_default.findOne({
-      _id
-    });
-    return researchedRoom;
-  }
-  // Trouve tous les salles
-  static async findAll() {
-    const allRoom = await room_model_default.find();
-    return allRoom;
-  }
-};
-__name(RoomService, "RoomService");
-
 // src/db/instance.model.ts
 var import_mongoose8 = __toESM(require("mongoose"));
 var Instancechema = new import_mongoose8.default.Schema({
@@ -937,27 +886,27 @@ var instance_model_default = MInstance;
 var import_mongoose9 = require("mongoose");
 var InstanceService = class {
   // Creation d une nouvelle instance par NOM
-  static async createInstanceByName(instanceName) {
+  async createInstanceByName(instanceName) {
     try {
       const instanceData = {
         _id: new import_mongoose9.Types.ObjectId(),
         name: instanceName,
         rooms: []
       };
-      const createdInstance = await InstanceService.create(instanceData);
-      console.log("Created Instance :", createdInstance);
+      const createdInstance = await this.create(instanceData);
+      console.log("Nouvelle Instance Cr\xE9\xE9e :", createdInstance);
     } catch (error) {
-      console.error("Error creating room:", error);
+      console.error("Erreur \xE0 la cr\xE9ation de l instance", error);
     }
   }
-  // Creation d une nouvelle instance
-  static async create(data) {
+  // Création d une nouvelle instance
+  async create(data) {
     const newInstance = __spreadValues({}, data);
     console.log("instance .service : nouvelle instance \xE0 cr\xE9er", newInstance);
     return await instance_model_default.create(newInstance);
   }
   // Met à jour une instance en particulier
-  static async update(instanceData, _id) {
+  async update(instanceData, _id) {
     const modifiedInstance = await instance_model_default.findByIdAndUpdate(_id, instanceData, {
       new: true
     });
@@ -965,33 +914,33 @@ var InstanceService = class {
     console.log(await instance_model_default.findOne(_id));
     return modifiedInstance;
   }
-  static async findByName(instanceName) {
+  async findByName(instanceName) {
     const researchedInstance = await instance_model_default.findOne({
       name: instanceName
     }).exec();
     return researchedInstance;
   }
-  static async findById(_id) {
+  async findById(_id) {
     const researchedInstance = await instance_model_default.findOne({
       _id
     });
     return researchedInstance;
   }
   // Trouve tous les salles
-  static async findAll() {
+  async findAll() {
     const allInstance = await instance_model_default.find();
     return allInstance;
   }
   // AJOUT D'UNE SALLE A UNE INSTANCE
-  static async addRoomToInstance(instanceName, roomId) {
+  async addRoomToInstance(instanceName, roomId) {
     try {
-      const instance = await InstanceService.findByName(instanceName);
+      const instance = await this.findByName(instanceName);
       console.log("Instance found by name:", instance);
       if (instance) {
         if (!instance.rooms.includes(roomId)) {
           instance.rooms.push(roomId);
           console.log("Room ID ", roomId, " ajout\xE9 \xE0 l array rooms de l instance", instanceName);
-          const updatedInstance = await InstanceService.update({
+          const updatedInstance = await this.update({
             rooms: instance.rooms
           }, instance._id);
           console.log("Updated instance:", updatedInstance);
@@ -1008,6 +957,72 @@ var InstanceService = class {
   }
 };
 __name(InstanceService, "InstanceService");
+
+// src/resources/room/room.service.ts
+var instanceService = new InstanceService();
+var RoomService = class {
+  // Creation d une nouvelle salle
+  async create(data) {
+    const newRoom = __spreadValues({}, data);
+    console.log("room.service : nouvelle salle \xE0 cr\xE9er", newRoom);
+    return await room_model_default.create(newRoom);
+  }
+  // Met à jour une salle en particulier
+  async update(roomData, _id) {
+    const modifiedRoom = await room_model_default.findByIdAndUpdate(_id, roomData, {
+      new: true
+    });
+    return modifiedRoom;
+  }
+  /// ATTENTION findByCode  NE FCTINNE QUE POUR UNE INSTANCE UNIQUE
+  async findByCode(roomCode) {
+    console.log("roomCode in service", roomCode);
+    const researchedRoom = await room_model_default.findOne({
+      roomCode
+    });
+    return researchedRoom;
+  }
+  // Trouve la ROOM selon le code de la salle et le nom de l'instance
+  async findByCodeAndInstance(roomCode, instanceName) {
+    console.log("roomCode in service", roomCode);
+    const arrayRoomSameCode = await room_model_default.find({
+      roomCode
+    });
+    if (!arrayRoomSameCode.length) {
+      return null;
+    }
+    const roomIds = arrayRoomSameCode.map((room) => room._id.toString());
+    const instance = await instanceService.findByName(instanceName);
+    if (!instance) {
+      return null;
+    }
+    const instanceRoomIds = instance.rooms.map((room) => room.toString());
+    const researchedRoom = arrayRoomSameCode.find((room) => instanceRoomIds.includes(room._id.toString()));
+    return researchedRoom || null;
+  }
+  // Trouve le ROOMCODE selon l ID de la room
+  async findCodeById(_id) {
+    console.log("roomCode in service", _id);
+    const researchedRoom = await room_model_default.findOne({
+      _id
+    });
+    const reserchedCode = researchedRoom == null ? void 0 : researchedRoom.roomCode;
+    return reserchedCode;
+  }
+  // Une salle par son ID
+  async findById(_id) {
+    const researchedRoom = await room_model_default.findOne({
+      _id
+    });
+    return researchedRoom;
+  }
+  // Trouve tous les salles
+  async findAll() {
+    const allRoom = await room_model_default.find();
+    return allRoom;
+  }
+};
+__name(RoomService, "RoomService");
 
 // src/middlewares/token.handler.ts
 var import_crypto = __toESM(require("crypto"));
@@ -1033,7 +1048,8 @@ var import_path9 = require("path");
 var UsersController = (0, import_express3.Router)();
 var service = new UsersService();
 var mediaService2 = new MediaService();
-var roomService = new RoomService();
+var roomService2 = new RoomService();
+var instanceService2 = new InstanceService();
 async function createNewRoom(roomCode) {
   try {
     const users = service.findAll();
@@ -1045,7 +1061,7 @@ async function createNewRoom(roomCode) {
       participants: [],
       mission: []
     };
-    const createdRoom = await RoomService.create(roomData);
+    const createdRoom = await roomService2.create(roomData);
     console.log("Created Room:", createdRoom);
   } catch (error) {
     console.error("Error creating room:", error);
@@ -1069,15 +1085,14 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
     } else {
       user = await service.findByEmail(email);
     }
-    console.log("user by findByEmail ", user);
     const roomCode = (_a9 = req.query.roomCode) == null ? void 0 : _a9.toString();
     console.log("req params roomcode?????", roomCode);
     let room;
     if (roomCode) {
-      room = await roomService.findByCode(roomCode);
+      room = await roomService2.findByCode(roomCode);
       if (room === null) {
         await createNewRoom(roomCode);
-        room = await roomService.findByCode(roomCode);
+        room = await roomService2.findByCode(roomCode);
       }
     }
     if (req.query.roomCode) {
@@ -1111,27 +1126,24 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
             if (isModerator) {
               console.log("Cet user est le moderator de la salle ! Il est ajout\xE9 dans la salle ");
               room.moderatorId = user._id;
-              const updatedRoom = await RoomService.update({
+              const updatedRoom = await roomService2.update({
                 moderatorId: user._id
               }, room._id);
-              console.log("Updated room:", updatedRoom);
             } else {
               room.participants.push(user._id);
             }
-            RoomService.update(room, room._id);
-            const roomCode2 = room.roomCode;
+            roomService2.update(room, room._id);
             const instanceName = user.instance;
             console.log("instance name", instanceName);
             if (instanceName) {
-              const instance = await InstanceService.findByName(instanceName);
-              console.log("instance", instance);
+              const instance = await instanceService2.findByName(instanceName);
               const roomId = room._id;
               if (instance === null) {
-                await InstanceService.createInstanceByName(instanceName);
-                const instance2 = await InstanceService.findByName(instanceName);
+                await instanceService2.createInstanceByName(instanceName);
+                const instance2 = await instanceService2.findByName(instanceName);
                 if (instance2) {
                   const newInstanceName = instance2.name;
-                  InstanceService.addRoomToInstance(newInstanceName, new import_mongoose10.Types.ObjectId(roomId));
+                  await instanceService2.addRoomToInstance(newInstanceName, new import_mongoose10.Types.ObjectId(roomId));
                 }
               } else {
                 const isRoomId = instance.rooms.includes(roomId);
@@ -1139,7 +1151,7 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
                 if (isRoomId) {
                   console.log("La salle existe d\xE9j\xE0 dans cette instance");
                 } else {
-                  InstanceService.addRoomToInstance(instanceName, roomId);
+                  await instanceService2.addRoomToInstance(instanceName, roomId);
                   console.log("La salle a \xE9t\xE9 ajout\xE9e \xE0 cette instance");
                 }
               }
@@ -1164,8 +1176,6 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
             }
           }
         } else {
-          console.log("user exisrs  avant check", user);
-          console.log("room._id avant check", room._id);
           if (room && room._id) {
             if (user.roomId.includes(room._id)) {
               await service.update({
@@ -1186,15 +1196,14 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
           const instanceName = user.instance;
           console.log("instance name", instanceName);
           if (instanceName) {
-            const instance = await InstanceService.findByName(instanceName);
-            console.log("instance", instance);
+            const instance = await instanceService2.findByName(instanceName);
             const roomId = room._id;
             if (instance === null) {
-              await InstanceService.createInstanceByName(instanceName);
-              const instance2 = await InstanceService.findByName(instanceName);
+              await instanceService2.createInstanceByName(instanceName);
+              const instance2 = await instanceService2.findByName(instanceName);
               if (instance2) {
                 const newInstanceName = instance2.name;
-                InstanceService.addRoomToInstance(newInstanceName, new import_mongoose10.Types.ObjectId(roomId));
+                await instanceService2.addRoomToInstance(newInstanceName, new import_mongoose10.Types.ObjectId(roomId));
               }
             } else {
               const isRoomId = instance.rooms.includes(roomId);
@@ -1202,7 +1211,7 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
               if (isRoomId) {
                 console.log("La salle existe d\xE9j\xE0 dans cette instance");
               } else {
-                InstanceService.addRoomToInstance(instanceName, roomId);
+                await instanceService2.addRoomToInstance(instanceName, roomId);
                 console.log("La salle a \xE9t\xE9 ajout\xE9e \xE0 cette instance");
               }
             }
@@ -1212,13 +1221,13 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})").get
           if (isModerator) {
             console.log("Cet user est le moderator de la salle ! Il est ajout\xE9 dans la salle ");
             room.moderatorId = user._id;
-            const updatedRoom = await RoomService.update({
+            const updatedRoom = await roomService2.update({
               moderatorId: user._id
             }, room._id);
-            console.log("Updated room:", updatedRoom);
           } else {
             room.participants.push(user._id);
           }
+          roomService2.update(room, room._id);
           const userPictureId = new import_mongoose10.Types.ObjectId((_a10 = user.picture) == null ? void 0 : _a10.toString());
           const userPicture = await mediaService2.find(userPictureId);
           if (userPicture) {
@@ -1328,7 +1337,7 @@ UsersController.route("/:idUser([a-z0-9]{24})/ismoderator/:idRoom([a-z0-9]{24})"
     const userId = new import_mongoose10.Types.ObjectId(req.params.idUser);
     const roomId = new import_mongoose10.Types.ObjectId(req.params.idRoom);
     const user = await service.find(userId);
-    const room = await roomService.findById(roomId);
+    const room = await roomService2.findById(roomId);
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
     }
@@ -1352,7 +1361,7 @@ UsersController.route("/:idUser([a-z0-9]{24})/ismoderatorConnect").get(async (re
     const user = await service.find(userId);
     console.log("ududeu", user);
     const roomId = new import_mongoose10.Types.ObjectId(user == null ? void 0 : user.connexion);
-    const room = await roomService.findById(roomId);
+    const room = await roomService2.findById(roomId);
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
     }
@@ -1376,7 +1385,7 @@ UsersController.route("/:idUser([a-z0-9]{24})/connect/:idRoom([a-z0-9]{24})").pu
     const userId = new import_mongoose10.Types.ObjectId(req.params.idUser);
     const roomId = new import_mongoose10.Types.ObjectId(req.params.idRoom);
     const user = await service.find(userId);
-    const room = await roomService.findById(roomId);
+    const room = await roomService2.findById(roomId);
     const roomCode = room == null ? void 0 : room.roomCode;
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
@@ -1403,7 +1412,7 @@ UsersController.route("/:idUser([a-z0-9]{24})/disconnect/:idRoom([a-z0-9]{24})")
     const userId = new import_mongoose10.Types.ObjectId(req.params.idUser);
     const roomId = new import_mongoose10.Types.ObjectId(req.params.idRoom);
     const user = await service.find(userId);
-    const room = await roomService.findById(roomId);
+    const room = await roomService2.findById(roomId);
     const roomCode = room == null ? void 0 : room.roomCode;
     if (!user) {
       throw new NotFoundException("Utilisateur introuvable");
@@ -1428,7 +1437,7 @@ UsersController.route("/:idUser([a-z0-9]{24})/disconnect/:idRoom([a-z0-9]{24})")
 UsersController.route("/listconnect/:idRoom([a-z0-9]{24})").get(async (req, res, next) => {
   try {
     const roomId = new import_mongoose10.Types.ObjectId(req.params.idRoom);
-    const room = await roomService.findById(roomId);
+    const room = await roomService2.findById(roomId);
     if (room) {
       const moderatorId = room == null ? void 0 : room.moderatorId;
       const connectedUsers = await service.findUserNamesConnectedToRoomExcludingModerator(roomId, moderatorId);
@@ -1442,7 +1451,7 @@ UsersController.route("/listconnect/:idRoom([a-z0-9]{24})").get(async (req, res,
 UsersController.route("/nbrconnect/:idRoom([a-z0-9]{24})").get(async (req, res, next) => {
   try {
     const roomId = new import_mongoose10.Types.ObjectId(req.params.idRoom);
-    const room = await roomService.findById(roomId);
+    const room = await roomService2.findById(roomId);
     if (room) {
       const moderatorId = room == null ? void 0 : room.moderatorId;
       const nbrConnectedUsers = await service.countConnectedUsersExcludingModerator(roomId, moderatorId);
@@ -1548,7 +1557,7 @@ var etat_enum_default = EEtat;
 
 // src/resources/mission/mission.service.ts
 var mediaService3 = new MediaService();
-var roomService2 = new RoomService();
+var roomService3 = new RoomService();
 var MissionService = class {
   // Creation d une nouvelle mission
   async createMission(datas) {
@@ -1729,7 +1738,7 @@ var MissionService = class {
     }
   }
   async inscrireParticipantsToMission(missionId, roomId) {
-    const room = await roomService2.findById(roomId);
+    const room = await roomService3.findById(roomId);
     if (!room) {
       throw new Error("Room not found");
     }
@@ -1753,7 +1762,7 @@ var MissionService = class {
     }
     return results;
   }
-  async insrireParticipantsRoomMissions(roomId) {
+  async insrireParticipantsRoomToMissions(roomId) {
     const missions = await this.findByRoomId(roomId);
     for (const mission of missions) {
       await this.inscrireParticipantsToMission(mission._id, roomId);
@@ -1886,7 +1895,7 @@ var activity_model_default = {
 
 // src/resources/activity/activity.service.ts
 var missionService = new MissionService();
-var roomService3 = new RoomService();
+var roomService4 = new RoomService();
 var ActivityService = class {
   // Création d une activité !!! HORS CLASS PRODUIRE OU CONSULTER // PAS DE CHAMP TYPE OU decription_detailleee_.....
   async create(data) {
@@ -1951,9 +1960,9 @@ var ActivityService = class {
   async inscriptionActivity(activityId, userId) {
     const activity2 = await activity_model_default.Activity.findById(activityId);
     if (activity2) {
-      console.log("activite", activity2);
       activity2.etat.set("NON_DEMARREE", activity2.etat.get("NON_DEMARREE").concat(userId));
       activity2.save();
+      console.log("Inscription r\xE9ussie \xE0 l activit\xE9", activityId, "pour", userId);
       return activity2;
     } else
       return null;
@@ -1962,22 +1971,22 @@ var ActivityService = class {
   async startActivity(activityId, userId) {
     const activity2 = await activity_model_default.Activity.findById(activityId);
     if (activity2) {
-      console.log("activiteyy", activity2);
       activity2.etat.set("EN_COURS", activity2.etat.get("EN_COURS").concat(userId));
       activity2.etat.set("NON_DEMARREE", activity2.etat.get("NON_DEMARREE").filter((id) => !id.equals(userId)));
       activity2.save();
+      console.log("D\xE9marrage r\xE9ussie de l activit\xE9", activityId, "pour", userId);
       return activity2;
     } else
       return null;
   }
-  // PASSAGE DE l'USERID DE NON_DEMARREE A EN_COURS DANS LES ETATS DE L ACTIVITE
+  // PASSAGE DE l'USERID DE EN_COURS A TERMINEE DANS LES ETATS DE L ACTIVITE
   async endActivity(activityId, userId) {
     const activity2 = await activity_model_default.Activity.findById(activityId);
     if (activity2) {
-      console.log("activiteyy", activity2);
       activity2.etat.set("TERMINEE", activity2.etat.get("TERMINEE").concat(userId));
       activity2.etat.set("EN_COURS", activity2.etat.get("EN_COURS").filter((id) => !id.equals(userId)));
       activity2.save();
+      console.log("Activit\xE9", activityId, " termin\xE9e avec succ\xE8s pour", userId);
       return activity2;
     } else
       return null;
@@ -1990,7 +1999,7 @@ var ActivityService = class {
         console.log(`Mission not found for activity ${activityId}`);
         return;
       }
-      const room = await roomService3.findById(roomId);
+      const room = await roomService4.findById(roomId);
       if (!room) {
         console.log(`Room not found for activity ${activityId}`);
         return;
@@ -2141,7 +2150,7 @@ var mediaService4 = new MediaService();
 var userService3 = new UsersService();
 var thumbService2 = new ThumbService();
 var activityService = new ActivityService();
-var roomService4 = new RoomService();
+var roomService5 = new RoomService();
 var missionService2 = new MissionService();
 var fileStorage3 = import_multer3.default.diskStorage({
   // définit le dossier de destination à partir de l'ID de l'utilisateur
@@ -2203,7 +2212,7 @@ UserDataController.route("/").post(fileupload.single("file"), async (req, res, n
       console.log("yep pas de romCode dans la requ\xEAte");
       const mission = await missionService2.findMissionByActivity(req.body.activityId);
       const roomId = mission.roomId;
-      room = await roomService4.findCodeById(roomId);
+      room = await roomService5.findCodeById(roomId);
     } else {
       room = req.body.room;
     }
@@ -2443,7 +2452,7 @@ UserDataController.route("/:activityId([a-z0-9]{24})/:userId([a-z0-9]{24})").get
     }
     const roomId = new import_mongoose15.Types.ObjectId(mission[0].roomId);
     console.log("roomId", roomId);
-    const roomCode = await roomService4.findCodeById(roomId);
+    const roomCode = await roomService5.findCodeById(roomId);
     console.log("roomId", roomCode);
     const dataList = await service2.findByUserIdAndActivityId(user, roomCode, activityId);
     console.log("dataList", dataList);
@@ -2671,7 +2680,7 @@ var import_fs6 = __toESM(require("fs"));
 var import_multer4 = __toESM(require("multer"));
 var MissionController = (0, import_express7.Router)();
 var service3 = new MissionService();
-var roomService5 = new RoomService();
+var roomService6 = new RoomService();
 var mediaService6 = new MediaService();
 var activityService2 = new ActivityService();
 var userService5 = new UsersService();
@@ -2700,11 +2709,11 @@ MissionController.route("/").get(async (req, res) => {
       });
     } else {
       const mission = await service3.createMission(req.body);
-      const room = await roomService5.findById(req.body.roomId);
+      const room = await roomService6.findById(req.body.roomId);
       if (room) {
         const roomId = new import_mongoose18.Types.ObjectId(req.body.roomId);
         room.mission.push(mission._id);
-        await RoomService.update(room, roomId);
+        await roomService6.update(room, roomId);
       } else {
         console.log("salle inconnue");
       }
@@ -2720,12 +2729,12 @@ MissionController.route("/").get(async (req, res) => {
 MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next) => {
   try {
     const roomCode = req.params.roomCode;
-    const room = await roomService5.findByCode(roomCode);
+    const room = await roomService6.findByCode(roomCode);
     if (room) {
       const roomId = room._id;
       const mission = await service3.createMissionByCode(req.body, roomId);
       room == null ? void 0 : room.mission.push(mission._id);
-      await RoomService.update(room, roomId);
+      await roomService6.update(room, roomId);
       return res.status(201).json(mission);
     } else {
       return res.status(404).json({
@@ -2744,7 +2753,7 @@ MissionController.route("/:roomCode([A-Z-z0-9]{6})/").post(async (req, res, next
   }
 }).get(async (req, res, next) => {
   try {
-    const room = await roomService5.findByCode(req.params.roomCode);
+    const room = await roomService6.findByCode(req.params.roomCode);
     if (room) {
       const missionList = room.mission;
       console.log("missionList", missionList);
@@ -2782,7 +2791,7 @@ MissionController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
   }
   try {
     await service3.delete(id);
-    const room = await roomService5.findById(mission.roomId);
+    const room = await roomService6.findById(mission.roomId);
     if (room) {
       room.mission = room.mission.filter((id2) => !id2.equals(mission._id));
       await room.save();
@@ -3199,6 +3208,30 @@ MissionController.route("/:id([a-z0-9]{24})/visuel").get(async (req, res) => {
     });
   }
 });
+MissionController.route("/:missionId([a-z0-9]{24})/visuel").delete(async (req, res, next) => {
+  try {
+    const missionId = new import_mongoose18.Types.ObjectId(req.params.missionId);
+    const mission = await service3.find(missionId);
+    if (!mission) {
+      return res.status(404).json({
+        error: "Mission non trouv\xE9e."
+      });
+    }
+    const visuel = await service3.visuel(missionId);
+    if (!visuel) {
+      return res.status(404).json({
+        error: "Visuel non trouv\xE9."
+      });
+    }
+    import_fs6.default.unlinkSync((0, import_path11.join)(config2.ATTACHEMENT_SRC, "VISUEL-MISSIONS", "images", visuel.name));
+    await mediaService6.delete(visuel._id);
+    mission.visuel = null;
+    await mission.save();
+    return res.status(200).json();
+  } catch (err) {
+    next(err);
+  }
+});
 var fileStorage4 = import_multer4.default.diskStorage({
   // définit le dossier de destination à partir de l'ID de l'utilisateur
   destination: function(req, file, cb) {
@@ -3244,7 +3277,7 @@ MissionController.route("/:idMission([a-z0-9]{24})/change-visuel").post(fileUplo
       return res.status(400).send("Room ID not found in mission");
     }
     console.log("rooom", room);
-    const researchedRoom = await roomService5.findById(room);
+    const researchedRoom = await roomService6.findById(room);
     if (!researchedRoom) {
       return res.status(404).send("Room not found");
     }
@@ -3327,7 +3360,7 @@ MissionController.route("/:missionId([a-z0-9]{24})/inscrireRoom/").post(async (r
     }
     const roomId = mission == null ? void 0 : mission.roomId;
     if (roomId) {
-      const room = await roomService5.findById(roomId);
+      const room = await roomService6.findById(roomId);
       if (!room) {
         return res.status(404).send("Room non trouv\xE9e.");
       }
@@ -3442,7 +3475,7 @@ var RoomController = (0, import_express8.Router)();
 var service4 = new RoomService();
 RoomController.route("/").get(async (req, res) => {
   try {
-    const roomList = await RoomService.findAll();
+    const roomList = await roomService.findAll();
     if (roomList.length === 0) {
       return res.status(404).json({
         message: "Aucune salle trouv\xE9e"
@@ -3469,16 +3502,6 @@ RoomController.route("/:id([a-z0-9]{24})/moderator").get(async (req, res, next) 
   try {
     const id = new import_mongoose19.Types.ObjectId(req.params.id);
     const room = await service4.findById(id);
-    const moderator = room == null ? void 0 : room.moderatorId;
-    return res.status(200).json(moderator);
-  } catch (err) {
-    next(err);
-  }
-});
-RoomController.route("/:roomCode([A-Z0-9]{6})/moderator").get(async (req, res, next) => {
-  try {
-    const roomCode = req.params.roomCode;
-    const room = await service4.findByCode(roomCode);
     const moderator = room == null ? void 0 : room.moderatorId;
     return res.status(200).json(moderator);
   } catch (err) {
@@ -3527,6 +3550,68 @@ RoomController.route("/:roomCode([A-Z0-9]{6})/missions").get(async (req, res, ne
 });
 var room_controller_default = RoomController;
 
+// src/resources/instance/instance.controller.ts
+var import_express9 = require("express");
+var import_mongoose20 = require("mongoose");
+var InstanceController = (0, import_express9.Router)();
+var roomService7 = new RoomService();
+var service5 = new InstanceService();
+InstanceController.route("/").get(async (req, res) => {
+  try {
+    const roomList = await roomService7.findAll();
+    if (roomList.length === 0) {
+      return res.status(404).json({
+        message: "Aucune salle trouv\xE9e"
+      });
+    }
+    return res.status(200).json(roomList);
+  } catch (error) {
+    console.error("Error in GET /room:", error);
+    return res.status(500).json({
+      message: "Erreur du serveur"
+    });
+  }
+});
+InstanceController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
+  try {
+    const id = new import_mongoose20.Types.ObjectId(req.params.id);
+    const room = await roomService7.findById(id);
+    return res.status(200).json(room);
+  } catch (err) {
+    next(err);
+  }
+});
+InstanceController.route("/:instanceName/:roomCode([A-Z0-9]{6})/moderator").get(async (req, res, next) => {
+  try {
+    const roomCode = req.params.roomCode;
+    const instanceName = req.params.instanceName;
+    const instance = await service5.findByName(instanceName);
+    if (!instance) {
+      return res.status(404).json({
+        error: "Instance introuvable."
+      });
+    }
+    const room = await roomService7.findByCodeAndInstance(roomCode, instanceName);
+    if (!room) {
+      return res.status(404).json({
+        error: "Salle introuvable."
+      });
+    }
+    const roomId = room._id.toString();
+    const roomsInInstance = instance.rooms.map((room2) => room2.toString());
+    if (!roomsInInstance.includes(roomId)) {
+      return res.status(403).json({
+        error: "Aucune salle avec ce code dans cette instance. "
+      });
+    }
+    const moderatorId = room.moderatorId.toString();
+    return res.status(200).json(moderatorId);
+  } catch (err) {
+    next(err);
+  }
+});
+var instance_controller_default = InstanceController;
+
 // src/middlewares/exceptions.handler.ts
 var ExceptionsHandler = /* @__PURE__ */ __name((err, req, res, next) => {
   if (res.headersSent) {
@@ -3556,15 +3641,15 @@ var import_swagger_jsdoc = __toESM(require("swagger-jsdoc"));
 var import_swagger_ui_express = __toESM(require("swagger-ui-express"));
 
 // src/resources/activity/activity.controller.ts
-var import_express9 = require("express");
-var import_mongoose20 = require("mongoose");
+var import_express10 = require("express");
+var import_mongoose21 = require("mongoose");
 var import_path12 = require("path");
 var import_fs7 = __toESM(require("fs"));
 var import_multer5 = __toESM(require("multer"));
-var service5 = new ActivityService();
+var service6 = new ActivityService();
 var missionService3 = new MissionService();
 var userService6 = new UsersService();
-var roomService6 = new RoomService();
+var roomService8 = new RoomService();
 var fileStorage5 = import_multer5.default.diskStorage({
   // définit le dossier de destination à partir de l'ID de l'utilisateur
   destination: function(req, file, cb) {
@@ -3599,11 +3684,11 @@ var fileStorage5 = import_multer5.default.diskStorage({
 var fileUpload4 = (0, import_multer5.default)({
   storage: fileStorage5
 });
-var ActivityController = (0, import_express9.Router)();
+var ActivityController = (0, import_express10.Router)();
 var activityService3 = new ActivityService();
 ActivityController.route("/").get(async (req, res, next) => {
   try {
-    const activityList = await service5.findAll();
+    const activityList = await service6.findAll();
     return res.status(200).json(activityList);
   } catch (err) {
     next(err);
@@ -3617,7 +3702,7 @@ ActivityController.route("/").get(async (req, res, next) => {
       const savedProduire = await ActivityProduireService.createProduire(req.body);
       return res.status(201).json(savedProduire);
     } else {
-      const savedActivity = await service5.create(req.body);
+      const savedActivity = await service6.create(req.body);
       return res.status(201).json(savedActivity);
     }
   } catch (error) {
@@ -3687,15 +3772,15 @@ ActivityController.route("/produire").post(async (req, res, next) => {
 });
 ActivityController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
   try {
-    const id = new import_mongoose20.Types.ObjectId(req.params.id);
-    const activity2 = await service5.findById(id);
+    const id = new import_mongoose21.Types.ObjectId(req.params.id);
+    const activity2 = await service6.findById(id);
     return res.status(200).json(activity2);
   } catch (err) {
     next(err);
   }
 }).delete(async (req, res, next) => {
-  const id = new import_mongoose20.Types.ObjectId(req.params.id);
-  const activity2 = await service5.findById(id);
+  const id = new import_mongoose21.Types.ObjectId(req.params.id);
+  const activity2 = await service6.findById(id);
   if (!activity2) {
     return res.status(404).json({
       error: `Activit\xE9 avec ID ${id} non trouv\xE9e`
@@ -3710,7 +3795,7 @@ ActivityController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
       mission.nb_activites = mission.activites.length;
       await mission.save();
     }
-    await service5.delete(id);
+    await service6.delete(id);
     return res.status(200).json({
       message: `Activit\xE9  ${id} supprim\xE9e avec succ\xE8s`
     });
@@ -3723,9 +3808,9 @@ ActivityController.route("/:id([a-z0-9]{24})/").get(async (req, res, next) => {
 });
 ActivityController.route("/:idActivity([a-z0-9]{24})/:idUser([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const activityId = new import_mongoose20.Types.ObjectId(req.params.idActivity);
-    const activity2 = await service5.find(activityId);
-    const userId = new import_mongoose20.Types.ObjectId(req.params.idUser);
+    const activityId = new import_mongoose21.Types.ObjectId(req.params.idActivity);
+    const activity2 = await service6.find(activityId);
+    const userId = new import_mongoose21.Types.ObjectId(req.params.idUser);
     const user = await userService6.find(userId);
     if (user === null) {
       return res.status(404).send("Le participant est introuvable");
@@ -3733,7 +3818,7 @@ ActivityController.route("/:idActivity([a-z0-9]{24})/:idUser([a-z0-9]{24})").get
       if (activity2 === null) {
         return res.status(404).send("L activit\xE9 est introuvable");
       } else {
-        const userState = await service5.etatByUser(activityId, userId);
+        const userState = await service6.etatByUser(activityId, userId);
         const newResponse = {
           _id: activity2._id,
           titre: activity2.titre,
@@ -3761,9 +3846,9 @@ ActivityController.route("/:idActivity([a-z0-9]{24})/:idUser([a-z0-9]{24})").get
 });
 ActivityController.route("/listetat/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const missionId = new import_mongoose20.Types.ObjectId(req.params.idMission);
+    const missionId = new import_mongoose21.Types.ObjectId(req.params.idMission);
     const mission = await missionService3.find(missionId);
-    const userId = new import_mongoose20.Types.ObjectId(req.params.idUser);
+    const userId = new import_mongoose21.Types.ObjectId(req.params.idUser);
     const user = await userService6.find(userId);
     if (user === null) {
       return res.status(404).send("Le participant est introuvable");
@@ -3777,8 +3862,8 @@ ActivityController.route("/listetat/:idMission([a-z0-9]{24})/:idUser([a-z0-9]{24
         }
         const responses = [];
         for (const activityId of activityIdList) {
-          const userState = await service5.etatByUser(activityId, userId);
-          const activity2 = await service5.findById(activityId);
+          const userState = await service6.etatByUser(activityId, userId);
+          const activity2 = await service6.findById(activityId);
           const newResponse = {
             _id: activity2._id,
             titre: activity2.titre,
@@ -3810,13 +3895,13 @@ ActivityController.route("/addToMission/:idActivity([a-z0-9]{24})/:idMission([a-
   try {
     const idActivity = req.params.idActivity;
     const idMission = req.params.idMission;
-    const activity2 = await service5.findById(new import_mongoose20.Types.ObjectId(idActivity));
+    const activity2 = await service6.findById(new import_mongoose21.Types.ObjectId(idActivity));
     if (!activity2) {
       return res.status(404).json({
         error: `Activit\xE9 avec ID ${idActivity} non trouv\xE9e`
       });
     }
-    const mission = await mission_model_default.findById(new import_mongoose20.Types.ObjectId(idMission));
+    const mission = await mission_model_default.findById(new import_mongoose21.Types.ObjectId(idMission));
     if (!mission) {
       return res.status(404).json({
         error: `Mission avec ID ${idMission} non trouv\xE9e`
@@ -3855,13 +3940,13 @@ ActivityController.route("/addToMission/:idActivity([a-z0-9]{24})/:idMission([a-
   try {
     const idActivity = req.params.idActivity;
     const idMission = req.params.idMission;
-    const activity2 = await service5.findById(new import_mongoose20.Types.ObjectId(idActivity));
+    const activity2 = await service6.findById(new import_mongoose21.Types.ObjectId(idActivity));
     if (!activity2) {
       return res.status(404).json({
         error: `Activit\xE9 avec ID ${idActivity} non trouv\xE9e`
       });
     }
-    const mission = await mission_model_default.findById(new import_mongoose20.Types.ObjectId(idMission));
+    const mission = await mission_model_default.findById(new import_mongoose21.Types.ObjectId(idMission));
     if (!mission) {
       return res.status(404).json({
         error: `Mission avec ID ${idMission} non trouv\xE9e`
@@ -3889,7 +3974,7 @@ ActivityController.route("/duplicate/:idActivity([a-z0-9]{24})").post(async (req
   try {
     const idActivity = req.params.idActivity;
     console.log("idActivity", idActivity);
-    const activitytodup = await service5.findById(new import_mongoose20.Types.ObjectId(idActivity));
+    const activitytodup = await service6.findById(new import_mongoose21.Types.ObjectId(idActivity));
     console.log("activitytodup", activitytodup);
     const isConsulter = activitytodup == null ? void 0 : activitytodup.description_detaillee_consulter;
     const isProduire = activitytodup == null ? void 0 : activitytodup.description_detaillee_produire;
@@ -3904,7 +3989,7 @@ ActivityController.route("/duplicate/:idActivity([a-z0-9]{24})").post(async (req
     }
     if (isConsulter) {
       const activityData = {
-        _id: new import_mongoose20.Types.ObjectId(),
+        _id: new import_mongoose21.Types.ObjectId(),
         titre: activitytodup.titre + "-Copie",
         description: activitytodup.description,
         etat: activitytodup.etat,
@@ -3919,7 +4004,7 @@ ActivityController.route("/duplicate/:idActivity([a-z0-9]{24})").post(async (req
     }
     if (isProduire) {
       const activityData = {
-        _id: new import_mongoose20.Types.ObjectId(),
+        _id: new import_mongoose21.Types.ObjectId(),
         titre: activitytodup.titre + "-Copie",
         description: activitytodup.description,
         etat: activitytodup.etat,
@@ -3941,12 +4026,12 @@ ActivityController.route("/duplicate/:idActivity([a-z0-9]{24})").post(async (req
 });
 ActivityController.route("/:id([a-z0-9]{24})/isVisible").get(async (req, res) => {
   try {
-    const id = new import_mongoose20.Types.ObjectId(req.params.id);
-    const activity2 = await service5.findById(id);
+    const id = new import_mongoose21.Types.ObjectId(req.params.id);
+    const activity2 = await service6.findById(id);
     if (!activity2) {
       return res.status(404).json("Activit\xE9 introuvable");
     }
-    const statusVisible = await service5.findVisibilityStatus(id);
+    const statusVisible = await service6.findVisibilityStatus(id);
     return res.status(200).json(statusVisible);
   } catch (error) {
     console.error("Error in GET /activity/{id}/isVisible:", error);
@@ -3957,7 +4042,7 @@ ActivityController.route("/:id([a-z0-9]{24})/isVisible").get(async (req, res) =>
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-visible").post(async (req, res) => {
   const id = req.params.id;
-  const activity2 = await service5.find(new import_mongoose20.Types.ObjectId(id));
+  const activity2 = await service6.find(new import_mongoose21.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
@@ -3965,9 +4050,9 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-visible").post(async (req
     return res.status(404).json("Activit\xE9 introuvable");
   }
   try {
-    const statusVisible = await service5.findVisibilityStatus(new import_mongoose20.Types.ObjectId(id));
+    const statusVisible = await service6.findVisibilityStatus(new import_mongoose21.Types.ObjectId(id));
     console.log("status visible", statusVisible);
-    const titre = await service5.findTitreById(new import_mongoose20.Types.ObjectId(id));
+    const titre = await service6.findTitreById(new import_mongoose21.Types.ObjectId(id));
     if (statusVisible === true) {
       return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 visible");
     } else {
@@ -3984,7 +4069,7 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-visible").post(async (req
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-not-visible").post(async (req, res) => {
   const id = req.params.id;
-  const activity2 = await service5.find(new import_mongoose20.Types.ObjectId(id));
+  const activity2 = await service6.find(new import_mongoose21.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
@@ -3992,8 +4077,8 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-visible").post(async 
     return res.status(404).json("Activit\xE9 introuvable");
   }
   try {
-    const statusVisible = await service5.findVisibilityStatus(new import_mongoose20.Types.ObjectId(id));
-    const titre = await service5.findTitreById(new import_mongoose20.Types.ObjectId(id));
+    const statusVisible = await service6.findVisibilityStatus(new import_mongoose21.Types.ObjectId(id));
+    const titre = await service6.findTitreById(new import_mongoose21.Types.ObjectId(id));
     console.log("statut visible", statusVisible);
     if (!statusVisible) {
       return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non visible");
@@ -4011,8 +4096,8 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-visible").post(async 
 });
 ActivityController.route("/:id([a-z0-9]{24})/isActive").get(async (req, res) => {
   try {
-    const id = new import_mongoose20.Types.ObjectId(req.params.id);
-    const isActiveStatus = await service5.findActiveStatus(id);
+    const id = new import_mongoose21.Types.ObjectId(req.params.id);
+    const isActiveStatus = await service6.findActiveStatus(id);
     return res.status(200).json(isActiveStatus);
   } catch (error) {
     console.error("Error in GET /activity/{id}/isActive:", error);
@@ -4023,7 +4108,7 @@ ActivityController.route("/:id([a-z0-9]{24})/isActive").get(async (req, res) => 
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-active").post(async (req, res) => {
   const id = req.params.id;
-  const activity2 = await service5.find(new import_mongoose20.Types.ObjectId(id));
+  const activity2 = await service6.find(new import_mongoose21.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
@@ -4031,8 +4116,8 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-active").post(async (req,
     return res.status(404).json("Activit\xE9 introuvable");
   }
   try {
-    const statusActive = await service5.findActiveStatus(new import_mongoose20.Types.ObjectId(id));
-    const titre = await service5.findTitreById(new import_mongoose20.Types.ObjectId(id));
+    const statusActive = await service6.findActiveStatus(new import_mongoose21.Types.ObjectId(id));
+    const titre = await service6.findTitreById(new import_mongoose21.Types.ObjectId(id));
     console.log("statut visible", statusActive);
     if (statusActive === true) {
       return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 active");
@@ -4050,7 +4135,7 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-active").post(async (req,
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-not-active").post(async (req, res) => {
   const id = req.params.id;
-  const activity2 = await service5.find(new import_mongoose20.Types.ObjectId(id));
+  const activity2 = await service6.find(new import_mongoose21.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
@@ -4058,8 +4143,8 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-active").post(async (
     return res.status(404).json("Activit\xE9 introuvable");
   }
   try {
-    const statusActive = await service5.findActiveStatus(new import_mongoose20.Types.ObjectId(id));
-    const titre = await service5.findTitreById(new import_mongoose20.Types.ObjectId(id));
+    const statusActive = await service6.findActiveStatus(new import_mongoose21.Types.ObjectId(id));
+    const titre = await service6.findTitreById(new import_mongoose21.Types.ObjectId(id));
     console.log("statut visible", statusActive);
     if (!statusActive) {
       return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non active");
@@ -4077,8 +4162,8 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-active").post(async (
 });
 ActivityController.route("/:id([a-z0-9]{24})/isGuidee").get(async (req, res) => {
   try {
-    const id = new import_mongoose20.Types.ObjectId(req.params.id);
-    const isGuideeStatus = await service5.findGuideeStatus(id);
+    const id = new import_mongoose21.Types.ObjectId(req.params.id);
+    const isGuideeStatus = await service6.findGuideeStatus(id);
     return res.status(200).json(isGuideeStatus);
   } catch (error) {
     console.error("Error in GET /activity/{id}/isActive:", error);
@@ -4089,7 +4174,7 @@ ActivityController.route("/:id([a-z0-9]{24})/isGuidee").get(async (req, res) => 
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-guidee").post(async (req, res) => {
   const id = req.params.id;
-  const activity2 = await service5.find(new import_mongoose20.Types.ObjectId(id));
+  const activity2 = await service6.find(new import_mongoose21.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
@@ -4097,8 +4182,8 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-guidee").post(async (req,
     return res.status(404).json("Activit\xE9 introuvable");
   }
   try {
-    const statusGuidee = await service5.findActiveStatus(new import_mongoose20.Types.ObjectId(id));
-    const titre = await service5.findTitreById(new import_mongoose20.Types.ObjectId(id));
+    const statusGuidee = await service6.findActiveStatus(new import_mongoose21.Types.ObjectId(id));
+    const titre = await service6.findTitreById(new import_mongoose21.Types.ObjectId(id));
     console.log("statut visible", statusGuidee);
     if (statusGuidee === true) {
       return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 guid\xE9e");
@@ -4116,7 +4201,7 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-guidee").post(async (req,
 });
 ActivityController.route("/:id([a-z0-9]{24})/change-to-not-guidee").post(async (req, res) => {
   const id = req.params.id;
-  const activity2 = await service5.find(new import_mongoose20.Types.ObjectId(id));
+  const activity2 = await service6.find(new import_mongoose21.Types.ObjectId(id));
   if (!id) {
     return res.status(400).send("Le champ ID est manquant.");
   }
@@ -4124,8 +4209,8 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-guidee").post(async (
     return res.status(404).json("Activit\xE9 introuvable");
   }
   try {
-    const statusGuidee = await service5.findActiveStatus(new import_mongoose20.Types.ObjectId(id));
-    const titre = await service5.findTitreById(new import_mongoose20.Types.ObjectId(id));
+    const statusGuidee = await service6.findActiveStatus(new import_mongoose21.Types.ObjectId(id));
+    const titre = await service6.findTitreById(new import_mongoose21.Types.ObjectId(id));
     console.log("statut guidee", statusGuidee);
     if (!statusGuidee) {
       return res.status(200).json("Activit\xE9 :  " + titre + " est d\xE9j\xE0 non guid\xE9e");
@@ -4143,10 +4228,10 @@ ActivityController.route("/:id([a-z0-9]{24})/change-to-not-guidee").post(async (
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/").get(async (req, res) => {
   try {
-    const activityId = new import_mongoose20.Types.ObjectId(req.params.activityId);
-    const userId = new import_mongoose20.Types.ObjectId(req.params.userId);
+    const activityId = new import_mongoose21.Types.ObjectId(req.params.activityId);
+    const userId = new import_mongoose21.Types.ObjectId(req.params.userId);
     const user = await userService6.find(userId);
-    const activity2 = await service5.find(activityId);
+    const activity2 = await service6.find(activityId);
     console.log("userid", user);
     if (user === null) {
       return res.status(404).send("Le participant est introuvable");
@@ -4155,7 +4240,7 @@ ActivityController.route("/:activityId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/
         if (activity2 === null) {
           return res.status(404).send("L activit\xE9 est introuvable");
         } else {
-          const etatByUser = await service5.etatByUser(activityId, userId);
+          const etatByUser = await service6.etatByUser(activityId, userId);
           if (Object.values(etat_enum_default).includes(etatByUser)) {
             return res.status(200).send(etatByUser);
           } else {
@@ -4171,10 +4256,10 @@ ActivityController.route("/:activityId([a-z0-9]{24})/etat/:userId([a-z0-9]{24})/
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{24})/").post(async (req, res) => {
   try {
-    const activityId = new import_mongoose20.Types.ObjectId(req.params.activityId);
-    const userId = new import_mongoose20.Types.ObjectId(req.params.userId);
+    const activityId = new import_mongoose21.Types.ObjectId(req.params.activityId);
+    const userId = new import_mongoose21.Types.ObjectId(req.params.userId);
     const user = await userService6.find(userId);
-    const activity2 = await service5.find(activityId);
+    const activity2 = await service6.find(activityId);
     console.log("userid", user);
     if (user === null) {
       return res.status(404).send("Le participant n existe pas en bdd");
@@ -4183,12 +4268,12 @@ ActivityController.route("/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{2
         if (activity2 === null) {
           return res.status(404).send("L activit\xE9 est introuvable");
         } else {
-          const isInEtat = await service5.etatByUser(activityId, userId);
+          const isInEtat = await service6.etatByUser(activityId, userId);
           if (isInEtat === "NON_DEMARREE" || isInEtat === "EN_COURS" || isInEtat === "TERMINEE") {
             console.log("User d\xE9j\xE0 in array", isInEtat);
             return res.status(500).send(`Ce participant est d\xE9j\xE0 inscrit \xE0 cette activit\xE9. \xC9tat d'avancement: ${isInEtat}`);
           } else {
-            const actvityEtatNonDem = await service5.inscriptionActivity(activityId, userId);
+            const actvityEtatNonDem = await service6.inscriptionActivity(activityId, userId);
             if (actvityEtatNonDem) {
               return res.status(200).send(actvityEtatNonDem);
             }
@@ -4203,17 +4288,17 @@ ActivityController.route("/:activityId([a-z0-9]{24})/inscrire/:userId([a-z0-9]{2
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/inscrireRoom/").post(async (req, res) => {
   try {
-    const activityId = new import_mongoose20.Types.ObjectId(req.params.activityId);
+    const activityId = new import_mongoose21.Types.ObjectId(req.params.activityId);
     const mission = await missionService3.findMissionByActivity(activityId);
-    const roomId = new import_mongoose20.Types.ObjectId(mission == null ? void 0 : mission.roomId);
-    const room = await roomService6.findById(roomId);
+    const roomId = new import_mongoose21.Types.ObjectId(mission == null ? void 0 : mission.roomId);
+    const room = await roomService8.findById(roomId);
     if (!room) {
       return res.status(404).send("Room non trouv\xE9e.");
     }
     const participants = room.participants || [];
     const results = [];
     for (const userId of participants) {
-      const userObjectId = new import_mongoose20.Types.ObjectId(userId);
+      const userObjectId = new import_mongoose21.Types.ObjectId(userId);
       const isInEtat = await activityService3.etatByUser(activityId, userObjectId);
       if (Object.values(etat_enum_default).includes(isInEtat)) {
         console.log("ouipipi");
@@ -4244,17 +4329,17 @@ ActivityController.route("/:activityId([a-z0-9]{24})/inscrireRoom/").post(async 
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/start/:userId([a-z0-9]{24})/").post(async (req, res) => {
   try {
-    const activityId = new import_mongoose20.Types.ObjectId(req.params.activityId);
-    const userId = new import_mongoose20.Types.ObjectId(req.params.userId);
+    const activityId = new import_mongoose21.Types.ObjectId(req.params.activityId);
+    const userId = new import_mongoose21.Types.ObjectId(req.params.userId);
     const user = await userService6.find(userId);
-    const activity2 = await service5.find(activityId);
+    const activity2 = await service6.find(activityId);
     if (user === null) {
       return res.status(404).send("Le participant est introuvable");
     }
     if (activity2 === null) {
       return res.status(404).send("L activit\xE9 est introuvable");
     }
-    const isInEtat = await service5.etatByUser(activityId, userId);
+    const isInEtat = await service6.etatByUser(activityId, userId);
     console.log("Isinetat", isInEtat);
     if (isInEtat === "EN_COURS") {
       console.log("User d\xE9j\xE0 in array", isInEtat);
@@ -4262,7 +4347,7 @@ ActivityController.route("/:activityId([a-z0-9]{24})/start/:userId([a-z0-9]{24})
     } else if (isInEtat === "TERMINEE") {
       return res.status(500).send("Activit\xE9 d\xE9j\xE0 termin\xE9e pour ce participant");
     } else if (isInEtat === "NON_DEMARREE") {
-      const actvityDemPourUser = await service5.startActivity(activityId, userId);
+      const actvityDemPourUser = await service6.startActivity(activityId, userId);
       if (actvityDemPourUser) {
         const mission = await missionService3.findMissionByActivity(activityId);
         const userStateMission = await missionService3.etatByUser(mission._id, userId);
@@ -4279,17 +4364,17 @@ ActivityController.route("/:activityId([a-z0-9]{24})/start/:userId([a-z0-9]{24})
 });
 ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/").post(async (req, res) => {
   try {
-    const activityId = new import_mongoose20.Types.ObjectId(req.params.activityId);
-    const activity2 = await service5.find(activityId);
+    const activityId = new import_mongoose21.Types.ObjectId(req.params.activityId);
+    const activity2 = await service6.find(activityId);
     if (activity2 === null) {
       return res.status(404).send("L activit\xE9 est introuvable");
     }
-    const userId = new import_mongoose20.Types.ObjectId(req.params.userId);
+    const userId = new import_mongoose21.Types.ObjectId(req.params.userId);
     const user = await userService6.find(userId);
     if (user === null) {
       return res.status(404).send("Le participant est introuvable");
     } else {
-      const isInEtat = await service5.etatByUser(activityId, userId);
+      const isInEtat = await service6.etatByUser(activityId, userId);
       console.log("Isinetat", isInEtat);
       if (isInEtat === "NON_DEMARREE") {
         console.log("User n a pas commenc\xE9 l activit\xE9", isInEtat);
@@ -4298,7 +4383,7 @@ ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/"
         console.log("User d\xE9j\xE0 in array", isInEtat);
         return res.status(500).send("Activit\xE9 d\xE9j\xE0 termin\xE9e pour cet User");
       } else if (isInEtat === "EN_COURS") {
-        const actvityTermineePourUser = await service5.endActivity(activityId, userId);
+        const actvityTermineePourUser = await service6.endActivity(activityId, userId);
         if (actvityTermineePourUser) {
           const mission = await missionService3.findMissionByActivity(activityId);
           if (mission === null) {
@@ -4307,7 +4392,7 @@ ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/"
           const activityIdList = mission == null ? void 0 : mission.activites;
           const result = [];
           for (const activityId2 of activityIdList) {
-            const etatUser = await service5.etatByUser(activityId2, userId);
+            const etatUser = await service6.etatByUser(activityId2, userId);
             result.push(etatUser);
           }
           const allTerminee = result.every((etat) => etat === "TERMINEE");
@@ -4329,24 +4414,46 @@ ActivityController.route("/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/"
 });
 ActivityController.route("/ressource-consulter/:activityId([a-z0-9]{24})").get(async (req, res, next) => {
   try {
-    const activityId = new import_mongoose20.Types.ObjectId(req.params.activityId);
+    const activityId = new import_mongoose21.Types.ObjectId(req.params.activityId);
+    const activity2 = await service6.findById(activityId);
+    if (activity2 === null) {
+      return res.status(404).send("L'activit\xE9 est introuvable");
+    }
     const mission = await missionService3.findMissionByActivity(activityId);
-    const roomId = new import_mongoose20.Types.ObjectId(mission == null ? void 0 : mission.roomId);
-    const room = await roomService6.findById(roomId);
+    const roomId = new import_mongoose21.Types.ObjectId(mission == null ? void 0 : mission.roomId);
+    const room = await roomService8.findById(roomId);
+    if (!room) {
+      return res.status(404).send("La salle est introuvable");
+    }
+    const userId = new import_mongoose21.Types.ObjectId(room.moderatorId);
     const axios4 = require("axios");
-    const userId = new import_mongoose20.Types.ObjectId(room == null ? void 0 : room.moderatorId);
-    const response = await axios4.get(`${config2.BASE_URL}/datas/${activityId}/${userId}`);
-    console.log("response", response);
-    const data = response.data[0];
-    const newResponse = {
-      _id: data._id,
-      description: data.description,
-      mediaId: data.mediaId,
-      type: data.type
-    };
-    res.json(newResponse);
+    try {
+      const response = await axios4.get(`${config2.BASE_URL}/datas/${activityId}/${userId}`);
+      console.log("response", response);
+      if (response.data && response.data.length > 0) {
+        const data = response.data[0];
+        const newResponse = {
+          _id: data._id,
+          description: data.description,
+          mediaId: data.mediaId,
+          type: data.type
+        };
+        return res.json(newResponse);
+      } else {
+        return res.status(404).json({
+          message: "Pas de ressource pour cette activit\xE9"
+        });
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        return res.status(404).json({
+          message: "Pas de ressource pour cette activit\xE9"
+        });
+      }
+      throw error;
+    }
   } catch (err) {
-    console.error("Error in get /ressource-consulter/:activityId", err);
+    console.error("Erreur dans get /ressource-consulter/:activityId", err);
     next(err);
   }
 });
@@ -4355,7 +4462,8 @@ var activity_controller_default = ActivityController;
 // src/index.ts
 var missionService4 = new MissionService();
 var activityService4 = new ActivityService();
-var app = (0, import_express10.default)();
+var roomService9 = new RoomService();
+var app = (0, import_express11.default)();
 var httpServer = import_http.default.createServer(app);
 var swaggerOptions = {
   definition: {
@@ -4394,6 +4502,7 @@ app.use("/instructions", instruction_controller_default);
 app.use("/mission", mission_controller_default);
 app.use("/activity", activity_controller_default);
 app.use("/room", room_controller_default);
+app.use("/instance", instance_controller_default);
 app.use("/moodle", moodle_controller_default);
 app.use("/docs", import_swagger_ui_express.default.serve);
 app.get("/docs", import_swagger_ui_express.default.setup(specs, {
@@ -4401,7 +4510,7 @@ app.get("/docs", import_swagger_ui_express.default.setup(specs, {
   customSiteTitle: "MISSIONS HUB DOCS",
   customfavIcon: "https://missions.mobiteach.fr/mobi.ico"
 }));
-app.use("/", import_express10.default.static(__dirname + "/../public", {
+app.use("/", import_express11.default.static(__dirname + "/../public", {
   dotfiles: "allow"
 }));
 app.all("*", UnknownRoutesHandler);
@@ -4413,9 +4522,9 @@ app.use((req, res, next) => {
 });
 var addConnectedUsersToMission = /* @__PURE__ */ __name(async () => {
   try {
-    const rooms = await RoomService.findAll();
+    const rooms = await roomService9.findAll();
     for (const room of rooms) {
-      await missionService4.insrireParticipantsRoomMissions(room._id);
+      await missionService4.insrireParticipantsRoomToMissions(room._id);
     }
   } catch (error) {
     console.error("Erreur lors de l ajout des participants aux missions :", error);
@@ -4423,7 +4532,7 @@ var addConnectedUsersToMission = /* @__PURE__ */ __name(async () => {
 }, "addConnectedUsersToMission");
 var addConnectedUsersToActivities = /* @__PURE__ */ __name(async () => {
   try {
-    const rooms = await RoomService.findAll();
+    const rooms = await roomService9.findAll();
     for (const room of rooms) {
       const missions = await missionService4.findByRoomId(room._id);
       for (const mission of missions) {
@@ -4442,21 +4551,23 @@ var missionIntervalId = setInterval(() => addConnectedUsersToMission(), 5e3);
 var activityIntervalId = setInterval(() => addConnectedUsersToActivities(), 5e3);
 var start = /* @__PURE__ */ __name(async () => {
   try {
-    httpServer.listen(config2.API_PORT);
-    console.log("MISSION HTTP server \xE0 l'\xE9coute sur : " + config2.API_PORT);
-    import_mongoose21.default.connect(config2.DB_URI);
-    httpServer.on("error", (err) => {
-      throw err;
-    });
-    process.on("SIGINT", () => {
-      httpServer.close();
-    });
-    httpServer.on("close", async () => {
-      clearInterval(missionIntervalId);
-      clearInterval(activityIntervalId);
-      await import_mongoose21.default.disconnect();
-      console.log("Server closed");
-    });
+    if (!(config2.SSL_KEY && config2.SSL_CERT)) {
+      httpServer.listen(config2.API_PORT);
+      console.log("MISSION HTTP server \xE0 l'\xE9coute sur : " + config2.API_PORT);
+      import_mongoose22.default.connect(config2.DB_URI);
+      httpServer.on("error", (err) => {
+        throw err;
+      });
+      process.on("SIGINT", () => {
+        httpServer.close();
+      });
+      httpServer.on("close", async () => {
+        clearInterval(missionIntervalId);
+        clearInterval(activityIntervalId);
+        await import_mongoose22.default.disconnect();
+        console.log("Server closed");
+      });
+    }
     if (config2.SSL_KEY && config2.SSL_CERT) {
       const options = {
         key: (0, import_fs8.readFileSync)(config2.SSL_KEY),
@@ -4464,7 +4575,8 @@ var start = /* @__PURE__ */ __name(async () => {
       };
       const httpsServer = import_https.default.createServer(options, app);
       httpsServer.listen(443);
-      console.log("HTTPS server is listening on port : 443");
+      console.log("HTTPS (avec key et cert) server is listening on port : 443");
+      import_mongoose22.default.connect(config2.DB_URI);
       httpsServer.on("error", (err) => {
         throw err;
       });
@@ -4474,7 +4586,7 @@ var start = /* @__PURE__ */ __name(async () => {
       httpsServer.on("close", async () => {
         clearInterval(missionIntervalId);
         clearInterval(activityIntervalId);
-        httpServer.close();
+        httpsServer.close();
       });
     }
   } catch (error) {

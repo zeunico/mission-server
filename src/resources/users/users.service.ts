@@ -78,8 +78,7 @@ export class UsersService {
 	// Met à jour un utilisateur en particulier
 	async update(userData: Partial<IUser>, _id: Types.ObjectId): Promise<IUser | null> {
 		const modifiedUser = await User.findByIdAndUpdate(_id, userData, { new: true });
-		console.log('yep c ici');
-		console.log(await User.findOne(_id));
+
 		return modifiedUser;
 	}
 

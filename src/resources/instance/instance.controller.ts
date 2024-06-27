@@ -1,28 +1,30 @@
 import { Router } from 'express';
 import { Types, isObjectIdOrHexString } from 'mongoose';
 import { RoomService } from '../room/room.service';
+import { InstanceService } from './instance.service';
 
 
 // Création d'un Router Express
-const RoomController: Router = Router();
+const InstanceController: Router = Router();
 
 // Instanciation des Services
 
 const roomService = new RoomService();
+const service = new InstanceService();
 
 /**
  * @swagger
  * tags:
- *  name: Room
- *  description: Gestion des salles
+ *  name: Instance
+ *  description: Gestion des instances
  * 
- * /room:
+ * /instance:
  *  get:
- *   summary: Récupération de la liste des salles
- *   tags: [Room]
+ *   summary: Récupération de la liste des instances
+ *   tags: [Instance]
  *   responses:
  *    200:
- *     description: Liste des salles
+ *     description: Liste des instances
  *     content:
  *      application/json:
  *       schema:
@@ -32,18 +34,15 @@ const roomService = new RoomService();
  *         properties:
  *          _id:
  *           type: string
- *           description: ID de la salle généré par la base de données
- *          roomCode:
+ *           description: ID de l instance
+ *          name:
  *           type: string
- *           description: Roomcode de la salle
- *          moderatorId:
- *           type: string
- *           description: L'ID de l'animateur (moderator) de la salle
- *          mission:
+ *           description: Nom de l instance
+ *          rooms:
  *           type: array
- *           description: Liste des missions présentes dans la salle
+ *           description: Liste des salles présentes dans l instance
  *    404:
- *     description: Aucune salle trouvée
+ *     description: Aucune instance trouvée
  *     content:
  *      application/json:
  *       schema:
@@ -52,41 +51,35 @@ const roomService = new RoomService();
  *         message:
  *          type: string
  *          description: Message d'erreur
- * /room/{id}:
+ * /instance/{id}:
  *  get:
- *   summary: Récupération des informations d'une salle pour son ID
- *   tags: [Room]
+ *   summary: Récupération des informations d'une instance pour son ID
+ *   tags: [Instance]
  *   parameters:
  *   - name: id
  *     in: path
  *     required: true
- *     description: L'ID de la mission dont on récupère les informations
+ *     description: L'ID de l instance dont on récupère les informations
  *     type: string
  *   responses:
  *    200:
- *     description: Liste des salles
+ *     description: L'instance récupérée selon son ID
  *     content:
  *      application/json:
  *       schema:
- *        type: array
- *        items:
- *         type: object
- *         properties:
+ *        type: object
+ *        properties:
  *          _id:
  *           type: string
- *           description: Code identifiant de la salle généré par la base de données
- *          roomCode:
+ *           description: Code identifiant de l instance
+ *          name:
  *           type: string
- *           description: Nom de code de la salle
- *          moderatorId:
- *           type: string
- *           description: L'ID de l'animateur (moderator) de la salle
- *          mission:
+ *           description: Nom de l'instance 
+ *          rooms:
  *           type: array
- *           description: Liste des missions présentes dans la salle
- * 
+ *           description: Liste des salles présentes dans l instance
  *    404:
- *     description: Aucune salle trouvée
+ *     description: Instance introuvable
  *     content:
  *      application/json:
  *       schema:
@@ -95,32 +88,34 @@ const roomService = new RoomService();
  *         message:
  *          type: string
  *          description: Message d'erreur
- * 
- * /room/{id}/moderator:
+  * /{instanceName}/{roomCode}/moderator:
  *  get:
- *   summary: Récupération de l'ID du moderator de la salle par l'ID de la salle
- *   tags: [Room]
+ *   summary: Récupération de l'ID du modérateur de la salle selon le roomCode et le nom de l'instance
+ *   tags: [Instance]
  *   parameters:
- *    - name: id
- *      in: path
+ *    - in: path
+ *      name: instanceName
  *      required: true
- *      description: L'ID de la salle
- *      type: string
+ *      schema:
+ *       type: string
+ *      description: Nom de l'instance
+ *    - in: path
+ *      name: roomCode
+ *      required: true
+ *      schema:
+ *       type: string
+ *       pattern: '^[A-Z0-9]{6}$'
+ *      description: Code de la salle (6 caractères alphanumériques)
  *   responses:
  *    200:
- *     description: ID du moderator de la salle
+ *     description: ID du modérateur de la salle
  *     content:
  *      application/json:
  *       schema:
  *        type: string
- *        items:
- *         type: object
- *         properties:
- *         _id:
- *           type: string
- *           description: ID du moderator de la salle
+ *        description: ID du modérateur
  *    404:
- *     description: Aucune salle trouvée
+ *     description: Instance ou salle non trouvée
  *     content:
  *      application/json:
  *       schema:
@@ -129,32 +124,8 @@ const roomService = new RoomService();
  *         message:
  *          type: string
  *          description: Message d'erreur
- * 
- * /room/{roomCode}/moderator:
- *  get:
- *   summary: Récupération de l'ID du moderator de la salle par le roomCode de la salle (MOBI01 par exemple) 
- *   tags: [Room]
- *   parameters:
- *    - name: roomcode
- *      in: path
- *      required: true
- *      description: Le roomcode de la salle.
- *      type: string
- *   responses:
- *    200:
- *     description: ID du moderator de la salle
- *     content:
- *      application/json:
- *       schema:
- *        type: string
- *        items:
- *         type: object
- *         properties:
- *         _id:
- *           type: string
- *           description: ID du moderator de la salle
- *    404:
- *     description: Aucune salle trouvée
+ *    500:
+ *     description: Erreur interne du serveur
  *     content:
  *      application/json:
  *       schema:
@@ -163,142 +134,15 @@ const roomService = new RoomService();
  *         message:
  *          type: string
  *          description: Message d'erreur
- * /room/{id}/participants:
- *  get:
- *   summary:  Récupération de la liste des ID des participants de la salle par l'ID de la salle
- *   tags: [Room]
- *   parameters:
- *   - name: id
- *     in: path
- *     required: true
- *     description: L'ID de la salle
- *     type: string
- *   responses:
- *    200:
- *     description: Liste des ID des participants dans la salle 181
- *     content:
- *      application/json:
- *       schema:
- *        type: array
- *        items:
- *         type: string
- *         properties:
- *           type: string
- *           description: Liste des ID des participants dans la salle 190
- *     404:
- *      description: Aucune participant trouvée
- *      content:
- *       application/json:
- *        schema:
- *         type: object
- *         properties:
- *         message:
- *          type: string
- *          description: Message d'erreur
- * /room/{roomCode}/participants:
- *  get:
- *   summary: Récupération de la liste des ID des participants de la salle par le RoomCode de la salle
- *   tags: [Room]
- *   parameters:
- *   - name: roomcode
- *     in: path
- *     required: true
- *     description: Le roomcode de la salle
- *     type: string
- *   responses:
- *    200:
- *     description: Liste des ID des participants dans la salle 213
- *     content:
- *      application/json:
- *       schema:
- *        type: array
- *        items:
- *         type: string
- *         properties:
- *           type: string
- *           description: Liste des ID des participants dans la salle 221
- *    404:
- *     description: Aucun participant trouvé
- *     content:
- *      application/json:
- *       schema:
- *        type: string
- *        properties:
- *         message:
- *          type: string
- *          description: Message d'erreur
-  * /room/{id}/missions:
- *  get:
- *   summary:  Récupération de la liste des ID des missions de la salle par l'ID de la salle
- *   tags: [Room]
- *   parameters:
- *    - name: id
- *      in: path
- *      required: true
- *      description: L'ID de la salle
- *      type: string
- *   responses:
- *    200:
- *     description: Liste des ID des missions de la salle
- *     content:
- *      application/json:
- *       schema:
- *        type: array
- *        items:
- *         type: string
- *         properties:
- *           type: string
- *           description: Liste des ID des missions dans la salle
- *    404:
- *     description: Aucune mission trouvée
- *     content:
- *      application/json:
- *       schema:
- *        type: object
- *        properties:
- *         message:
- *          type: string
- *          description: Message d'erreur
- * /room/{roomCode}/missions:
- *  get:
- *   summary: Récupération de la liste des ID des participants de la salle par le RoomCode de la salle
- *   tags: [Room]
- *   parameters:
- *    - name: roomcode
- *      in: path
- *      required: true
- *      description: Le roomcode de la salle
- *      type: string
- *   responses:
- *    200:
- *     description: Liste des ID des missions de la salle
- *     content:
- *      application/json:
- *       schema:
- *        type: array
- *        items:
- *         type: string
- *         properties:
- *           type: string
- *           description: Liste des ID des missions dans la salle
- *    404:
- *     description: Aucune mission trouvé
- *     content:
- *      application/json:
- *       schema:
- *        type: string
- *        properties:
- *         message:
- *          type: string
- *          description: Message d'erreur
+
  */
 
 // ROUTE RACINE LISTE TOUTES LES SALLES
-RoomController.route('/')
+InstanceController.route('/')
 	.get(async (req, res) => {
 		try {
            
-		const roomList = await RoomService.findAll();
+		const roomList = await roomService.findAll();
 	
 		if (roomList.length === 0) {
 			return res.status(404).json({ message: 'Aucune salle trouvée' });
@@ -313,7 +157,7 @@ RoomController.route('/')
 });
 
 // ROUTE SALLE SELON SON ID 
-RoomController.route('/:id([a-z0-9]{24})/')
+InstanceController.route('/:id([a-z0-9]{24})/')
 .get(async (req, res, next) => {
 	try {
 		const id = new Types.ObjectId(req.params.id);
@@ -326,86 +170,40 @@ RoomController.route('/:id([a-z0-9]{24})/')
 	}
 });
 
-// ID MODERATOR DE LA SALLE SELON ID DE SALLE
-RoomController.route('/:id([a-z0-9]{24})/moderator')
-	.get(async (req, res, next) => {
-		try {
-			const id = new Types.ObjectId(req.params.id);
-			
-			const room =  await roomService.findById(id);
-			const moderator = room?.moderatorId;
-		
-			return res.status(200).json(moderator);
-		} catch (err) {
-			next(err);
-		}
-	});
-
-// ID MODERATOR DE LA SALLE SELON ROOMCODE DE LA SALLE
-RoomController.route('/:roomCode([A-Z0-9]{6})/moderator')
+// ID MODERATOR DE LA SALLE SELON ROOMCODE ET NOM INSTANCE 
+InstanceController.route('/:instanceName/:roomCode([A-Z0-9]{6})/moderator')
 	.get(async (req, res, next) => {
 		try {
 			const roomCode = req.params.roomCode;
-			const room =  await roomService.findByCode(roomCode);
-			const moderator = room?.moderatorId;
-			return res.status(200).json(moderator);
-		} catch (err) {
-			next(err);
-		}
-	});
 
-// LISTE DES PARTICIPANTS DE LA SALLE SELON ID DE SALLE
-RoomController.route('/:id([a-z0-9]{24})/participants')
-	.get(async (req, res, next) => {
-		try {
-			const id = new Types.ObjectId(req.params.id);
+			const instanceName = req.params.instanceName;
+			const instance = await service.findByName(instanceName);
+			if (!instance) {
+				return res.status(404).json({ error: 'Instance introuvable.' });
+			}			
 			
-			const room =  await roomService.findById(id);
-			const participantsList = room?.participants;
-			return res.status(200).json(participantsList);
-		} catch (err) {
-			next(err);
-		}
-	});
-	
-// LISTE DES PARTICIPANTS DE LA SALLE SELON ROOMCODE DE LA SALLE
-RoomController.route('/:roomCode([A-Z0-9]{6})/participants')
-	.get(async (req, res, next) => {
-		try {
-			const roomCode = req.params.roomCode;
-			const room =  await roomService.findByCode(roomCode);
-			const participantsList = room?.participants;
-			return res.status(200).json(participantsList);
+			// On récupère la salle par son roomcode et son instance 			
+			const room = await roomService.findByCodeAndInstance(roomCode, instanceName);
+			if (!room) {
+				return res.status(404).json({ error: 'Salle introuvable.' });
+			}
+
+		// TO STRING pour comparaison
+			const roomId = room._id.toString();
+
+			const roomsInInstance = instance.rooms.map(room => room.toString());
+
+			if (!roomsInInstance.includes(roomId)) {
+				return res.status(403).json({ error: 'Aucune salle avec ce code dans cette instance. ' });
+			}
+
+			const moderatorId = room.moderatorId.toString();
+
+			return res.status(200).json(moderatorId);
+
 		} catch (err) {
 			next(err);
 		}
 	});
 
-// LISTE DES MISSIONS DE LA SALLE SELON ID DE SALLE
-RoomController.route('/:id([a-z0-9]{24})/missions')
-	.get(async (req, res, next) => {
-		try {
-			const id = new Types.ObjectId(req.params.id);
-			
-			const room =  await roomService.findById(id);
-			const missionsList = room?.mission;
-			return res.status(200).json(missionsList);
-		} catch (err) {
-			next(err);
-		}
-	});
-	
-// LISTE DES MISSIONS DE LA SALLE SELON ROOMCODE DE LA SALLE
-RoomController.route('/:roomCode([A-Z0-9]{6})/missions')
-	.get(async (req, res, next) => {
-		try {
-			const roomCode = req.params.roomCode;
-			const room =  await roomService.findByCode(roomCode);
-			const missionsList = room?.mission;
-			return res.status(200).json(missionsList);
-		} catch (err) {
-			next(err);
-		}
-	});
-
-export default RoomController;
+export default InstanceController;

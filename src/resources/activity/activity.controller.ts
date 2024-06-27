@@ -1569,6 +1569,59 @@ const activityService = new ActivityService();
  *         message:
  *          type: string
  *          description: Message d'erreur indiquant une erreur interne du serveur.
+ * /ressource-consulter/{activityId}:
+ *  get:
+ *   summary: Récupération des informations de la ressource consultée selon l'ID de l'activité
+ *   tags: [Activity]
+ *   parameters:
+ *    - in: path
+ *      name: activityId
+ *      required: true
+ *      schema:
+ *       type: string
+ *       pattern: '^[a-z0-9]{24}$'
+ *      description: ID de l'activité (24 caractères alphanumériques)
+ *   responses:
+ *    200:
+ *     description: Informations de la ressource consultée
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         _id:
+ *          type: string
+ *          description: ID de la ressource
+ *         description:
+ *          type: string
+ *          description: Description de la ressource
+ *         mediaId:
+ *          type: string
+ *          description: ID du média associé à la ressource
+ *         type:
+ *          type: string
+ *          description: Type de la ressource
+ *    404:
+ *     description: Activité, salle, mission ou ressource non trouvée
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+ *    500:
+ *     description: Erreur interne du serveur
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Message d'erreur
+
  */
 
 // POST ACTIVITY 
@@ -2418,46 +2471,66 @@ ActivityController.route('/:activityId([a-z0-9]{24})/end/:userId([a-z0-9]{24})/'
 		}
 	});
 
-	ActivityController.route('/ressource-consulter/:activityId([a-z0-9]{24})')
+
+ActivityController.route('/ressource-consulter/:activityId([a-z0-9]{24})')
 	.get(async (req, res, next) => {
 		try {
 			const activityId = new Types.ObjectId(req.params.activityId);
+
+			// Ctrl activity pour activite introuvable
+			const activity = await service.findById(activityId);
+
+			if (activity === null) {
+				return res.status(404).send("L'activité est introuvable");
+			}
 			
 			// Trouver toutes la mission 
 			const mission = await missionService.findMissionByActivity(activityId);
 			const roomId = new Types.ObjectId(mission?.roomId);
 			const room  = await roomService.findById(roomId);
 
+			if (!room) {
+				return res.status(404).send("La salle est introuvable");
+			}
 
+			// Moderateur 
+			const userId = new Types.ObjectId(room.moderatorId);
+
+			// TEMPORAIRE AXIOS
 			const axios = require('axios');
 			
-				// Moderateur 
-			const userId = new Types.ObjectId(room?.moderatorId);
+			try {
+				const response = await axios.get(`${config.BASE_URL}/datas/${activityId}/${userId}`);
+				console.log('response', response);
 
-			const response = await axios.get(`${config.BASE_URL}/datas/${activityId}/${userId}`);
-			console.log('response', response);
+				if (response.data && response.data.length > 0) {
+					// Première USERDATA DE l'activité
+					const data = response.data[0];
 
-			// Assuming you want the first item in the array
-			const data = response.data[0];
+					const newResponse = {
+						_id: data._id,
+						description: data.description,
+						mediaId: data.mediaId,
+						type: data.type
+					};
 
-			const newResponse = {
-				_id: data._id,
-				description: data.description,
-				mediaId: data.mediaId,
-				type: data.type
-			};
-
-			// Retourner la liste des réponses
-			res.json(newResponse);
-			} catch (err) {
-			console.error('Error in get /ressource-consulter/:activityId', err);
-			next(err);
+					// Retourne la réponse
+					return res.json(newResponse);
+				} else {
+					return res.status(404).json({ message: 'Pas de ressource pour cette activité' });
+				}
+			} catch (error) {
+				if (error.response && error.response.status === 404) {
+					return res.status(404).json({ message: 'Pas de ressource pour cette activité' });
+				}
+				throw error;
 			}
-		});
 
-
-
-
+		} catch (err) {
+			console.error('Erreur dans get /ressource-consulter/:activityId', err);
+			next(err);
+		}
+	});
 
 
 export default ActivityController;

@@ -58,8 +58,6 @@ export class UserDataService {
 		return userActivityDataList;
 	}
 
-
-
 	// Trouve une réponse en particulier par son ID
 	async find(userDataId: Types.ObjectId): Promise<IUserData | null> {
 		const researchedData = await MUserData.findById(userDataId);
