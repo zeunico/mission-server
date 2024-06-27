@@ -146,18 +146,18 @@ var getFileTypeByExtension = /* @__PURE__ */ __name((extension) => {
     case ".MP4":
       return media_enum_default.VIDEO;
     case ".mp3":
-    case ".flac":
     case ".MP3":
+    case ".flac":
     case ".FLAC":
       return media_enum_default.AUDIO;
     case ".pdf":
     case ".PDF":
       return media_enum_default.SLIDE;
     case ".doc":
-    case ".docx":
-    case ".txt":
     case ".DOC":
+    case ".docx":
     case ".DOCX":
+    case ".txt":
     case ".TXT":
       return media_enum_default.TEXT;
     default:
@@ -1753,7 +1753,7 @@ var MissionService = class {
     }
     return results;
   }
-  async processRoomMissions(roomId) {
+  async insrireParticipantsRoomMissions(roomId) {
     const missions = await this.findByRoomId(roomId);
     for (const mission of missions) {
       await this.inscrireParticipantsToMission(mission._id, roomId);
@@ -4411,27 +4411,20 @@ app.use((req, res, next) => {
   res.charset = "utf-8";
   next();
 });
-var shutdownSignal = {
-  received: false
-};
-var addConnectedUsersToMission = /* @__PURE__ */ __name(async (shutdownSignal2) => {
+var addConnectedUsersToMission = /* @__PURE__ */ __name(async () => {
   try {
     const rooms = await RoomService.findAll();
     for (const room of rooms) {
-      if (shutdownSignal2.received)
-        return;
-      await missionService4.processRoomMissions(room._id);
+      await missionService4.insrireParticipantsRoomMissions(room._id);
     }
   } catch (error) {
     console.error("Erreur lors de l ajout des participants aux missions :", error);
   }
 }, "addConnectedUsersToMission");
-var addConnectedUsersToActivities = /* @__PURE__ */ __name(async (shutdownSignal2) => {
+var addConnectedUsersToActivities = /* @__PURE__ */ __name(async () => {
   try {
     const rooms = await RoomService.findAll();
     for (const room of rooms) {
-      if (shutdownSignal2.received)
-        return;
       const missions = await missionService4.findByRoomId(room._id);
       for (const mission of missions) {
         const activityList = mission == null ? void 0 : mission.activites;
@@ -4445,8 +4438,8 @@ var addConnectedUsersToActivities = /* @__PURE__ */ __name(async (shutdownSignal
     console.error("Erreur lors de l ajout des participants aux activit\xE9s :", error);
   }
 }, "addConnectedUsersToActivities");
-var missionIntervalId = setInterval(() => addConnectedUsersToMission(shutdownSignal), 5e3);
-var activityIntervalId = setInterval(() => addConnectedUsersToActivities(shutdownSignal), 5e3);
+var missionIntervalId = setInterval(() => addConnectedUsersToMission(), 5e3);
+var activityIntervalId = setInterval(() => addConnectedUsersToActivities(), 5e3);
 var start = /* @__PURE__ */ __name(async () => {
   try {
     httpServer.listen(config2.API_PORT);

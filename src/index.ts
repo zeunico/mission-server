@@ -116,17 +116,14 @@ app.use((req, res, next) => {
 });
 
 // LES ROUTINES D INSCRIPTION AUX MISSIONS ET ACTIVITES
-// Shutdown signal object to communicate shutdown status
-const shutdownSignal = { received: false };
 
-const addConnectedUsersToMission = async (shutdownSignal) => {
+
+const addConnectedUsersToMission = async () => {
     try {
         const rooms = await RoomService.findAll();
         for (const room of rooms) {
-			// Gestion de la fermeture du server 
-			if (shutdownSignal.received) return;  
 
-            await missionService.processRoomMissions(room._id);
+            await missionService.insrireParticipantsRoomToMissions(room._id);
         }
     } catch (error) {
         console.error('Erreur lors de l ajout des participants aux missions :', error);
@@ -135,13 +132,11 @@ const addConnectedUsersToMission = async (shutdownSignal) => {
 
 
 // Routine pour ajouter les users connectés aux activités des missions de leur(s) room(s)
-const addConnectedUsersToActivities = async (shutdownSignal) => {
+const addConnectedUsersToActivities = async () => {
     try {
 		// Toutes les salles
 		const rooms = await RoomService.findAll();
 		for (const room of rooms) {
-			// Gestion de la fermeture du server 
-			if (shutdownSignal.received) return;  
 
 			// Toutes les missions dans la salle
 			const missions = await missionService.findByRoomId(room._id);
@@ -160,9 +155,9 @@ const addConnectedUsersToActivities = async (shutdownSignal) => {
     }
 };
 
-// Fréquence des inscriptions
-const missionIntervalId = setInterval(() => addConnectedUsersToMission(shutdownSignal), 5000);
-const activityIntervalId = setInterval(() => addConnectedUsersToActivities(shutdownSignal), 5000);
+// Fréquence des inscriptions, constantes objects Intervalles pour le "clear" au shutdown du server 
+const missionIntervalId = setInterval(() => addConnectedUsersToMission(), 5000);
+const activityIntervalId = setInterval(() => addConnectedUsersToActivities(), 5000);
 
 
 // On demande à express d'écouter les requetes sur le port défini dans la config
@@ -184,6 +179,7 @@ const start = async () => {
 			// On clear les missionIntervalId et activityIntervalId après le SIGINT pour interrompre les routines d'inscription
 			clearInterval(missionIntervalId);
 			clearInterval(activityIntervalId);
+			// Déconnexion Mongo
 			await mongoose.disconnect();
 			console.log('Server closed');
 		});

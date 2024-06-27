@@ -22,19 +22,20 @@ export const getFileTypeByExtension = (extension: string): EMedia => {
 	case '.MP4':
 		return EMedia.VIDEO;
 	case '.mp3':
-	case '.flac':
 	case '.MP3':
+	case '.flac':
 	case '.FLAC':
 		return EMedia.AUDIO;
 	case '.pdf':
 	case '.PDF':
 		return EMedia.SLIDE;
 	case '.doc':
-	case '.docx':
-	case '.txt':
 	case '.DOC':
+	case '.docx':
 	case '.DOCX':
+	case '.txt':
 	case '.TXT':
+
 		return EMedia.TEXT;
 	default:
 		throw new BadRequestException('Le type de fichier n\'est pas reconnu');
@@ -56,18 +57,18 @@ export const getPathByExtension = (extension: string, id: string): string => {
 	case '.MP4':
 		return join(config.ATTACHEMENT_SRC, id, 'videos');
 	case '.mp3':
-	case '.flac':
 	case '.MP3':
+	case '.flac':
 	case '.FLAC':
 		return join(config.ATTACHEMENT_SRC, id, 'audios');
 	case '.pdf':
 	case '.PDF':
 		return join(config.ATTACHEMENT_SRC, id, 'slides');
 	case '.doc':
-	case '.docx':
-	case '.txt':
 	case '.DOC':
+	case '.docx':
 	case '.DOCX':
+	case '.txt':
 	case '.TXT':
 		return join(config.ATTACHEMENT_SRC, id, 'textes');
 	default:

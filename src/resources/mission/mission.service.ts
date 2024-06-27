@@ -246,7 +246,7 @@ export class MissionService {
         return results;
     }
 
-    async processRoomMissions(roomId: Types.ObjectId): Promise<void> {
+    async insrireParticipantsRoomToMissions(roomId: Types.ObjectId): Promise<void> {
         const missions = await this.findByRoomId(roomId);
 
         for (const mission of missions) {
