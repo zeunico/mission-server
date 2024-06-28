@@ -88,7 +88,7 @@ const service = new InstanceService();
  *         message:
  *          type: string
  *          description: Message d'erreur
-  * /{instanceName}/{roomCode}/moderator:
+ * /{instanceName}/{roomCode}/moderator:
  *  get:
  *   summary: Récupération de l'ID du modérateur de la salle selon le roomCode et le nom de l'instance
  *   tags: [Instance]
@@ -170,7 +170,7 @@ InstanceController.route('/:id([a-z0-9]{24})/')
 	}
 });
 
-// ID MODERATOR DE LA SALLE SELON ROOMCODE ET NOM INSTANCE 
+// ID MODERATOR DE LA SALLE SELON NOM INSTANCE ET ROOMCODE 
 InstanceController.route('/:instanceName/:roomCode([A-Z0-9]{6})/moderator')
 	.get(async (req, res, next) => {
 		try {

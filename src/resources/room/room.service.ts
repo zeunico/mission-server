@@ -9,7 +9,6 @@ const instanceService = new InstanceService();
 
 export class RoomService {
     // Creation d une nouvelle salle
-
 	async create(data: IRoom): Promise<IRoom> {
 		const newRoom: IRoom = {
             ...data, 
@@ -19,6 +18,23 @@ export class RoomService {
 
 		return await Room.create(newRoom);
 	}
+	// Creation d une nouvelle salle avec un roomcode donné  
+	async  createNewRoom(roomCode: string): Promise<IRoom | undefined> {
+		try {
+		const roomData: IRoom = {
+			_id: new Types.ObjectId(),
+			moderatorId: new Types.ObjectId(),
+			roomCode: roomCode,
+			participants: [],
+			mission: []
+			};
+		const createdRoom = await this.create(roomData);
+		console.log('Created Room:', createdRoom);
+		return createdRoom;
+		} catch (error) {
+		  console.error('Error creating room:', error);
+		}
+	  }
 	
 	// Met à jour une salle en particulier
 	async update(roomData: Partial<IRoom>, _id: Types.ObjectId): Promise<IRoom | null> {
@@ -84,5 +100,3 @@ export class RoomService {
 	}
 
 }
-
-

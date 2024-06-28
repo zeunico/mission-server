@@ -24,7 +24,6 @@ const userDataService = new UserDataService();
  * tags:
  *  name: Medias
  *  description: Gestion des médias
- *  
  * /medias:
  *  post:
  *   summary: Création d'un média
@@ -74,7 +73,6 @@ const userDataService = new UserDataService();
  *         message:
  *          type: string
  *          description: Message d'erreur
- * 
  * /medias/user/{id}:
  *  get:
  *   summary: Récupération des médias d'un utilisateur à partir de l'ID passé en paramètre.

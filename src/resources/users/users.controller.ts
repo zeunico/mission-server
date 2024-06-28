@@ -19,6 +19,7 @@ import { TokenHandler } from '~/middlewares/token.handler';
 import axios from 'axios';
 import { IRoom } from '~~/types/room.interface';
 import { join } from 'path';
+import { IInstance } from '~~/types/instance.interface';
 
 
 // Création d'un Router Express
@@ -540,25 +541,6 @@ const instanceService =new InstanceService();
  *                   example: "Internal server error."
  */
 
-async function createNewRoom(roomCode) {
-	try {
-	const users = service.findAll();
-	console.log('users', users);
-	const roomData: IRoom = {
-		_id: new Types.ObjectId(),
-		moderatorId: new Types.ObjectId(),
-		roomCode: roomCode,
-		participants: [],
-		mission: []
-		};
-	const createdRoom = await roomService.create(roomData);
-	console.log('Created Room:', createdRoom);
-	} catch (error) {
-	  console.error('Error creating room:', error);
-	}
-  }
-
-
 UsersController.route('/')
 	.get(async (req, res) => {
 		const userList = await service.findAll();
@@ -569,255 +551,130 @@ UsersController.route('/')
 		return res.status(201).json(createdUser);
 	});
 
+// !!!!!!!!!!!  PORTE D ENTREE !!! 
+// !!!!!!!!!!!  PORTE D'ENTRÉE !!! 
+UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})/')
+    .get(async (req, res, next) => {
+        try {
+            const email = req.params.email;
 
+            let user: IUser | null;
+            if (req.query.instance) {
+                user = await service.findByEmail(email, req.query.instance.toString());
+            } else {
+                user = await service.findByEmail(email);
+            }
 
-UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})')
-	.get(async (req, res, next) => {
-		try {
-			const email = req.params.email;
+            const roomCode = req.query.roomCode;
 
-			let user: IUser | null;
-			if (req.query.instance) {
-				user = await service.findByEmail(email, req.query.instance.toString());
-			} else {
-				user = await service.findByEmail(email);
-			}		
+            const instanceName = req.query.instance;
 
-        // CREATION NOUVELLE ROOM SI CET USER PROVIENT D UNE ROOM PAR ENCORE EN BDD 
-			/// ATTENTION findByCode  NE FCTINNE QUE POUR UNE INSTANCE UNIQUE
+            const instance = await instanceService.findByName(instanceName);
 
-			const roomCode = req.query.roomCode?.toString();
-			console.log('req params roomcode?????', roomCode);
-			let room: IRoom | null;
-			if (roomCode) {
-				room = await roomService.findByCode(roomCode);
-				if (room === null) {
-					await createNewRoom(roomCode);
-					room = await roomService.findByCode(roomCode);					
-				}
-			}
+            if (!instance) {
+                // Créer une instance et une salle si elles n'existent pas
+                await instanceService.createInstanceByName(instanceName);
+                const newInstance = await instanceService.findByName(instanceName);
+                if (newInstance) {
+                    const room = await roomService.createNewRoom(roomCode);
+                    const roomId = room._id;
+                    await instanceService.addRoomToInstance(instanceName.toString(), new Types.ObjectId(roomId));
+                } else {
+                    throw new Error('Échec de la création ou de la recherche de l\'instance');
+                }
+            } else {
+                // L'instance existe, vérifier et créer la salle si nécessaire
+                const room = await roomService.findByCodeAndInstance(roomCode, instanceName);
+                if (!room && roomCode) {
+                    const room = await roomService.createNewRoom(roomCode);
+                    const roomId = room._id;
+                    await instanceService.addRoomToInstance(instanceName.toString(), new Types.ObjectId(roomId));
+                }
+            }
 
+            // S'assurer que la salle est définie pour le traitement ultérieur
+            const room = await roomService.findByCodeAndInstance(roomCode, instanceName);
 
-        	if (req.query.roomCode) {
-				await axios.post('https://' + req.query.instance + '/html/mobiApp/connect', {
-					'roomCode': req.query.roomCode,
-					'userEmail': email
-				}, { headers: { 'mission-token': TokenHandler() } })
-					.then(async (resAxios) => {
-						if (!user) {
-								if (room) {
-									console.log('resAxios.data.user.moderatorId',  resAxios.data.user.isModerator );
-									// @ts-ignore
-									user = await service.create({
-										_id: new Types.ObjectId(resAxios.data.user.id),
-										email,
-										firstname: resAxios.data.user.firstname,
-										lastname: resAxios.data.user.lastname, 
-										connexion: new Types.ObjectId(room._id),
-										picture: null,
-										instructions: [],
-										instance: req.query.instance !== undefined ? req.query.instance.toString() : config.MOBITEACH_URL,
-										roomId: [room._id],
-									});			
+            if (req.query.roomCode) {
+                // Effectuer un post axios et gérer la création ou la mise à jour de l'utilisateur
+                await axios.post('https://' + req.query.instance + '/html/mobiApp/connect', {
+                    'roomCode': req.query.roomCode,
+                    'userEmail': email
+                }, { headers: { 'mission-token': TokenHandler() } })
+                    .then(async (resAxios) => {
+                        if (!user) {
+                            // Créer l'utilisateur s'il n'est pas trouvé
+                            // @ts-ignore
+                            user = await service.create({
+                                _id: new Types.ObjectId(resAxios.data.user.id),
+                                email,
+                                firstname: resAxios.data.user.firstname,
+                                lastname: resAxios.data.user.lastname,
+                                connexion: new Types.ObjectId(room._id),
+                                picture: null,
+                                instructions: [],
+                                instance: req.query.instance !== undefined ? req.query.instance.toString() : config.MOBITEACH_URL,
+                                roomId: [room._id],
+                            });
 
-									/// MODERATEUR
-									const isModerator = resAxios.data.user.isModerator;
-									console.log('ismodo from axios', isModerator);
-									if (isModerator) {
-										// Le modérateur est ajouté comme modérateur de la salle
-									
-											console.log('Cet user est le moderator de la salle ! Il est ajouté dans la salle ');
-											room.moderatorId = user._id;
-										
-											const updatedRoom = await roomService.update({ moderatorId: user._id }, room._id);
-										} else {
-											// On ajoute le user à la liste des participants dans la salle SEULEMENT SI il n'est pas moderator
-											room.participants.push(user._id);
-										}
-									
-										roomService.update(room, room._id);
+                            const isModerator = resAxios.data.user.isModerator;
+                            if (isModerator) {
+                                // Gérer la logique du modérateur
+                                room.moderatorId = user._id;
+                                await roomService.update({ moderatorId: user._id }, room._id);
+                            } else {
+                                // Gérer la logique du participant
+                                if (!room.participants.includes(user._id)) {
+                                    room.participants.push(user._id);
+                                    await roomService.update({ participants: room.participants }, room._id);
+                                }
+                            }
 
-
-									  /// INSTANCES 
-											const instanceName = user.instance;
-											console.log('instance name', instanceName);
-											
-											if (instanceName) {
-												const instance = await instanceService.findByName(instanceName);
-												const roomId = room._id;
-												if (instance === null) {
-													// CREATION NOUVELLE INSTANCE PAR NOM user.instance
-													await instanceService.createInstanceByName(instanceName);
-													const instance = await instanceService.findByName(instanceName);
-													if (instance) {
-													const newInstanceName = instance.name;
-													// AJOUT SALLE DANS INSTANCE
-													await instanceService.addRoomToInstance(newInstanceName, new Types.ObjectId(roomId));
-													}
-			
-												} else {
-														// L'instance existe! On vérifie si la room est déjà dans l'array de l'instance, si non on l'ajoute
-														const isRoomId = instance.rooms.includes(roomId);
-														console.log('bool isroomid',isRoomId)
-														if (isRoomId) {
-														  console.log('La salle existe déjà dans cette instance');
-														} else {
-															await instanceService.addRoomToInstance(instanceName, roomId);
-																  console.log('La salle a été ajoutée à cette instance');
-																}
-														}
-											}
-												
-							// USER PICTURE
-							const userPicture = resAxios.data.user.image;
-							// L'image de profil existe dans la réponse 
-							if (userPicture && userPicture !== '') {
-								// On télécharge l'image
-								const [file, filename] = await downloadFile(resAxios.data.user.image);
-
-								// On créé le document media associé
-								// @ts-ignore
-								const media = await mediaService.create(user._id, {
-									name: user._id + '_profile' + extname(filename),
-									type: EMedia.IMAGE,
-								});
-
-								const dest = media.path().split(sep).slice(0, -1).join(sep);
-								if (!existsSync(dest)) {
-									await mkdir(dest, { recursive: true });
-								}
-								// On écrit sur le systeme le fichier
-								await writeFile(media.path(), file);
-
-								// On met à jour l'utilisateur
-								user = await service.update({ picture: media._id }, user._id);
-							}					
-						}
-					}
-					else { 
-						// l utilisateur existe déjà mise à jour Nvelle roomId dans user ? Nvelle instance ? Nvelle connexion ? MOderation
-						// Ajout room à l'array room du participant si elle n est pas déjà
-						if (room && room._id) {
-							
-							// On vérifie si la salle est dans l'array sinon on l'ajoute
-							if(user.roomId.includes(room._id))
-								{ 
-									await service.update({ connexion: room._id }, user._id);
-								} else
-								{ 
-									user.roomId.push(room._id);
-									await service.update({ roomId: user.roomId }, new Types.ObjectId(user._id));
-								}
-							await service.update({ connexion: room._id }, user._id);
-									
-							} else {
-								console.log('roomCode ou RoomId invalide.');
-							}
-
-					  				// CREATION INSTANCES  
-																  const instanceName = user.instance;
-																  console.log('instance name', instanceName);
-																  
-																  if (instanceName) {
-																	  const instance = await instanceService.findByName(instanceName);
-																	  const roomId = room._id;
-																	  if (instance === null) {
-																		  // CREATION NOUVELLE INSTANCE PAR NOM user.instance
-																		  await instanceService.createInstanceByName(instanceName);
-																		  const instance = await instanceService.findByName(instanceName);
-																		  if (instance) {
-																		  const newInstanceName = instance.name;
-																		  // AJOUT SALLE DANS INSTANCE
-																		  await instanceService.addRoomToInstance(newInstanceName, new Types.ObjectId(roomId));
-																		  }
-								    // MAJ ROOM SI INSTANCE EXISTE PAS LA SALLE
-																	  } else {
-																			  // L'instance existe! On vérifie si la room est déjà dans l'array de l'instance, si non on l'ajoute
-																			  const isRoomId = instance.rooms.includes(roomId);
-																			  console.log('bool isroomid',isRoomId)
-																			  if (isRoomId) {
-																				console.log('La salle existe déjà dans cette instance');
-																			  } else {
-																					  await instanceService.addRoomToInstance(instanceName, roomId);
-																					  console.log('La salle a été ajoutée à cette instance');
-																					  }
-																			  }
-																  }
-
-
-									/// CREATION OU MAJ MODERATEUR
-										const isModerator = resAxios.data.user.isModerator;
-										console.log('ismodo from axios', isModerator);
-										if (isModerator) {
-											// Le modérateur est ajouté comme modérateur de la salle
-										
-												console.log('Cet user est le moderator de la salle ! Il est ajouté dans la salle ');
-												room.moderatorId = user._id;
-											
-												const updatedRoom = await roomService.update({ moderatorId: user._id }, room._id);
-											} else {
-												// On ajoute le user à la liste des participants dans la salle SEULEMENT SI il n'est pas moderator
-												room.participants.push(user._id);
-											}
-										
-									 roomService.update(room, room._id);
-
-
-									///   update media si disparu de la base
-									const userPictureId = new Types.ObjectId(user.picture?.toString());
-									const userPicture = await mediaService.find(userPictureId);
-									if (userPicture)
-										{
-											console.log('pistcure user deja en bdd');
-										}
-										else {
-												const userPicture = resAxios.data.user.image;
-												// L'image de profil existe dans la réponse 
-												if (userPicture && userPicture !== '') {
-													// On télécharge l'image
-													const [file, filename] = await downloadFile(resAxios.data.user.image);
-					
-													// On créé le document media associé
-													// @ts-ignore
-													const media = await mediaService.create(user._id, {
-														name: user._id + '_profile' + extname(filename),
-														type: EMedia.IMAGE,
-													});
-					
-													const dest = media.path().split(sep).slice(0, -1).join(sep);
-													if (!existsSync(dest)) {
-														await mkdir(dest, { recursive: true });
-													}
-													// On écrit sur le systeme le fichier
-													await writeFile(media.path(), file);
-					
-													// On met à jour l'utilisateur
-													user = await service.update({ picture: media._id }, user._id);
-												}
-										}
-									}
-			
-			const updatedUser = await service.find(user._id);
-			return res.status(200).json(updatedUser);
-		})
-		.catch((err) => {
-			console.log('ERROR', err);
-			next(err);
-		});
-	} else {
-		// Handle case where roomCode is not provided but user is found
-		if (!user) {
-			throw new NotFoundException('Utilisateur introuvable');
-		}
-		const updatedUser = await service.findById(user._id);
-		return res.status(200).json(updatedUser);
-	}
-} catch (err) {
-next(err);
-}
-});
-
-
+                            // Gérer l'image de profil de l'utilisateur
+                            const userPicture = resAxios.data.user.image;
+                            if (userPicture && userPicture !== '') {
+                                // Télécharger et enregistrer l'image de l'utilisateur
+                                const [file, filename] = await downloadFile(resAxios.data.user.image);
+                                // @ts-ignore
+                                const media = await mediaService.create(user._id, {
+                                    name: user._id + '_profile' + extname(filename),
+                                    type: EMedia.IMAGE,
+                                });
+                                const dest = media.path().split(sep).slice(0, -1).join(sep);
+                                if (!existsSync(dest)) {
+                                    await mkdir(dest, { recursive: true });
+                                }
+                                await writeFile(media.path(), file);
+                                user = await service.update({ picture: media._id }, user._id);
+                            }
+                        } else {
+                            // Mettre à jour l'utilisateur existant s'il est trouvé
+                            if (room && room._id) {
+                                if (!user.roomId.includes(room._id)) {
+                                    user.roomId.push(room._id);
+                                    await service.update({ roomId: user.roomId }, new Types.ObjectId(user._id));
+                                }
+                            }
+                        }
+                        const updatedUser = await service.find(user._id);
+                        return res.status(200).json(updatedUser);
+                    })
+                    .catch((err) => {
+                        console.log('ERREUR', err);
+                        next(err); // Transmettre l'erreur au middleware de gestion des erreurs
+                    });
+            } else {
+                // Gérer le cas où req.query.roomCode n'est pas présent
+                if (!user) {
+                    throw new NotFoundException('Utilisateur introuvable');
+                }
+                const updatedUser = await service.find(user._id);
+                return res.status(200).json(updatedUser);
+            }
+        } catch (err) {
+            next(err); // Transmettre l'erreur au middleware de gestion des erreurs
+        }
+    });
 
 
 

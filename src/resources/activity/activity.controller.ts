@@ -2120,12 +2120,12 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-active')
         try {
             const statusActive = await service.findActiveStatus(new Types.ObjectId(id));
             const titre = await service.findTitreById(new Types.ObjectId(id));
-            console.log('statut visible', statusActive);
-            if (statusActive === true) {
+            console.log('statut active', statusActive);
+            if (statusActive) {
                 return res.status(200).json('Activité :  ' + titre + ' est déjà active');
             } else {           
                 if (activity) {
-                    activity.visible = true;
+                    activity.active = true;
                     await activity.save();
                     return res.status(201).json('Activité :  ' + titre + ' est désormais active');
                 }
@@ -2151,7 +2151,7 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-not-active')
         try {
             const statusActive = await service.findActiveStatus(new Types.ObjectId(id));
             const titre = await service.findTitreById(new Types.ObjectId(id));
-            console.log('statut visible', statusActive);
+            console.log('statut active', statusActive);
             if (!statusActive) {
                 return res.status(200).json('Activité :  ' + titre + ' est déjà non active');
             } else {
@@ -2195,10 +2195,10 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-guidee')
 		}
 
 		try {
-			const statusGuidee = await service.findActiveStatus(new Types.ObjectId(id));
+			const statusGuidee = await service.findGuideeStatus(new Types.ObjectId(id));
 			const titre = await service.findTitreById(new Types.ObjectId(id));
-			console.log('statut visible', statusGuidee);
-			if (statusGuidee === true) {
+			console.log('statut guidee', statusGuidee);
+			if (statusGuidee) {
 				return res.status(200).json('Activité :  ' + titre + ' est déjà guidée');
 			} else {
 				
@@ -2227,7 +2227,7 @@ ActivityController.route('/:id([a-z0-9]{24})/change-to-not-guidee')
 			return res.status(404).json('Activité introuvable');
 		}
 		try {
-			const statusGuidee = await service.findActiveStatus(new Types.ObjectId(id));
+			const statusGuidee = await service.findGuideeStatus(new Types.ObjectId(id));
 			const titre = await service.findTitreById(new Types.ObjectId(id));
 			console.log('statut guidee', statusGuidee);
 			if (!statusGuidee) {

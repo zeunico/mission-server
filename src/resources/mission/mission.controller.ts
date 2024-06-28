@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Types } from 'mongoose';
 import { MissionService } from '../mission/mission.service';
+import { InstanceService } from '../instance/instance.service';
 import { ActivityService } from '../activity/activity.service';
 import { MediaService } from '../media/media.service';
 import { UsersService } from '../users/users.service';
@@ -22,11 +23,13 @@ const MissionController: Router = Router();
 // Instanciation des Services
 
 const service = new MissionService();
-const roomService = new RoomService();
 
+const roomService = new RoomService();
 const mediaService = new MediaService();
 const activityService = new ActivityService();
 const userService = new UsersService();
+const instanceService = new InstanceService();
+
 
 /**
  * @swagger
@@ -107,38 +110,6 @@ const userService = new UsersService();
  *        roomId:
  *         type: string
  *         description: ID de la salle 
- *        activites:
- *         type: array
- *         description: Toutes les activités dans la mission
- *        nb_activites:
- *         type: number
- *         description: Nombre d'activités de la mission
- *        etat:
- *         type: string
- *         description: Etat de la mission (non démarrée / en cours / terminée)
- *        visible:
- *         type: boolean
- *         description: Visibilié de la mission
- *        active:  
- *         type: boolean
- *         description: La mission est-elle active ?
- *        guidee:
- *         type: boolean
- *         description: La mission est-elle guidée ?
- *        visuel: 
- *         type: String,
- *         description: Visuel accompagnant la mission.
- *        createdAt:
- *         type: string
- *         format: date-time
- *         example: "2021-06-25T15:20:49.000Z"
- *        updatedAt:
- *         type: string
- *         format: date-time
- *         example: "2021-06-25T15:20:49.000Z"
- *        __v:
- *         type: number
- *         example: 0
  *   responses:
  *    201:
  *     description: Mission créée
@@ -198,10 +169,24 @@ const userService = new UsersService();
  *         message:
  *          type: string
  *          description: Message d'erreur
- * /mission/{roomCode}:
+ * /mission/{instanceName}/{roomCode}:
  *  post:
- *   summary: Création d'une mission (Route avec RoomCode)
+ *   summary: Création d'une mission par instance et code de la salle
  *   tags: [Mission]
+ *   parameters:
+ *     - in: path
+ *       name: instanceName
+ *       required: true
+ *       schema:
+ *         type: string
+ *       description: Le nom de l'instance
+ *     - in: path
+ *       name: roomCode
+ *       required: true
+ *       schema:
+ *         type: string
+ *         pattern: '^[A-Z-z0-9]{6}$'
+ *       description: Le code de la salle
  *   requestBody:
  *    required: true
  *    content:
@@ -212,38 +197,6 @@ const userService = new UsersService();
  *        titre:
  *         type: string
  *         description: Titre de la mission
- *        activites:
- *         type: array
- *         description: Toutes les activités dans la mission
- *        nb_activites:
- *         type: number
- *         description: Nombre d'activités de la mission
- *        etat:
- *         type: string
- *         description: Etat de la mission (non démarrée / en cours / terminée)
- *        visible:
- *         type: boolean
- *         description: Visibilié de la mission
- *        active:  
- *         type: boolean
- *         description: La mission est-elle active ?
- *        guidee:
- *         type: boolean
- *         description: La mission est-elle guidée ?
- *        visuel: 
- *         type: String,
- *         description: Visuel accompagnant la mission.
- *        createdAt:
- *         type: string
- *         format: date-time
- *         example: "2021-06-25T15:20:49.000Z"
- *        updatedAt:
- *         type: string
- *         format: date-time
- *         example: "2021-06-25T15:20:49.000Z"
- *        __v:
- *         type: number
- *         example: 0
  *   responses:
  *    201:
  *     description: Mission créée
@@ -272,7 +225,7 @@ const userService = new UsersService();
  *          description: Etat de la mission (non démarrée / en cours / terminée)
  *         visible:
  *          type: boolean
- *          description: Visibilié de la mission
+ *          description: Visibilité de la mission
  *         active:  
  *          type: boolean
  *          description: La mission est-elle active ?
@@ -280,7 +233,7 @@ const userService = new UsersService();
  *          type: boolean
  *          description: La mission est-elle guidée ?
  *         visuel: 
- *          type: String,
+ *          type: string
  *          description: Visuel accompagnant la mission.
  *         createdAt:
  *          type: string
@@ -293,19 +246,56 @@ const userService = new UsersService();
  *         __v:
  *          type: number
  *          example: 0
+ *    400:
+ *     description: Echec à la validation de la mission
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Un message d'erreur
+ *    404:
+ *     description: Instance ou salle non trouvée
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         message:
+ *          type: string
+ *          description: Un message d'erreur
+ *    500:
+ *     description: Erreur interne du serveur
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         error:
+ *          type: string
+ *          description: Un message d'erreur
  *  get:
- *   summary: Récupérer une liste de missions par code de salle
+ *   summary: Récupérer une liste de missions par instance et code de la salle
  *   tags: [Mission]
  *   parameters:
+ *     - in: path
+ *       name: instanceName
+ *       required: true
+ *       schema:
+ *         type: string
+ *       description: Le nom de l'instance
  *     - in: path
  *       name: roomCode
  *       required: true
  *       schema:
  *         type: string
- *       description: Le code de la salle pour laquelle récupérer les missions
-*   responses:
+ *         pattern: '^[A-Z-z0-9]{6}$'
+ *       description: Le code de la salle
+ *   responses:
  *    200:
- *     description: Toutes les activités 
+ *     description: Liste des missions
  *     content:
  *      application/json:
  *       schema:
@@ -313,71 +303,70 @@ const userService = new UsersService();
  *        items:
  *         type: object
  *         properties:
- *         _id:
- *          type: string
- *          description: Code identifiant (ID) de la mission généré par la base de données
- *          example: "60d5ec49e0d2b524789a1c4b"
- *         titre:
- *          type: string
- *          description: Titre de la mission
- *          example: "Mission de nettoyage"
- *         activites:
- *          type: array
- *          description: Toutes les activités dans la mission
- *         nb_activites:
- *          type: number
- *          description: Nombre d'activités de la mission
- *          example: 2
- *         etat:
- *          type: string
- *          description: Etats d'avancement de la mission pour chacun des participants
- *          example: {"EN_COURS": [], "NON_DEMARREE": ["6228b3b4d558d809023a8db8"],"TERMINEE": []}
- *         visible :
- *          type: boolean
- *          description: Visibilité de la mission
- *          example: true 
- *         active :
- *          type: boolean
- *          description: Statut actif de la mission
- *          example: true 
- *         guidee :
- *          type: boolean
- *          description: Mission Guidee
- *         visuel :
- *          type: string
- *          description: Visuel
- *          example: true 
- *         createdAt:
- *          type: string
- *          format: date-time
- *          example: "2021-06-25T15:20:49.000Z"
- *         updatedAt:
- *          type: string
- *          format: date-time
- *          example: "2021-06-25T15:20:49.000Z"
- *         __v:
- *          type: number
- *          example: 0
- *     404:
- *       description: Salle non trouvée
- *       content:
- *        application/json:
- *         schema:
- *          type: object
- *          properties:
- *           error:
+ *          _id:
  *           type: string
- *           description: Un message d'erreur
- *     500:
- *      description: Erreur interne du serveur
- *      content:
- *        application/json:
- *         schema:
- *          type: object
- *          properties:
- *           error:
- *            type: string
- *            description: Un message d'erreur
+ *           description: Code identifiant (ID) de la mission généré par la base de données
+ *           example: "60d5ec49e0d2b524789a1c4b"
+ *          titre:
+ *           type: string
+ *           description: Titre de la mission
+ *           example: "Mission de nettoyage"
+ *          activites:
+ *           type: array
+ *           description: Toutes les activités dans la mission
+ *          nb_activites:
+ *           type: number
+ *           description: Nombre d'activités de la mission
+ *           example: 2
+ *          etat:
+ *           type: string
+ *           description: Etats d'avancement de la mission pour chacun des participants
+ *           example: {"EN_COURS": [], "NON_DEMARREE": ["6228b3b4d558d809023a8db8"],"TERMINEE": []}
+ *          visible :
+ *           type: boolean
+ *           description: Visibilité de la mission
+ *           example: true 
+ *          active :
+ *           type: boolean
+ *           description: Statut actif de la mission
+ *           example: true 
+ *          guidee :
+ *           type: boolean
+ *           description: Mission Guidée
+ *          visuel :
+ *           type: string
+ *           description: Visuel
+ *          createdAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2021-06-25T15:20:49.000Z"
+ *          updatedAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2021-06-25T15:20:49.000Z"
+ *          __v:
+ *           type: number
+ *           example: 0
+ *    404:
+ *     description: Instance ou salle non trouvée
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         error:
+ *          type: string
+ *          description: Un message d'erreur
+ *    500:
+ *     description: Erreur interne du serveur
+ *     content:
+ *      application/json:
+ *       schema:
+ *        type: object
+ *        properties:
+ *         error:
+ *          type: string
+ *          description: Un message d'erreur
  * /mission/{id}:
  *  get:
  *   summary: Récupère une mission enregistrée en base de données à partir de son ID passé en paramètre.
@@ -1739,66 +1728,67 @@ MissionController.route('/')
 			return res.status(500).json({ message: 'Erreur de pramàtres' });
 		}
 	});
-// ROUTE POST MISSION DANS UNE SALLE IDENTIFIEE PAR SON ROOMCODE &&
-// GET LISTE DES MISSIONS DANS UNE SALLE PAR UN ROOMCODE 
-// EN COURS DE DEV 
-MissionController.route('/:roomCode([A-Z-z0-9]{6})/')
+
+
+// ROUTES  POST MISSION DANS UNE SALLE IDENTIFIEE PAR SON ROOMCODE && PAR L INSTANCE 
+//          GET LISTE DES MISSIONS DANS UNE SALLE PAR UN ROOMCODE  && PAR L INSTANCE 
+MissionController.route('/:instanceName/:roomCode([A-Z-z0-9]{6})/')
 	.post(async (req, res, next) => {
 		try {
+			const instanceName = req.params.instanceName;
+			const instance = await instanceService.findByName(instanceName);
+			if (!instance) {
+				return res.status(404).json({ message: 'Instance introuvable' });   
+			}
 			const roomCode = req.params.roomCode;
-			const room = await roomService.findByCode(roomCode);
-			
-			if (room) {
-				const roomId = room._id;
+			const room = await roomService.findByCodeAndInstance(roomCode, instanceName);	
+			if (!room) {
+				return res.status(404).json({ message: 'Salle introuvable' });   
+			}
+			const roomId = room._id;
+			const mission = await service.createMissionByCode(req.body, roomId);
+			room?.mission.push(mission._id);	
+			await roomService.update(room, roomId);							
+			return res.status(201).json(mission);
 
-				const mission = await service.createMissionByCode(req.body, roomId);
-
-				room?.mission.push(mission._id);	
-				await roomService.update(room, roomId);				
-
-				
-				return res.status(201).json(mission);
-				} else {
-                return res.status(404).json({ message: 'Room not found' });
-            	}
-        } catch (error) {
-            console.error('Error in POST /missions/:roomCode:');
-
-            if (error.name === 'ValidationError') {
-                const messages = Object.values(error.errors).map(err => err.message);
-                return res.status(400).json({ message: `Echec à la validation de la mission  : ${messages.join(', ')}` });
-            }
-
-            next(error);
+		} catch (error) {
+			console.error('Error in POST /missions//:instanec/:roomCode:');
+			if (error.name === 'ValidationError') {
+				const messages = Object.values(error.errors).map(err => err.message);
+				return res.status(400).json({ message: `Echec à la validation de la mission  : ${messages.join(', ')}` });
+			}
+			next(error);
 		}
-    })
+	})
 	.get(async (req, res, next) => {
 		try {
 				/// ATTENTION findByCode  NE FCTINNE QUE POUR UNE INSTANCE UNIQUE
 
-			const room = await roomService.findByCode(req.params.roomCode);
+			const room = await roomService.findByCodeAndInstance(req.params.roomCode, req.params.instanceName);
+
 			if (room) {
 				const missionList = room.mission;
 				console.log('missionList', missionList);
-	
-				// Fetch all missions asynchronously
-				const result = await Promise.all(missionList.map(async element => {
+				// Toutes ls missions de la salle dans cette instance
+				const missions = await Promise.all(missionList.map(async element => {
 					return service.find(element);
 				}));
-	
-				console.log('result', result);
-	
+				console.log('missions dans instancce +rommcode', missions);
 				// Return the resolved array of missions
-				return res.status(201).json(result);
+				return res.status(201).json(missions);
 			} else {
 				// If the room is not found, return a 404 status
 				return res.status(404).json({ error: 'Room not found' });
 			}
+
 		} catch (err) {
-			console.error('Error in GET /liste missions par roomCode:', err);
+			console.error('Error in GET /liste missions par instance et roomCode:', err);
 			next(err);
 		}
 	});
+
+
+
 // ROUTE MISSION PAR SON ID
 MissionController.route('/:id([a-z0-9]{24})/')
 	.get(async (req, res, next) => {
