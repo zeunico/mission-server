@@ -81,7 +81,7 @@ export class RoomService {
 
 	// Trouve le ROOMCODE selon l ID de la room
 	async findCodeById(_id: Types.ObjectId): Promise<String | undefined> {
-		console.log('roomCode in service', _id);
+		console.log('roomCode by Id', _id);
 		const researchedRoom = await Room.findOne({_id});
 		const reserchedCode = researchedRoom?.roomCode;
 		return reserchedCode;

@@ -1022,7 +1022,7 @@ var RoomService = class {
   }
   // Trouve le ROOMCODE selon l ID de la room
   async findCodeById(_id) {
-    console.log("roomCode in service", _id);
+    console.log("roomCode by Id", _id);
     const researchedRoom = await room_model_default.findOne({
       _id
     });
@@ -1165,6 +1165,9 @@ UsersController.route("/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})/").ge
           }
         } else {
           if (room && room._id) {
+            await service.update({
+              connexion: room._id
+            }, user._id);
             if (!user.roomId.includes(room._id)) {
               user.roomId.push(room._id);
               await service.update({

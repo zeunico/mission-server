@@ -650,6 +650,9 @@ UsersController.route('/:email([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+.[a-z]{2,3})/')
                         } else {
                             // Mettre à jour l'utilisateur existant s'il est trouvé
                             if (room && room._id) {
+								// Mettre à jour la propriétés connexion	
+								await service.update({ connexion: room._id }, user._id);
+								// Ajouter la salle à la liste des salles de l'utilisateur
                                 if (!user.roomId.includes(room._id)) {
                                     user.roomId.push(room._id);
                                     await service.update({ roomId: user.roomId }, new Types.ObjectId(user._id));
